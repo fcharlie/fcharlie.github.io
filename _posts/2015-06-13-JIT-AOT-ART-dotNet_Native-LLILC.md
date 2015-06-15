@@ -22,4 +22,4 @@ categories: compiler
 ##LLILC
 在.NET CoreCLR开源后，.NET开发团队也创建了基于LLVM的.NET Core编译器项目，包括JIT和AOT,不过目前AOT并没有编码实现。
 
-![AOT](https://github.com/dotnet/llilc/blob/master/Documentation/Images/AOTArch.png)
+![AOT](https://raw.githubusercontent.com/dotnet/llilc/master/Documentation/Images/AOTArch.png)
