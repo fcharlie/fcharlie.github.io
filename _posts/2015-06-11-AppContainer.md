@@ -374,8 +374,12 @@ int wmain(int argc,wchar_t *argv[])
 当我们操作时，可以看到如下结果：
 ![Open](https://raw.githubusercontent.com/fstudio/Phoenix/master/doc/Container/Images/appcontainer-open.png)   
 
+实际上除了 IE ,Google 的开源浏览器 Chromium 也在沙箱代码中添加了 AppContainer 的支持：  
+[http://src.chromium.org/chrome/trunk/src/sandbox/win/src/app_container.cc](http://src.chromium.org/chrome/trunk/src/sandbox/win/src/app_container.cc)  
+
+
 ##其他
-实际上很多开发者在 Windows 上使用沙箱来实现安全隔离，而沙箱
+实际上很多开发者在 Windows 上使用沙箱来实现安全隔离，而沙箱本质上也是利用权限隔离以及 Hook 之类的技术来实现。而容器则可以在权限隔离的基础上添加资源限制来实现，类似于作业对象限制资源，当然，如果要更加安全，隔离更加深入，必须从内核上做出努力。
 
 ##备注：
 1. 用户账户控制(UAC): [https://en.wikipedia.org/wiki/User_Account_Control](https://en.wikipedia.org/wiki/User_Account_Control)    
