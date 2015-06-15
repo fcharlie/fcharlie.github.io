@@ -60,7 +60,7 @@ Windows XP 是历史上最受欢迎的版本之一，然而，一直以来XP的�
   IRegisteredTask *iRegisteredTask = nullptr;
 
 {% endhighlight %}   
-使用这些接口创建一个计划任务，值得注意的是，计划任务的创建需要管理员权限运行，然而本程序的功能就是从管理员降权到标准用户，所以这个设定每一点影响。  
+使用这些接口创建一个计划任务，值得注意的是，计划任务的创建需要管理员权限运行，本程序的功能就是从管理员降权到标准用户，所以这个限制没有影响。  
 在这个过程中最有价值的代码是：  
 {% highlight cpp %}  
  DO(iPrin->put_RunLevel(TASK_RUNLEVEL_LUA))
@@ -73,7 +73,7 @@ Windows XP 是历史上最受欢迎的版本之一，然而，一直以来XP的�
 所以这个时候需要采取第二种策略。
 
 ##使用 Explorer 的 Token 启动进程
-简单点就是拿桌面进程的 Token，然后使用桌面的 Token 启动进程。这需要窗口 Shell 正在运行，也就是常说的桌面得存在，并且权限是标准的。
+简单点就是拿桌面进程的 Token，然后使用桌面的 Token 启动进程。这需要桌面正在运行 （Explorer 作为桌面进程正在运行），也就是常说的桌面得存在，并且权限是标准的。
 
 {% highlight cpp %}
 HRESULT WINAPI ProcessLauncherExplorerLevel(LPCWSTR exePath,LPCWSTR cmdArgs,LPCWSTR workDirectory)
@@ -374,12 +374,14 @@ int wmain(int argc,wchar_t *argv[])
 当我们操作时，可以看到如下结果：
 ![Open](https://raw.githubusercontent.com/fstudio/Phoenix/master/doc/Container/Images/appcontainer-open.png)   
 
-实际上除了 IE ,Google 的开源浏览器 Chromium 也在沙箱代码中添加了 AppContainer 的支持：  
+除了 IE ,Google 的开源浏览器 Chromium 也在沙箱代码中添加了 AppContainer 的支持：  
 [http://src.chromium.org/chrome/trunk/src/sandbox/win/src/app_container.cc](http://src.chromium.org/chrome/trunk/src/sandbox/win/src/app_container.cc)  
 
+Windows 的系统安全正得益于以上种种技术的出现，程序不是说想干什么就能干什么了。危险的系统操作被限制，特别是 AppContainer ，应用之间的隔离加深，跨应用的数据难以窃取。
 
 ##其他
-实际上很多开发者在 Windows 上使用沙箱来实现安全隔离，而沙箱本质上也是利用权限隔离以及 Hook 之类的技术来实现。而容器则可以在权限隔离的基础上添加资源限制来实现，类似于作业对象限制资源，当然，如果要更加安全，隔离更加深入，必须从内核上做出努力。
+很多开发者在 Windows 上使用沙箱来实现安全隔离，而沙箱本质上也是利用权限隔离以及 Hook 之类的技术来实现。而容器则可以在权限隔离的基础上添加资源限制来实现，类似于作业对象限制资源，当然，如果要更加安全，隔离更加深入，必须从内核上做出努力。
+开发者并不一定要专注在容器，安全上，然而一定不要滥用权限。
 
 ##备注：
 1. 用户账户控制(UAC): [https://en.wikipedia.org/wiki/User_Account_Control](https://en.wikipedia.org/wiki/User_Account_Control)    
