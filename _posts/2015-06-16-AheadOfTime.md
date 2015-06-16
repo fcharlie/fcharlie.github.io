@@ -21,12 +21,14 @@ Clang如此优秀，备受开源界推崇。《程序员》杂志， 在介绍Ma
 而Clang仅仅只是LLVM针对C家族语言的实现。 
 说到LLVM就不得不谈到Chris Lattner，Chris Lattner其人生于1978年，于2000年进入著名的伊利诺伊大学厄巴纳-香槟分校(University of Illinois at Urbana-Champaign), 而LLVM正是源于Chris Lattner 与  [Vikram Adve](http://academic.research.microsoft.com/Author/2313275/vikram-s-adve)的研究项目。
 
-传统的编译器
+传统的编译器  
+
 ![SimpleCompiler](https://raw.githubusercontent.com/fstudio/Beaot/master/doc/Images/llvm/SimpleCompiler.png)   
                                                  
                                                图-1.1 传统编译器
 
-LLVM
+LLVM  
+
 ![LLVMCompiler1](https://github.com/fstudio/Beaot/raw/master/doc/Images/llvm/LLVMCompiler1.png)   
                           
                                                 图-1.2 LLVM编译器
@@ -39,7 +41,8 @@ LLVM
                                                         
                                                 图-1.4
 
-LTO:
+LTO:  
+
 ![LTO](https://github.com/fstudio/Beaot/raw/master/doc/Images/llvm/LTO.png)     
 
                                                 图-1.5
@@ -108,21 +111,23 @@ Chris Lattner 曾于2004年在微软研究院实习，参与微软的[Phoenix Co
 或许对于微软来说，应该感到遗憾，Chris Lattner 并没有最终加入微软，而是加入了苹果公司。
 
 ##4. 折腾，永不止步  
+
 ####4.1 CSNative
 永远不会有完全统一的意见，总会有人去创造新的轮子。不谈其他，重复的创造能对已有的东西带来技术革新，在[codeplex.com](http://csnative.codeplex.com/)上,就有个伙计利用Roslyn API将C#编译成MSIL，然后将MSIL编译成LLVM IR,随后'LLVM System compiler' llc编译成Native code,用GCC将Object文件链接成exe，GC库是32位的 [libgc](http://www.hboehm.info/gc/)
 
 
 ####4.2 SharpLang
-同样的，在Githu上，也有一个基于LLVM的C# Native的解决方案:[SharpLang](https://github.com/xen2/SharpLang).
+同样的，在Githu上，也有一个基于LLVM的C# Native的解决方案:[SharpLang](https://github.com/xen2/SharpLang)。在LLILC推出后，开发者 Virgile Bello 也就没有更新 SharpLang 了。
 
 
 ####.NET
-实际上无论是JVM还是.NET Framework 已经LLVM Framework在结构上是非常相似的，如图-5.1，
+实际上无论是JVM还是.NET Framework 已经LLVM Framework在结构上是非常相似的，如图-5.1，   
 ![Framework](https://raw.githubusercontent.com/fstudio/Beaot/master/doc/Images/dotNet/CLR_diag.png)    
                                         
                                         图-5.1
 
-Developer History:
+Developer History:     
+
 ![dotNet](https://raw.githubusercontent.com/fstudio/Beaot/master/doc/Images/dotNet/DotNet.png)      
                                    
                                         图-5.2
@@ -132,16 +137,18 @@ Developer History:
                                                         
                                         图-5.3
 
-####JVM
+####JVM   
+
 ![JVM](https://raw.githubusercontent.com/fstudio/Beaot/master/doc/Images/JvmSpec7.png)        
                                                       
                                         图-5.4
+
 ####ECMAScript
 
 
 
 ####LLILC
-在.NET CoreCLR开源后，.NET开发团队也创建了基于LLVM的.NET Core编译器项目，包括JIT和AOT,不过目前AOT并没有编码实现。
+在.NET CoreCLR开源后，.NET开发团队也创建了基于LLVM的.NET Core编译器项目，包括JIT和AOT,不过目前AOT并没有编码实现。  
 
 ![AOT](https://raw.githubusercontent.com/dotnet/llilc/master/Documentation/Images/AOTArch.png)
 
@@ -153,7 +160,7 @@ BCC64.EXE, the C++ 64-bit Windows Compiler:
 Clang-based C++ Compilers:     
 [http://docwiki.embarcadero.com/RADStudio/XE6/en/Clang-based_C%2B%2B_Compilers](http://docwiki.embarcadero.com/RADStudio/XE6/en/Clang-based_C%2B%2B_Compilers)
 2. Phoenix Compiler Framework Wiki:
-[http://en.wikipedia.org/wiki/Phoenix_(compiler_framework)](http://en.wikipedia.org/wiki/Phoenix_(compiler_framework))            
+[http://en.wikipedia.org/wiki/Phoenix_(compiler_framework)](http://en.wikipedia.org/wiki/Phoenix_(compiler_framework))           
 3. Dalvik Wiki:
 [http://en.wikipedia.org/wiki/Dalvik_(software)](http://en.wikipedia.org/wiki/Dalvik_(software))        
  
