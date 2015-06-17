@@ -11,7 +11,7 @@ AOT 即Ahead of Time,即运行前编译，事实上C/C++ D,Pascal,Fortran之类�
 三四年前，LLVM的官网对于LLVM项目的介绍是: "Low Level Virtual Machine",低级虚拟机，而现在对LLVM的介绍是："The LLVM Compiler Infrastructure"，即编译器基础设施。  
 在程序员圈子中对LLVM最深刻的影响来自于Clang，C 家族编译器(C/C++ Objective-C/C++ Compiler)前端，Clang是LLVM最成功的实现，在平台支持上，Clang短短几年达到了GNU C Compliton (GCC) 20年的高度。 
 Clang 在编译速度，占用内存，以及整个框架的设计上都是可圈可点的，对用户友好的开源许可证 *[The University of Illinois/NCSA Open Source License (NCSA)](http://opensource.org/licenses/UoI-NCSA.php)*. 实际上就有商业编译器依赖Clang实现，比如：Embarcadero™ C++ Builder的Win64编译器 bcc64就是完全基于Clang 实现（3.1 trunk）。而C++ Builder前身是Borland C/C++&Turbo C.  
-下面bcc64的命令实例:
+下面bcc64的命令实例:    
 >"C:\Program Files (x86)\Embarcadero\Studio\14.0\bin\bcc64.exe" -cc1 -D_RTLDLL -isystem "C:\Program Files (x86)\Embarcadero\Studio\14.0\include" -isystem "C:\Program Files (x86)\Embarcadero\Studio\14.0\include\dinkumware" -isystem "C:\Program Files (x86)\Embarcadero\Studio\14.0\include\windows\crtl" -fborland-extensions -triple=x86_64-pc-win32-elf -emit-obj -std=c++11 -o Hello.o Hello.cpp   
 
 看过**《C/C++圣战》** 大抵也知道Borland C/C++曾经是多么的辉煌，而现在却选择了Clang来实现Win64工具链。    
@@ -25,35 +25,28 @@ Clang如此优秀，备受开源界推崇。《程序员》杂志， 在介绍Ma
 
 ![SimpleCompiler](https://raw.githubusercontent.com/fstudio/Beaot/master/doc/Images/llvm/SimpleCompiler.png)   
                                                  
-                                               图-1.1 传统编译器
 
 LLVM  
 
 ![LLVMCompiler1](https://github.com/fstudio/Beaot/raw/master/doc/Images/llvm/LLVMCompiler1.png)   
                           
-                                                图-1.2 LLVM编译器
 
 ![Retargetable](https://github.com/fstudio/Beaot/raw/master/doc/Images/llvm/RetargetableCompiler.png)                
                                
-                                                图 1.3 
 
 ![InstallTime](https://github.com/fstudio/Beaot/raw/master/doc/Images/llvm/InstallTime.png)    
                                                         
-                                                图-1.4
 
 LTO:  
 
 ![LTO](https://github.com/fstudio/Beaot/raw/master/doc/Images/llvm/LTO.png)     
 
-                                                图-1.5
 
 ![PassLinkage](https://github.com/fstudio/Beaot/raw/master/doc/Images/llvm/PassLinkage.png)   
 
-                                                图-1.6
 
 ![X86](https://raw.githubusercontent.com/fstudio/Beaot/master/doc/Images/llvm/X86Target.png)    
 
-                                                图-1.7
 
 
 于2010年Chris Lattner 被ACM授予 "Programming Languages Software Award" 。2014年Chris Lattner作为苹果编译器开发团队的首席架构师，在Apple WWDC 2014 推出了Swift。实际上Swift也是基于LLVM的。LLVM的优秀设计也是Apple能够迅速推出Swift的基础。
@@ -98,7 +91,7 @@ Chris Lattner 曾于2004年在微软研究院实习，参与微软的[Phoenix Co
 
 ![Images](https://raw.githubusercontent.com/fstudio/Beaot/master/doc/Images/Roslyn.png )           
                                              
-                                             图-3.1
+
 
 放心 Roslyn是开源的基于C#的，Mono会移植到其他平台的。
 ####.NET Native
@@ -121,27 +114,23 @@ Chris Lattner 曾于2004年在微软研究院实习，参与微软的[Phoenix Co
 
 
 ####.NET
-实际上无论是JVM还是.NET Framework 已经LLVM Framework在结构上是非常相似的，如图-5.1，   
+实际上无论是JVM还是.NET Framework 已经LLVM Framework在结构上是非常相似的，如下图：     
 ![Framework](https://raw.githubusercontent.com/fstudio/Beaot/master/doc/Images/dotNet/CLR_diag.png)    
                                         
-                                        图-5.1
 
 Developer History:     
 
 ![dotNet](https://raw.githubusercontent.com/fstudio/Beaot/master/doc/Images/dotNet/DotNet.png)      
                                    
-                                        图-5.2
 
 
 ![Step](https://raw.githubusercontent.com/fstudio/Beaot/master/doc/Images/dotNet/Overview_of_the_Common_Language_Infrastructure.png)         
                                                         
-                                        图-5.3
 
 ####JVM   
 
 ![JVM](https://raw.githubusercontent.com/fstudio/Beaot/master/doc/Images/JvmSpec7.png)        
                                                       
-                                        图-5.4
 
 ####ECMAScript
 
