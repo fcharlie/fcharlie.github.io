@@ -132,9 +132,11 @@ Developer History:
 ![JVM](https://raw.githubusercontent.com/fstudio/Beaot/master/doc/Images/JvmSpec7.png)        
                                                       
 
-####ECMAScript
+####ECMAScript PNacl Asm.js WebAssembly
 
+[asm.js AOT](https://blog.mozilla.org/luke/2014/01/14/asm-js-aot-compilation-and-startup-performance/)  
 
+![asm.js-AOT](https://ffp4g1ylyit3jdyti1hqcvtb-wpengine.netdna-ssl.com/luke/files/2013/12/aot-diagram.png)  
 
 ####LLILC
 在.NET CoreCLR开源后，.NET开发团队也创建了基于LLVM的.NET Core编译器项目，包括JIT和AOT,不过目前AOT并没有编码实现。  
