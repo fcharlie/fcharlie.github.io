@@ -96,9 +96,8 @@ x86 上模拟执行 ARM 架构的程序也可以是这个套路。）但是这�
 而 ldc 是基于 LLVM 的编译器，DMD 目前依然只支持 x86/x86_64 架构处理器，而 ldc 可以生成 ARM64,PPC,PPC64, mips64 架构的机器码
 [Dlang Compilers](http://wiki.dlang.org/Compilers#Comparison)   
 
-LLVM IR 可以反汇编成人类可读的形式
-> clang -emit-llvm -c add.c -o add.bc
-> llvm-dis add.bc
+LLVM IR 可以反汇编成人类可读的形式，LLVM IR 类似于 RSIC 指令。
+> clang add.c -S -emit-llvm
 
 add.ll
 {% highlight llvm%}
@@ -129,6 +128,11 @@ attributes #0 = { nounwind uwtable "disable-tail-calls"="false" "less-precise-fp
 {% endhighlight %}
 
 
+使用以下命令即可：
+> clang add.ll -c
+
+也可以使用 llc 命令编译
+
 ![InstallTime](http://www.aosabook.org/images/llvm/InstallTime.png)    
                                                         
 
@@ -144,16 +148,26 @@ LTO:
 
 
 
-于2010年Chris Lattner 被ACM授予 "Programming Languages Software Award" 。2014年Chris Lattner作为苹果编译器开发团队的首席架构师，在Apple WWDC 2014 推出了Swift。实际上Swift也是基于LLVM的。LLVM的优秀设计也是Apple能够迅速推出Swift的基础。
+于2010年Chris Lattner 被ACM授予 "Programming Languages Software Award" 。2014年Chris Lattner作为苹果编译器开发团队的首席架构师，
+在Apple WWDC 2014 推出了Swift。而 Swift 就是基于 LLVM 的，使用如下命令编译 swift 代码，即可得到 LLVM IR 代码。 
+>swiftc -S -emit-object hello.swift 
 
-可以说，如果没有LLVM支撑着苹果的软件生态，靠着GCC对Objective-C低优先级的优化，苹果是很难打响一起翻身仗的，也很难用1GB RAM的iPhone单挑Android诸强。
+{% highlight switf%}
+// hello.swift
+print("Hello, world!");
+{% endhighlight %}
+ 
+[通过 LLVM 在 Android 上运行 Swift 代码](http://romain.goyet.com/articles/running_swift_code_on_android/)
 
-然而不得不说，LLVM的发扬光大同样离不开Google，Apple系对于LLVM的贡献多少有点不足，比如跨平台，在Windows上LLVM很早几乎是无法使用的，Google贡献了大量代码，如项目msbuild，以及clang-cl命令，clang-cl十分接近Visual C/C++的cl命令，能够支持VisualStudio，一般安装后，就可以在VisualStudio选择Clang来开发Windows程序。
-
-##2. Android壮士断腕   
+##2. Android 的 AOT 之路   
+LLVM 优异的架构并没有被 Android AOT 广泛使用。
 Android最初由Andy Rubin开发作为数码相机的操作系统，使用Linux内核，后来发现市场需求不大被改造成智能手机操作系统反而获得了巨大成功。
-Rubin 选择了具有很大争议的Java作为Android的应用开发语言，Java基于JVM，能够在支持JVM的平台上运行，Java的开发者非常多，你可以在中国任何一个理工科大学找到学习Java的学生，漫天遍地的Java培训机构，这对于Android来说非常有利，从Google收购Android开始，这一切已然水到渠成。
-Android 使用的是Dalvik的虚拟机，这与Java官方的JVM 技术上稍微有些差异，JVM是一种堆栈机器，而Dalvik是[寄存器机](http://zh.wikipedia.org/wiki/%E5%AF%84%E5%AD%98%E5%99%A8%E6%9C%BA),孰优孰劣，也不太好评价，正如CISC与RSIC的争议，实际上对于软件而言，架构，编码实现，编译器（解析器），都会给软件的性能带来巨大的影响，时常发现某某JavaScript升级换代，性能增加一倍。
+Rubin 选择了具有很大争议的Java作为Android的应用开发语言，Java基于JVM，能够在支持JVM的平台上运行，Java的开发者非常多，
+你可以在中国任何一个理工科大学找到学习Java的学生，漫天遍地的Java培训机构，这对于Android来说非常有利，从Google收购Android开始，这一切已然水到渠成。
+Android 使用的是Dalvik的虚拟机，这与Java官方的JVM 技术上稍微有些差异，JVM是一种堆栈机器，
+而Dalvik是[寄存器机](http://zh.wikipedia.org/wiki/%E5%AF%84%E5%AD%98%E5%99%A8%E6%9C%BA),孰优孰劣，也不太好评价，
+正如CISC与RSIC的争议，实际上对于软件而言，架构，编码实现，编译器（解析器），都会给软件的性能带来巨大的影响，时常发现某某JavaScript升级换代，
+性能增加一倍。
 
 
 ####Android ART
