@@ -150,8 +150,8 @@ print("Hello, world!");
 很多公司贡献了代码到 LLVM 项目中，或使用 LLVM 的工具改善自己的产品，比如 Google ,Google NDK 以及 PNacl 都使用了 LLVM 的工具，而 LLVM 的许多特性就是 
 Google 实现的，比如地址消毒剂 AddressSanitizer（GCC 目前也支持了）。还有 Intel OpenCL, Adobe, NVIDIA Nucda,Microsoft WinObjc。
 
-##2. Android 的 AOT 之路   
-LLVM 优异的架构并没有被 Android AOT 广泛使用。
+##2. Android 与 AOT  
+LLVM 优异的架构并没有被 Android 广泛使用。
 Android最初由Andy Rubin开发作为数码相机的操作系统，使用Linux内核，后来发现市场需求不大被改造成智能手机操作系统反而获得了巨大成功。
 Rubin 选择了具有很大争议的Java作为Android的应用开发语言，Java基于JVM，能够在支持JVM的平台上运行，Java的开发者非常多，
 你可以在中国任何一个理工科大学找到学习Java的学生，漫天遍地的Java培训机构，这对于Android来说非常有利，从Google收购Android开始，这一切已然水到渠成。
@@ -163,25 +163,36 @@ Android 使用的是Dalvik的虚拟机，这与Java官方的JVM 技术上稍微�
 
 ####Android Runtime
 2014年6月，Google推出Android 5.0(Android Lollipop) ，ART完全取代了Dalvik。
-[ART View](https://upload.wikimedia.org/wikipedia/commons/2/25/ART_view.png)
-
-Oracle将习性一并收购了Sun，当Android已成气候，Oracle便由API侵权来收割。这也迫使Google开始转变，或许Android ART最终的目的只是为了兼容，以后出现Go来开发Android,Java也少见了，Plan9换皮重生。
+![ART View](https://upload.wikimedia.org/wikipedia/commons/2/25/ART_view.png)  
+ART 本质上一个混合的 AOT 方案，它还实现了 JVM 解释器。
 
 Andy Rubin 先后在苹果 微软 谷歌公司工作过。
 
-##3. .NET Native的背水一战    
-说起.NET 就不得不谈到[Anders Hejlsberg](http://zh.wikipedia.org/wiki/%E5%AE%89%E5%BE%B7%E6%96%AF%C2%B7%E6%B5%B7%E5%B0%94%E6%96%AF%E4%BC%AF%E6%A0%BC)此人，他来自丹麦，Turbo Pascal最开始就是他开发的，Delphi/C#之父，C#&.NET的首席架构师，TypeScript的首席架构师，主持开发了.NET Framework，Visual Basic.NET，以及最新的.NET编译器[Roslyn](http://msdn.microsoft.com/en-us/vstudio/roslyn.aspx) 。   
-值得注意的是TypeScript 完全基于ECMAScript 6标准草案开发，
-Java的流行以至于微软也坐不住，在上个世纪末，微软也开发了自己的Java虚拟机，最初微软推出的是Visual J++，而在Anders加入微软后立即被委以重任，Visual J++在性能上甚至超越了Sun JVM，这个Sun带来了恐慌，Sun以破坏兼容性将微软告上公堂，微软最终放弃了Java的开发，而C#与.NET也诞生了，.NET在设计上确实借鉴了Java的很多理念，并且超越了Java，这也是Anders从Borland就存在心中的构想。
+##3. .NET 与 AOT    
+说起.NET 就不得不谈到 [Anders Hejlsberg](http://zh.wikipedia.org/wiki/%E5%AE%89%E5%BE%B7%E6%96%AF%C2%B7%E6%B5%B7%E5%B0%94%E6%96%AF%E4%BC%AF%E6%A0%BC)此人，
+他来自丹麦，Turbo Pascal最开始就是他开发的，Delphi/C#之父，C#&.NET 的首席架构师，TypeScript 的首席架构师，主持开发了.NET Framework，Visual Basic.NET，
+以及最新的.NET 编译器 [Roslyn](http://msdn.microsoft.com/en-us/vstudio/roslyn.aspx) 。   
+值得注意的是 TypeScript 完全基于 ECMAScript 6标准草案开发，Java 的流行以至于微软也坐不住，在上个世纪末，微软也开发了自己的Java虚拟机，最初微软推出的是Visual J++，
+而在Anders加入微软后立即被委以重任，Visual J++在性能上甚至超越了Sun JVM，这个Sun带来了恐慌，Sun 以破坏兼容性将微软告上公堂，微软最终放弃了Java的开发，而C#与.NET也诞生了，
+.NET在设计上确实借鉴了Java的很多理念，并且超越了Java，这也是 Anders 从 Borland 就存在心中的构想。
 
-
+类似于 LLVM 的研究，微软很早就有，这个项目是：
 >*Phoenix Compiler and Shared Source Common Language Infrastructure*
 
-Chris Lattner 曾于2004年在微软研究院实习，参与微软的[Phoenix Compiler Framework](http://research.microsoft.com/en-us/collaboration/focus/cs/phoenix.aspx) 项目，在我刚进入大学的时候，刚刚学会编程，曾经下载过08版的Phoenix Compiler编译器工具，并且也试用过，不过到现在已经无法下载了。而Phoenix Compiler Framework与LLVM的理念确实很相似，并且可以得知的是，Phoenix很多的技术被整合到微软的Microsoft C/C++ Compiler，就技术上而言Phoenix与LLVM有许多相似之处。 
->Phoenix不仅仅限于一个编译器，它还是一个软件优化和分析框架，能被其他编译器和工具使用。 它能生成二进制代码，也能输出MSIL程序集。源代码可以经过分析，并被表示为IR（中间表示，Intermediate Representation）形式，这种形式可以在后期被各种工具分析和处理。    
+现在的 Microsoft Visual C++ 就是基于 Phoenix 编译器架构实现的。
+
+Chris Lattner 曾于2004年在微软研究院实习，参与微软的 [Phoenix Compiler Framework](http://research.microsoft.com/en-us/collaboration/focus/cs/phoenix.aspx) 项目，
+很多时候技术是互相影响的。
+在我刚进入大学的时候，刚刚学会编程，曾经下载过08版的 Phoenix Compiler 编译器工具，并且也试用过，不过到现在已经无法下载了。而Phoenix Compiler Framework与LLVM的理念确实很相似，
+并且可以得知的是，Phoenix很多的技术被整合到微软的Microsoft C/C++ Compiler，就技术上而言Phoenix与LLVM有许多相似之处。 
+
+>Phoenix不仅仅限于一个编译器，它还是一个软件优化和分析框架，能被其他编译器和工具使用。 它能生成二进制代码，也能输出MSIL程序集。源代码可以经过分析，
+>并被表示为IR（中间表示，Intermediate Representation）形式，这种形式可以在后期被各种工具分析和处理。    
                                                          ----InfoQ: [Phoenix编译器框架说明](http://www.infoq.com/cn/news/2008/05/Phoenix-Compiler-Framework)     
 
-微软研究院还提供了一个“[Shared Source Common Language Infrastructure](http://www.microsoft.com/en-us/download/details.aspx?id=4917)”的源代码下载。
+在 .NET 未开源时，微软研究院还提供了一个 .NET 的学习代码 “[Shared Source Common Language Infrastructure](http://www.microsoft.com/en-us/download/details.aspx?id=4917)”的源代码下载。
+
+为什么说无关的东西？实际上，微软的 .NET Netive 实现离不开 Phoenix 编译器的技术研究。
 
 ![DotCLR](https://raw.githubusercontent.com/fstudio/Beaot/master/doc/Images/dotNet/CLR_diag.png)
 
@@ -203,7 +214,14 @@ Chris Lattner 曾于2004年在微软研究院实习，参与微软的[Phoenix Co
 
 或许对于微软来说，应该感到遗憾，Chris Lattner 并没有最终加入微软，而是加入了苹果公司。
 
-##4. 折腾，永不止步  
+
+####LLILC
+在.NET CoreCLR开源后，.NET开发团队也创建了基于LLVM的.NET Core编译器项目，包括JIT和AOT,不过目前AOT并没有编码实现。  
+
+![AOT](https://raw.githubusercontent.com/dotnet/llilc/master/Documentation/Images/AOTArch.png)
+
+
+##4. 探索的脚步 
 
 ####4.1 CSNative
 永远不会有完全统一的意见，总会有人去创造新的轮子。不谈其他，重复的创造能对已有的东西带来技术革新，在[codeplex.com](http://csnative.codeplex.com/)上,就有个伙计利用Roslyn API将C#编译成MSIL，然后将MSIL编译成LLVM IR,随后'LLVM System compiler' llc编译成Native code,用GCC将Object文件链接成exe，GC库是32位的 [libgc](http://www.hboehm.info/gc/)
@@ -238,10 +256,6 @@ Developer History:
 
 ![asm.js-AOT](https://ffp4g1ylyit3jdyti1hqcvtb-wpengine.netdna-ssl.com/luke/files/2013/12/aot-diagram.png)  
 
-####LLILC
-在.NET CoreCLR开源后，.NET开发团队也创建了基于LLVM的.NET Core编译器项目，包括JIT和AOT,不过目前AOT并没有编码实现。  
-
-![AOT](https://raw.githubusercontent.com/dotnet/llilc/master/Documentation/Images/AOTArch.png)
 
 
 ##备注  
