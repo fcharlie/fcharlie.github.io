@@ -133,21 +133,6 @@ attributes #0 = { nounwind uwtable "disable-tail-calls"="false" "less-precise-fp
 
 也可以使用 llc 命令编译
 
-![InstallTime](http://www.aosabook.org/images/llvm/InstallTime.png)    
-                                                        
-
-LTO:  
-
-![LTO](http://www.aosabook.org/images/llvm/LTO.png)     
-
-
-![PassLinkage](http://www.aosabook.org/images/llvm/PassLinkage.png)   
-
-
-![X86](http://www.aosabook.org/images/llvm/X86Target.png)    
-
-
-
 于2010年Chris Lattner 被ACM授予 "Programming Languages Software Award" 。2014年Chris Lattner作为苹果编译器开发团队的首席架构师，
 在Apple WWDC 2014 推出了Swift。而 Swift 就是基于 LLVM 的，使用如下命令编译 swift 代码，即可得到 LLVM IR 代码。 
 >swiftc -S -emit-object hello.swift 
@@ -158,6 +143,12 @@ print("Hello, world!");
 {% endhighlight %}
  
 [通过 LLVM 在 Android 上运行 Swift 代码](http://romain.goyet.com/articles/running_swift_code_on_android/)
+
+整个 LLVM 项目推出了很多重量级工具，除了 Clang 之外，还有 LLVM 调试器  lldb, LLVM 连接器 lld,目前都可以在 Windows, Linux ,Mac ,以及 BSD 上运行，
+且是 XCode 的标配。
+
+很多公司贡献了代码到 LLVM 项目中，或使用 LLVM 的工具改善自己的产品，比如 Google ,Google NDK 以及 PNacl 都使用了 LLVM 的工具，而 LLVM 的许多特性就是 
+Google 实现的，比如地址消毒剂 AddressSanitizer（GCC 目前也支持了）。还有 Intel OpenCL, Adobe, NVIDIA Nucda,Microsoft WinObjc。
 
 ##2. Android 的 AOT 之路   
 LLVM 优异的架构并没有被 Android AOT 广泛使用。
