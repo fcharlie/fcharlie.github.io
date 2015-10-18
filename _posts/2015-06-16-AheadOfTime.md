@@ -100,7 +100,7 @@ LLVM IR 可以反汇编成人类可读的形式，LLVM IR 类似于 RSIC 指令�
 > clang add.c -S -emit-llvm
 
 add.ll
-{% highlight llvm%}
+{% highlight llvm %}
 ; ModuleID = 'add.bc'
 target datalayout = "e-m:w-i64:64-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-w64-windows-gnu"
@@ -137,7 +137,7 @@ attributes #0 = { nounwind uwtable "disable-tail-calls"="false" "less-precise-fp
 在Apple WWDC 2014 推出了Swift。而 Swift 就是基于 LLVM 的，使用如下命令编译 swift 代码，即可得到 LLVM IR 代码。 
 >swiftc -S -emit-object hello.swift 
 
-{% highlight switf%}
+{% highlight c %}
 // hello.swift
 print("Hello, world!");
 {% endhighlight %}
