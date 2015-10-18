@@ -100,7 +100,8 @@ LLVM IR 可以反汇编成人类可读的形式
 > clang -emit-llvm -c add.c -o add.bc
 > llvm-dis add.bc
 
-{% highlight asm%}
+add.ll
+{% highlight llvm%}
 ; ModuleID = 'add.bc'
 target datalayout = "e-m:w-i64:64-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-w64-windows-gnu"
@@ -126,6 +127,7 @@ attributes #0 = { nounwind uwtable "disable-tail-calls"="false" "less-precise-fp
 !1 = !{!"clang version 3.7.0 (tags/RELEASE_370/final)"}
 
 {% endhighlight %}
+
 
 ![InstallTime](http://www.aosabook.org/images/llvm/InstallTime.png)    
                                                         
