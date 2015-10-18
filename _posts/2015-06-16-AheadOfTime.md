@@ -134,10 +134,10 @@ attributes #0 = { nounwind uwtable "disable-tail-calls"="false" "less-precise-fp
 也可以使用 llc 命令编译
 
 于2010年Chris Lattner 被ACM授予 "Programming Languages Software Award" 。2014年Chris Lattner作为苹果编译器开发团队的首席架构师，
-在Apple WWDC 2014 推出了Swift。而 Swift 就是基于 LLVM 的，使用如下命令编译 swift 代码，即可得到 LLVM IR 代码。 
+在Apple WWDC 2014 推出了Swift。而 Swift 就是基于 LLVM 的，使用如下命令编译 swift 代码，即可得到 LLVM IR 代码。   
 >swiftc -S -emit-object hello.swift 
 
-{% highlight c %}
+{% highlight swift %}
 // hello.swift
 print("Hello, world!");
 {% endhighlight %}
