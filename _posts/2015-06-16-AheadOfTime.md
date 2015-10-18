@@ -1,11 +1,51 @@
 ---
 layout: post
-title:  "AOT与现代软件的杂谈 "
+title:  "AOT杂谈 "
 date:   2015-06-16 21:30:16
 categories: compiler
 ---
-#AOT与现代软件的杂谈 
-AOT 即Ahead of Time,即运行前编译，事实上C/C++ D,Pascal,Fortran之类的语言本质上也是AOT,但本文讨论的AOT主要针对的是对于Java,NET等框架&语言的AOT。 
+#Ahead of Time
+AOT 即Ahead of Time Compilation,即运行前编，与之对应的是JIT。众所周知，程序的源码并不能够被处理器直接执行，
+编程语言基本上都是人类可读，和友好的。
+
+{% highlight cpp %}
+int add(int x,int y){
+    return x+y;
+}
+{% endhighlight %}
+
+
+{% highlight asm %}
+	.text
+	.def	 add;
+	.scl	2;
+	.type	32;
+	.endef
+	.globl	add
+	.align	16, 0x90
+add:                                    # @add
+.Ltmp0:
+.seh_proc add
+# BB#0:
+	pushq	%rax
+.Ltmp1:
+	.seh_stackalloc 8
+.Ltmp2:
+	.seh_endprologue
+	movl	%ecx, 4(%rsp)
+	movl	%edx, (%rsp)
+	movl	4(%rsp), %ecx
+	addl	%ecx, %edx
+	movl	%edx, %eax
+	popq	%rdx
+	retq
+.Ltmp3:
+	.seh_endproc
+
+
+{% endhighlight %}
+
+，事实上C/C++ D,Pascal,Fortran之类的语言本质上也是AOT,但本文讨论的AOT主要针对的是对于Java,NET等框架或语言的AOT。 
 
 ##1. LLVM的发迹   
 三四年前，LLVM的官网对于LLVM项目的介绍是: "Low Level Virtual Machine",低级虚拟机，而现在对LLVM的介绍是："The LLVM Compiler Infrastructure"，即编译器基础设施。  
