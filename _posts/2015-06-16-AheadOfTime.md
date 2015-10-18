@@ -79,29 +79,29 @@ x86 上模拟执行 ARM 架构的程序也可以是这个套路。）但是这�
 
 传统的编译器  
 
-![SimpleCompiler](https://raw.githubusercontent.com/fstudio/Beaot/master/doc/Images/llvm/SimpleCompiler.png)   
+![SimpleCompiler](http://www.aosabook.org/images/llvm/SimpleCompiler.png)   
                                                  
 
 LLVM  
 
-![LLVMCompiler1](https://github.com/fstudio/Beaot/raw/master/doc/Images/llvm/LLVMCompiler1.png)   
+![LLVMCompiler1](http://www.aosabook.org/images/llvm/LLVMCompiler1.png)   
                           
 
-![Retargetable](https://github.com/fstudio/Beaot/raw/master/doc/Images/llvm/RetargetableCompiler.png)                
+![Retargetable](http://www.aosabook.org/images/llvm/RetargetableCompiler.png)                
                                
 
-![InstallTime](https://github.com/fstudio/Beaot/raw/master/doc/Images/llvm/InstallTime.png)    
+![InstallTime](http://www.aosabook.org/images/llvm/InstallTime.png)    
                                                         
 
 LTO:  
 
-![LTO](https://github.com/fstudio/Beaot/raw/master/doc/Images/llvm/LTO.png)     
+![LTO](http://www.aosabook.org/images/llvm/LTO.png)     
 
 
-![PassLinkage](https://github.com/fstudio/Beaot/raw/master/doc/Images/llvm/PassLinkage.png)   
+![PassLinkage](http://www.aosabook.org/images/llvm/PassLinkage.png)   
 
 
-![X86](https://raw.githubusercontent.com/fstudio/Beaot/master/doc/Images/llvm/X86Target.png)    
+![X86](http://www.aosabook.org/images/llvm/X86Target.png)    
 
 
 
