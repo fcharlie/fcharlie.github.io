@@ -80,18 +80,52 @@ x86 上模拟执行 ARM 架构的程序也可以是这个套路。）但是这�
 ###传统的编译器  
 传统编译器需要经过前端(Frontend)，优化(Optimizer)，后端(Backend)然后将源代码转变为机器码，
 ![SimpleCompiler](http://www.aosabook.org/images/llvm/SimpleCompiler.png)   
-                            Three Major Components of a Three-Phase Compiler                                                 
+                             1. Three Major Components of a Three-Phase Compiler                                                 
 如果需要增加一种新的平台的支持，这种模型无法提供更多的可重用的代码。   
 
 要添加其他语言的支持模型如下：  
 ![Retargetable](http://www.aosabook.org/images/llvm/RetargetableCompiler.png)                
-                               Retargetablity
+                              2. Retargetablity
 
 
 ###基于 LLVM 的编译器  
-
+基于 LLVM 的编译器架构如下：   
 ![LLVMCompiler1](http://www.aosabook.org/images/llvm/LLVMCompiler1.png)   
-                          
+                              3. LLVM's Implementation of the Three-Phase Design
+基于 LLVM 的编译器前端将源码编译成 LLVM IR,然后在使用优化编译器编译成对应平台的机器码，一个很鲜明的对比是 D语言的编译器 DMD 与 ldc,DMD 是传统的编译器
+而 ldc 是基于 LLVM 的编译器，DMD 目前依然只支持 x86/x86_64 架构处理器，而 ldc 可以生成 ARM64,PPC,PPC64, mips64 架构的机器码
+[Dlang Compilers](http://wiki.dlang.org/Compilers#Comparison)   
+
+LLVM IR 可以反汇编成人类可读的形式
+> clang -emit-llvm -c add.c -o add.bc
+> llvm-dis add.bc
+
+{% highlight asm%}
+; ModuleID = 'add.bc'
+target datalayout = "e-m:w-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-w64-windows-gnu"
+
+; Function Attrs: nounwind uwtable
+define i32 @add(i32 %y, i32 %x) #0 {
+  %1 = alloca i32, align 4
+  %2 = alloca i32, align 4
+  store i32 %y, i32* %1, align 4
+  store i32 %x, i32* %2, align 4
+  %3 = load i32, i32* %2, align 4
+  %4 = load i32, i32* %1, align 4
+  %5 = add nsw i32 %3, %4
+  ret i32 %5
+}
+
+attributes #0 = { nounwind uwtable "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+sse,+sse2" "unsafe-fp-math"="false" "use-soft-float"="false" }
+
+!llvm.module.flags = !{!0}
+!llvm.ident = !{!1}
+
+!0 = !{i32 1, !"PIC Level", i32 2}
+!1 = !{!"clang version 3.7.0 (tags/RELEASE_370/final)"}
+
+{% endhighlight %}
 
 ![InstallTime](http://www.aosabook.org/images/llvm/InstallTime.png)    
                                                         
@@ -148,7 +182,7 @@ Chris Lattner 曾于2004年在微软研究院实习，参与微软的[Phoenix Co
 
 ####.NET Compiler Platform ("Roslyn")
 
-![Images](https://raw.githubusercontent.com/fstudio/Beaot/master/doc/Images/Roslyn.png )           
+![Images](https://raw.githubusercontent.com/fstudio/Beaot/master/doc/Images/Roslyn.png)           
                                              
 
 
