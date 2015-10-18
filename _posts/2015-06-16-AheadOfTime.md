@@ -1,20 +1,23 @@
 ---
 layout: post
-title:  "AOT杂谈 "
+title:  "Aeah of Time Compilation "
 date:   2015-06-16 21:30:16
 categories: compiler
 ---
 #Ahead of Time
 AOT 即Ahead of Time Compilation,即运行前编，与之对应的是JIT。众所周知，程序的源码并不能够被处理器直接执行，
-编程语言基本上都是人类可读，和友好的。
-
+编程语言基本上都是人类可读，编译器或者解释器就需要将源代码转变为 CPU 可以操作的指令。比如一个加法函数最终需要执行 
+addl 汇编指定对于的机器码。
+add.c
 {% highlight cpp %}
 int add(int x,int y){
     return x+y;
 }
 {% endhighlight %}
 
+>clang -S add.c
 
+add.s
 {% highlight asm %}
 	.text
 	.def	 add;
@@ -45,7 +48,14 @@ add:                                    # @add
 
 {% endhighlight %}
 
+对于转变为机器码的时机，不同的语言有着不同的选择，或是完全转变为机器码后运行，或是在运行时转变为机器码。AOT 便是运行前转为机器码。
 ，事实上C/C++ D,Pascal,Fortran之类的语言本质上也是AOT,但本文讨论的AOT主要针对的是对于Java,NET等框架或语言的AOT。 
+
+以 Java 为例，Java 源码被编译器 Java Vitrual Machine ByteCode,当需要执行的时候，将 JVM 指令一条一条的转变为对应处理器的指令，然后执行，（实际上
+x86 上模拟执行 ARM 架构的程序也可以是这个套路。）但是这个效率并不高，而且不好优化，而 JIT 的做法是将字节码编译成对于处理器的指令后运行。
+这比纯解释又快了许多。
+
+
 
 ##1. LLVM的发迹   
 三四年前，LLVM的官网对于LLVM项目的介绍是: "Low Level Virtual Machine",低级虚拟机，而现在对LLVM的介绍是："The LLVM Compiler Infrastructure"，即编译器基础设施。  
