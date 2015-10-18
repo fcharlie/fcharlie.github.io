@@ -74,9 +74,7 @@ x86 上模拟执行 ARM 架构的程序也可以是这个套路。）但是这�
 目前Clang在C++的标准上，远远优于其他主流编译器Microsoft C++(cl.exe),GCC (g++)。   
 另一方面，LLVM 实现了一套可扩展的编译器实现方案，任何人需要实现一个语言，只需要实现一个前段，然后将源码编译成 LLVM 字节码，也就是 LLVM IR, 然后 LLVM llc 将
 源码编译成不同平台的机器码，并且优化。比如最近正火的语言 Rust,后端也使用了 LLVM,以及 D语言编译器 ldc，Go 语言编译器 llgo 等等。而 LLVM 不仅仅拥有 AOT 的能力，
-而且还有 JIT 模块, [LLVM ExecutionEngine](http://llvm.org/svn/llvm-project/llvm/trunk/lib/ExecutionEngine/) ExecutionEngine 并不是非常稳定，相对于 Java JIT 或者
-.NET JIT 并非广泛使用。也有如 [Dropbox pyston](https://github.com/dropbox/pyston) [.NET LLICL](https://github.com/dotnet/llilc) 这样的项目使用 LLVM JIT。
-
+而且还有 JIT 模块, [LLVM ExecutionEngine](http://llvm.org/svn/llvm-project/llvm/trunk/lib/ExecutionEngine/) ExecutionEngine 的 API 并不是非常稳定。
 
 
 传统的编译器  
