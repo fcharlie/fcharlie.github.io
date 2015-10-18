@@ -176,10 +176,10 @@ Andy Rubin 先后在苹果 微软 谷歌公司工作过。
 而在Anders加入微软后立即被委以重任，Visual J++在性能上甚至超越了Sun JVM，这个Sun带来了恐慌，Sun 以破坏兼容性将微软告上公堂，微软最终放弃了Java的开发，而C#与.NET也诞生了，
 .NET在设计上确实借鉴了Java的很多理念，并且超越了Java，这也是 Anders 从 Borland 就存在心中的构想。
 
-类似于 LLVM 的研究，微软很早就有，这个项目是：
+类似于 LLVM 的研究，微软很早就有，这个项目是：   
 >*Phoenix Compiler and Shared Source Common Language Infrastructure*
 
-现在的 Microsoft Visual C++ 就是基于 Phoenix 编译器架构实现的。
+现在的 Microsoft Visual C++ 就有 Phoenix 编译器架构的技术积累。
 
 Chris Lattner 曾于2004年在微软研究院实习，参与微软的 [Phoenix Compiler Framework](http://research.microsoft.com/en-us/collaboration/focus/cs/phoenix.aspx) 项目，
 很多时候技术是互相影响的。
@@ -206,11 +206,21 @@ Chris Lattner 曾于2004年在微软研究院实习，参与微软的 [Phoenix C
 
 放心 Roslyn是开源的基于C#的，Mono会移植到其他平台的。
 ####.NET Native
-早在2013年就有传闻，.NET将推出.NET Native,.NET本就有一个NGEN工具，负责将.NET程序集一股脑的生成本机镜像。但NGEN依然无法脱离.NET平台，并且有大量的JIT，小型程序一般不会出现严重的性能问题，但是，当项目体积变得巨大时，类似于Visual Studio之类的工具，程序启动就会非常缓慢。必要的优化显得尤为重要。
+.NET 的 AOT 解决方案在 Mono 中很早就出现了，
+早在2013年就有传闻，.NET将推出.NET Native,.NET本就有一个NGEN工具，负责将.NET程序集一股脑的生成本机镜像。但NGEN依然无法脱离.NET平台，
+并且有大量的JIT，小型程序一般不会出现严重的性能问题，但是，当项目体积变得巨大时，类似于Visual Studio之类的工具，程序启动就会非常缓慢。
+必要的优化显得尤为重要。
 >App IL + FX -> MCG　-> Interop.g.cs -> CSC -> Interop.dll -> Merge -> IL transform -> NUTC -> RhBind -> .EXE
+
 
 .NET Native的实现，在IR前期很大的程度上依赖Roslyn这类新型的编译器，而在IR后期，就得意于Phoenix编译器框架，.NET Native后端和Visual C/C++共用一套后端优化编译器。
 
+[.NET Native Deep Dive](https://channel9.msdn.com/Events/dotnetConf/2014/-NET-Native-Deep-Dive)
+
+[.NET Native PPTX](http://files.channel9.msdn.com/thumbnail/45d78758-8ab8-4e62-8a73-2e6a4027b49c.pptx)  
+
+在 Visual Studio 2015 中   
+>Install-Package Microsoft.NETNative.Analyzer
 
 或许对于微软来说，应该感到遗憾，Chris Lattner 并没有最终加入微软，而是加入了苹果公司。
 
