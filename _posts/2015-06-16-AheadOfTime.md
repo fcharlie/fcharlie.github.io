@@ -77,18 +77,21 @@ x86 上模拟执行 ARM 架构的程序也可以是这个套路。）但是这�
 而且还有 JIT 模块, [LLVM ExecutionEngine](http://llvm.org/svn/llvm-project/llvm/trunk/lib/ExecutionEngine/) ExecutionEngine 的 API 并不是非常稳定。
 
 
-传统的编译器  
-
+###传统的编译器  
+传统编译器需要经过前端(Frontend)，优化(Optimizer)，后端(Backend)然后将源代码转变为机器码，
 ![SimpleCompiler](http://www.aosabook.org/images/llvm/SimpleCompiler.png)   
-                                                 
+                            Three Major Components of a Three-Phase Compiler                                                 
+如果需要增加一种新的平台的支持，这种模型无法提供更多的可重用的代码。   
 
-LLVM  
+要添加其他语言的支持模型如下：  
+![Retargetable](http://www.aosabook.org/images/llvm/RetargetableCompiler.png)                
+                               Retargetablity
+
+
+###基于 LLVM 的编译器  
 
 ![LLVMCompiler1](http://www.aosabook.org/images/llvm/LLVMCompiler1.png)   
                           
-
-![Retargetable](http://www.aosabook.org/images/llvm/RetargetableCompiler.png)                
-                               
 
 ![InstallTime](http://www.aosabook.org/images/llvm/InstallTime.png)    
                                                         
