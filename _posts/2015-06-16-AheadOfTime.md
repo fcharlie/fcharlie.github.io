@@ -57,19 +57,27 @@ x86 上模拟执行 ARM 架构的程序也可以是这个套路。）但是这�
 
 
 
-##1. LLVM的发迹   
-三四年前，LLVM的官网对于LLVM项目的介绍是: "Low Level Virtual Machine",低级虚拟机，而现在对LLVM的介绍是："The LLVM Compiler Infrastructure"，即编译器基础设施。  
-在程序员圈子中对LLVM最深刻的影响来自于Clang，C 家族编译器(C/C++ Objective-C/C++ Compiler)前端，Clang是LLVM最成功的实现，在平台支持上，Clang短短几年达到了GNU C Compliton (GCC) 20年的高度。 
-Clang 在编译速度，占用内存，以及整个框架的设计上都是可圈可点的，对用户友好的开源许可证 *[The University of Illinois/NCSA Open Source License (NCSA)](http://opensource.org/licenses/UoI-NCSA.php)*. 实际上就有商业编译器依赖Clang实现，比如：Embarcadero™ C++ Builder的Win64编译器 bcc64就是完全基于Clang 实现（3.1 trunk）。而C++ Builder前身是Borland C/C++&Turbo C.  
+##1. LLVM 编译器基础设施的发迹   
+数年前，LLVM的官网对于LLVM项目的介绍是: "Low Level Virtual Machine",低级虚拟机，而现在对LLVM的介绍是："The LLVM Compiler Infrastructure"，
+即编译器基础设施。  在程序员圈子中对LLVM最深刻的影响来自于Clang，C 家族编译器(C/C++ Objective-C/C++ Compiler)前端，Clang是LLVM最成功的实现，
+在平台支持上，Clang 短短几年达到了GNU C Compliton (GCC) 20年的高度。 Clang 在编译速度，占用内存，以及整个框架的设计上都是可圈可点的，
+对用户友好的开源许可证 *[The University of Illinois/NCSA Open Source License (NCSA)](http://opensource.org/licenses/UoI-NCSA.php)*. 
+实际上就有商业编译器依赖Clang实现，比如：Embarcadero™ C++ Builder的Win64编译器 bcc64就是完全基于Clang 实现（3.1 trunk）。
+而C++ Builder前身是Borland C/C++&Turbo C.  
 下面bcc64的命令实例:    
->"C:\Program Files (x86)\Embarcadero\Studio\14.0\bin\bcc64.exe" -cc1 -D_RTLDLL -isystem "C:\Program Files (x86)\Embarcadero\Studio\14.0\include" -isystem "C:\Program Files (x86)\Embarcadero\Studio\14.0\include\dinkumware" -isystem "C:\Program Files (x86)\Embarcadero\Studio\14.0\include\windows\crtl" -fborland-extensions -triple=x86_64-pc-win32-elf -emit-obj -std=c++11 -o Hello.o Hello.cpp   
+>bcc64 -cc1 -D_RTLDLL -fborland-extensions -triple=x86_64-pc-win32-elf -emit-obj -std=c++11 -o Hello.o Hello.cpp   
 
-看过**《C/C++圣战》** 大抵也知道Borland C/C++曾经是多么的辉煌，而现在却选择了Clang来实现Win64工具链。    
-Clang基于库的模块化设计，易于 IDE 集成及其他用途的重用。比如Sublime Text VIM Emacs都有基于Clang实现C/C++代码自动补全，Clang提供一个libclang的库，可以编译成动态也可以编译成静态库，SublimeText 的C/C++插件SublimeClang就是使用libclang.dll(libclang.so)。   
-目前Clang在C++的标准上，远远优于其他主流编译器Microsoft C++(cl.exe),GCC (g++)。  
-Clang如此优秀，备受开源界推崇。《程序员》杂志， 在介绍Mac OS背后的故事，专门有一篇介绍LLVM工具链，其中着重的赞扬了Clang,链接如下：[Mac OS X 背后的故事（八）三好学生Chris Lattner的LLVM编译工具链](http://www.programmer.com.cn/9436/) 。 
-而Clang仅仅只是LLVM针对C家族语言的实现。 
-说到LLVM就不得不谈到Chris Lattner，Chris Lattner其人生于1978年，于2000年进入著名的伊利诺伊大学厄巴纳-香槟分校(University of Illinois at Urbana-Champaign), 而LLVM正是源于Chris Lattner 与  [Vikram Adve](http://academic.research.microsoft.com/Author/2313275/vikram-s-adve)的研究项目。
+看过**《C/C++圣战》** 大抵也知道Borland C/C++ 曾经是多么的辉煌，而现在却选择了 Clang 来实现Win64工具链 （C++ Builder 10  32位也使用了 clang）。  
+ 
+一方面，单从 C 语言家族来讲 Clang基于库的模块化设计，易于 IDE 集成及其他用途的重用。比如 Sublime Text，VIM，Emacs 都有基于 Clang 实现 C/C++ 
+代码自动补全，Clang 提供一个 libclang 的库，可以编译成动态也可以编译成静态库，SublimeText 的 C/C++ 插件 SublimeClang 就是使用 libclang.dll(so/dylib)。   
+目前Clang在C++的标准上，远远优于其他主流编译器Microsoft C++(cl.exe),GCC (g++)。   
+另一方面，LLVM 实现了一套可扩展的编译器实现方案，任何人需要实现一个语言，只需要实现一个前段，然后将源码编译成 LLVM 字节码，也就是 LLVM IR, 然后 LLVM llc 将
+源码编译成不同平台的机器码，并且优化。比如最近正火的语言 Rust,后端也使用了 LLVM,以及 D语言编译器 ldc，Go 语言编译器 llgo 等等。而 LLVM 不仅仅拥有 AOT 的能力，
+而且还有 JIT 模块, [LLVM ExecutionEngine](http://llvm.org/svn/llvm-project/llvm/trunk/lib/ExecutionEngine/) ExecutionEngine 并不是非常稳定，相对于 Java JIT 或者
+.NET JIT 并非广泛使用。也有如 [Dropbox pyston](https://github.com/dropbox/pyston) [.NET LLICL](https://github.com/dotnet/llilc) 这样的项目使用 LLVM JIT。
+
+
 
 传统的编译器  
 
