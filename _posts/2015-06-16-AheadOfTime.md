@@ -161,9 +161,9 @@ Android 使用的是Dalvik的虚拟机，这与Java官方的JVM 技术上稍微�
 性能增加一倍。
 
 
-####Android ART
+####Android Runtime
 2014年6月，Google推出Android 5.0(Android Lollipop) ，ART完全取代了Dalvik。
-
+[ART View](https://upload.wikimedia.org/wikipedia/commons/2/25/ART_view.png)
 
 Oracle将习性一并收购了Sun，当Android已成气候，Oracle便由API侵权来收割。这也迫使Google开始转变，或许Android ART最终的目的只是为了兼容，以后出现Go来开发Android,Java也少见了，Plan9换皮重生。
 
