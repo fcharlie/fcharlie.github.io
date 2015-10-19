@@ -542,9 +542,9 @@ WebAssembly 是 Microsoft Google Mozille Apple 开发者合作开发的一项新
 2. Embarcadero C++ Builder:    
 [BCC64.EXE, the C++ 64-bit Windows Compiler](http://docwiki.embarcadero.com/RADStudio/XE6/en/BCC64.EXE,_the_C%2B%2B_64-bit_Windows_Compiler)     
 [Clang-based C++ Compilers](http://docwiki.embarcadero.com/RADStudio/XE6/en/Clang-based_C%2B%2B_Compilers)
-3. Phoenix Compiler Framework Wiki:     
-[Phoenix_(compiler_framework)](https://en.wikipedia.org/wiki/Phoenix_%28compiler_framework%29)           
-4. Dalvik Wiki:       
-[Dalvik_(software)](https://en.wikipedia.org/wiki/Dalvik_%28software%29)        
+3. Phoenix Compiler Framework:      
+[Phoenix Compiler Framework Wiki](https://en.wikipedia.org/wiki/Phoenix_%28compiler_framework%29)           
+4. Android Dalvik:       
+[Dalvik Wiki](https://en.wikipedia.org/wiki/Dalvik_%28software%29)        
 5. LLILC News:     
 [InfoQ Microsoft Introduces LLILC, LLVM-based .NET/CoreCLR Compiler](http://www.infoq.com/news/2015/04/microsoft-llilc-llvm-compiler) 
