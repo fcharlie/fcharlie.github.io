@@ -65,7 +65,7 @@ x86 上模拟执行 ARM 架构的程序也可以是这个套路。）但是这�
 实际上就有商业编译器依赖Clang实现，比如：Embarcadero™ C++ Builder 的 Win64 编译器 bcc64 就是完全基于 Clang 实现（3.1 trunk）。
 而 C++ Builder 前身是 Borland C/C++&Turbo C.     
 下面bcc64的命令实例:       
->bcc64 -cc1 -D_RTLDLL -fborland-extensions -triple=x86_64-pc-win32-elf -emit-obj -std=c++11 -o Hello.o Hello.cpp   
+>bcc64 -cc1 -D_RTLDLL -fborland-extensions -triple=x86_64-pc-win32-elf -emit-obj -std=c++11 -o Hello.o Hello.cpp
 
 看过**《C/C++圣战》** 大抵也知道 Borland C/C++ 曾经是多么的辉煌，而现在却选择了 Clang 来实现 Win64 工具链 （C++ Builder 10  32位也使用了 clang）。  
  
@@ -100,7 +100,8 @@ x86 上模拟执行 ARM 架构的程序也可以是这个套路。）但是这�
 [Dlang Compilers](http://wiki.dlang.org/Compilers#Comparison)   
 
 LLVM IR 可以反汇编成人类可读的形式，LLVM IR 类似于 RSIC 指令。
-> clang add.c -S -emit-llvm
+
+>clang add.c -S -emit-llvm
 
 add.ll
 {% highlight llvm %}
@@ -131,14 +132,16 @@ attributes #0 = { nounwind uwtable "disable-tail-calls"="false" "less-precise-fp
 {% endhighlight %}
 
 
-使用以下命令即可：    
+使用以下命令即可：
+
 > clang add.ll -c
 
 也可以使用 llc 命令编译   
 
 于2010年Chris Lattner 被 ACM 授予 "Programming Languages Software Award" 。2014年 Chris Lattner 作为苹果编译器开发团队的首席架构师，
-在 Apple WWDC 2014 推出了Swift。而 Swift 就是基于 LLVM 的，使用如下命令编译 swift 代码，即可得到 LLVM IR 代码。   
->swiftc -S -emit-object hello.swift 
+在 Apple WWDC 2014 推出了Swift。而 Swift 就是基于 LLVM 的，使用如下命令编译 swift 代码，即可得到 LLVM IR 代码。
+
+>swiftc -S -emit-object hello.swift
 
 {% highlight swift %}
 // hello.swift
@@ -251,12 +254,15 @@ namespace hello
 {% endhighlight %}  
 
 使用 Mono 编译:      
+
 >mcs Program.cs
 
 然后使用 mono AOT 编译成机器码:     
+
 >mono --aot=full,nrgctx-trampolines=8096,nimt-trampolines=8096,ntrampolines=4048 Program.exe
 
 使用 objdump 反汇编:     
+
 >objdump -d Program.exe.so >Program.s
 
 这里只反汇编了执行段,Program.s:      
@@ -324,13 +330,16 @@ Windows update 更新重启后,经常可以在任务管理器里面发现 NGEN �
 早在2013年就有传闻，.NET将推出.NET Native,时至今日,基于 .NET 的 Windows 10 通用应用程序,都开始开启 .NET Native 支持.    
 
 .NET Native 基本的流程如下:    
+
 >App IL + FX -> MCG　-> Interop.g.cs -> CSC -> Interop.dll -> Merge -> IL transform -> NUTC -> RhBind -> .EXE
 
 .NET Native 工具链将所有依赖到的程序集反汇编成 C# 源码,使用 C# 编译器再编译成一个 dll, dll 再转 IR ,使用 nutc_driver 编译成机器码,
-而 nutc_driver 代码是使用了 Microsoft C++ 后端代码. 最后生成一个 dll 和一个 Bootstrap 的 EXE, dll 导出的函数为:      
+而 nutc_driver 代码是使用了 Microsoft C++ 后端代码. 最后生成一个 dll 和一个 Bootstrap 的 EXE, dll 导出的函数为:     
+ 
 >RHBinder__ShimExeMain
 
 使用 Visual C++ 工具 dumpbin 查看符号信息：  
+
 >dumpbin /EXPORTS App2.dll
 
 得到的结果如下：   
@@ -402,6 +411,7 @@ File Type: DLL
 {% endhighlight %}
 
 查看 App2.exe 导入的符号信息       
+
 >dumpbin /IMPORTS App2.exe
 
 输出如下：   
@@ -443,7 +453,8 @@ File Type: EXECUTABLE IMAGE
 视频中的 PPT 可以下载：
 [.NET Native PPTX](http://files.channel9.msdn.com/thumbnail/45d78758-8ab8-4e62-8a73-2e6a4027b49c.pptx)  
 
-在 Visual Studio 2015 中，可以使用 NuGet 安装 .NET Native 的相关插件，以此来分析 .NET 引用能否被 .NET Native 支持。      
+在 Visual Studio 2015 中，可以使用 NuGet 安装 .NET Native 的相关插件，以此来分析 .NET 引用能否被 .NET Native 支持。     
+ 
 >Install-Package Microsoft.NETNative.Analyzer
 
 对于 .NET Native, 大多数人并不会感到满意，大多数 .NET 开发者都希望 .NET Native 能够扩展到 桌面平台，能够支持 WPF ...
@@ -489,12 +500,15 @@ class X {
 {% endhighlight %}
 
 Il2c 是一个利用 Roslyn 实现的 C#/MSIL to C++ 的编译器       
+
 >Il2c.exe helloworld.cs /corelib:CoreLib.dll
 
 生成 helloworld.cpp, 然后使用 g++ 编译成 exe :    
+
 >g++ -o helloworld.exe helloworld.cpp CoreLib.cpp -lstdc++ -lgcmt-lib -march=i686 -L .
 
 直接生成 Exe:    
+
 >Il2c.exe /exe helloworld.cs /corelib:CoreLib.dll
 
 C# Native 作者 AlexDev 本人也是 Babylon 3D (C#/native port) 的作者。  
