@@ -456,10 +456,10 @@ SharpLang 之类的项目着手实现 .NET 的 AOT。然而这些项目大多是
 LLILC 的核心开发者是 Phoenix 编译器框架的架构师 [Andy Ayers](https://github.com/AndyAyersMS),  大神本人也会在 gitter.im 上回答人们对 LLILC 的疑问。
 LLILC 包括 JIT 和 AOT ,不过目前 AOT 并没有编码实现。目前项目组的重心任然是 JIT 模块。     
 
-LLILC 的 JIT 架构
+LLILC 的 JIT 架构    
 ![JIT](https://github.com/dotnet/llilc/raw/master/Documentation/Images/JITArch.png)
 
-LLILC 的 AOT 架构
+LLILC 的 AOT 架构    
 ![AOT](https://github.com/dotnet/llilc/raw/master/Documentation/Images/AOTArch.png)
 
 MRT 也就是 .NET Native Runtime ，专门为 .NET Native 实现的一个精简运行时。
@@ -523,7 +523,7 @@ JVM 加载器：
                                                       
 
 ###ECMAScript PNacl Asm.js WebAssembly
-**asm.js** 是一个非常容易优化的JavaScript子集
+**asm.js** 是一个非常容易优化的JavaScript子集: 
 [asm.js AOT](https://blog.mozilla.org/luke/2014/01/14/asm-js-aot-compilation-and-startup-performance/)     
 ![asm.js-AOT](https://ffp4g1ylyit3jdyti1hqcvtb-wpengine.netdna-ssl.com/luke/files/2013/12/aot-diagram.png)  
 
@@ -540,13 +540,11 @@ WebAssembly 是 Microsoft Google Mozille Apple 开发者合作开发的一项新
 ##备注  
 1. LLVM [http://www.aosabook.org/en/llvm.html](http://www.aosabook.org/en/llvm.html)     
 2. Embarcadero C++ Builder:    
-BCC64.EXE, the C++ 64-bit Windows Compiler:     
-[http://docwiki.embarcadero.com/RADStudio/XE6/en/BCC64.EXE,_the_C%2B%2B_64-bit_Windows_Compiler](http://docwiki.embarcadero.com/RADStudio/XE6/en/BCC64.EXE,_the_C%2B%2B_64-bit_Windows_Compiler)   
-Clang-based C++ Compilers:     
-[http://docwiki.embarcadero.com/RADStudio/XE6/en/Clang-based_C%2B%2B_Compilers](http://docwiki.embarcadero.com/RADStudio/XE6/en/Clang-based_C%2B%2B_Compilers)
+[BCC64.EXE, the C++ 64-bit Windows Compiler](http://docwiki.embarcadero.com/RADStudio/XE6/en/BCC64.EXE,_the_C%2B%2B_64-bit_Windows_Compiler)     
+[Clang-based C++ Compilers](http://docwiki.embarcadero.com/RADStudio/XE6/en/Clang-based_C%2B%2B_Compilers)
 3. Phoenix Compiler Framework Wiki:     
-[http://en.wikipedia.org/wiki/Phoenix_(compiler_framework)](https://en.wikipedia.org/wiki/Phoenix_%28compiler_framework%29)           
+[Phoenix_(compiler_framework)](https://en.wikipedia.org/wiki/Phoenix_%28compiler_framework%29)           
 4. Dalvik Wiki:       
-[http://en.wikipedia.org/wiki/Dalvik_(software)](https://en.wikipedia.org/wiki/Dalvik_%28software%29)        
+[Dalvik_(software)](https://en.wikipedia.org/wiki/Dalvik_%28software%29)        
 5. LLILC News:     
 [InfoQ Microsoft Introduces LLILC, LLVM-based .NET/CoreCLR Compiler](http://www.infoq.com/news/2015/04/microsoft-llilc-llvm-compiler) 
