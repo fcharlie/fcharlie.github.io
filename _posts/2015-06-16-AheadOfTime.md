@@ -57,7 +57,7 @@ x86 上模拟执行 ARM 架构的程序也可以是这个套路。）但是这�
 
 
 
-##1. LLVM 编译器基础设施的发迹   
+##LLVM 编译器基础设施的发迹   
 数年前，LLVM 的官网对于 LLVM 项目的介绍是: "Low Level Virtual Machine",低级虚拟机，而现在对 LLVM 的介绍是："The LLVM Compiler Infrastructure"，
 即编译器基础设施。  在程序员圈子中对 LLVM 最深刻的影响来自于 Clang，C 家族编译器(C/C++ /Objective-C/C++ Compiler)前端，Clang 是 LLVM 最成功的实现，
 在平台支持上，Clang 短短几年达到了 GNU C Compliton (GCC) 20年的高度。 Clang 在编译速度，占用内存，以及整个框架的设计上都是可圈可点的，
@@ -157,7 +157,7 @@ print("Hello, world!");
 很多公司贡献了代码到 LLVM 项目中，或使用 LLVM 的工具改善自己的产品，比如 Google ,Google NDK 以及 PNacl 都使用了 LLVM 的工具，而 LLVM 的许多特性就是 
 Google 实现的，比如地址消毒剂 AddressSanitizer（GCC 目前也支持了）。还有 Intel OpenCL, Adobe, NVIDIA Nucda,Microsoft WinObjc。
 
-##2. Android 与 AOT  
+##Android 与 AOT  
 LLVM 优异的架构并没有被 Android 广泛使用。
 Android 最初由 Andy Rubin 开发作为数码相机的操作系统，使用 Linux 内核，后来发现市场需求不大被改造成智能手机操作系统反而获得了巨大成功。
 Rubin 选择了具有很大争议的 Java 作为 Android 的应用开发语言，Java 基于 JVM，能够在支持 JVM 的平台上运行，Java 的开发者非常多，
@@ -175,7 +175,7 @@ ART 本质上一个混合的 AOT 方案，它还实现了 JVM 解释器。
 
 Andy Rubin 先后在苹果 微软 谷歌公司工作过。
 
-##3. .NET 与 AOT    
+##.NET 与 AOT    
 说起.NET 就不得不谈到 [Anders Hejlsberg](http://zh.wikipedia.org/wiki/%E5%AE%89%E5%BE%B7%E6%96%AF%C2%B7%E6%B5%B7%E5%B0%94%E6%96%AF%E4%BC%AF%E6%A0%BC)此人，
 他来自丹麦，Turbo Pascal最开始就是他开发的，Delphi/C#之父，C#&.NET 的首席架构师，TypeScript 的首席架构师，主持开发了.NET Framework，Visual Basic.NET，
 以及最新的.NET 编译器 [Roslyn](http://msdn.microsoft.com/en-us/vstudio/roslyn.aspx) 。   
@@ -480,7 +480,7 @@ LLILC 依然是非常的不完善，最后的究竟怎样仍需观望。
 
 从 .NET 还是 JVM 或者是 LLVM 来看，很多东西都是相似的，技术也在互相影响和渗透。
 
-##4. 探索的脚步 
+##探索的脚步 
 
 ###4.1 CSNative
 永远不会有完全统一的意见，总会有人去创造新的轮子。不谈其他，重复的创造能对已有的东西带来技术革新，在 CodePlex上,
@@ -518,7 +518,7 @@ C# Native 作者 AlexDev 本人也是 Babylon 3D (C#/native port) 的作者。
 同样的，在 Github上，也有一个基于 LLVM 的 C# Native 的解决方案: [SharpLang](https://github.com/xen2/SharpLang)。
 在LLILC推出后，开发者 Virgile Bello 也就没有更新 SharpLang 了。
 
-##5. 框架图
+##其他
 ###.NET
 实际上无论是 JVM 还是 .NET Framework 以及 LLVM Framework 在结构上是非常相似的，如下图：     
 ![Framework](https://raw.githubusercontent.com/fstudio/Beaot/master/doc/Images/dotNet/CLR_diag.png)    
@@ -537,7 +537,7 @@ JVM 加载器：
 ![JVM](https://raw.githubusercontent.com/fstudio/Beaot/master/doc/Images/JvmSpec7.png)        
                                                       
 
-###ECMAScript PNacl Asm.js WebAssembly
+###Web AOT
 **asm.js** 是一个非常容易优化的 JavaScript 子集: 
 [asm.js AOT](https://blog.mozilla.org/luke/2014/01/14/asm-js-aot-compilation-and-startup-performance/)     
 ![asm.js-AOT](https://ffp4g1ylyit3jdyti1hqcvtb-wpengine.netdna-ssl.com/luke/files/2013/12/aot-diagram.png)  
