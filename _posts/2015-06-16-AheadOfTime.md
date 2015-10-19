@@ -230,12 +230,109 @@ Roslyn APIs:
 
 
 ####.NET Native
-.NET 的 AOT 解决方案在 Mono 中很早就出现了，
-早在2013年就有传闻，.NET将推出.NET Native,.NET本就有一个NGEN工具，负责将.NET程序集一股脑的生成本机镜像。但NGEN依然无法脱离.NET平台，
-并且有大量的JIT，小型程序一般不会出现严重的性能问题，但是，当项目体积变得巨大时，类似于Visual Studio之类的工具，程序启动就会非常缓慢。
-必要的优化显得尤为重要。   
->App IL + FX -> MCG　-> Interop.g.cs -> CSC -> Interop.dll -> Merge -> IL transform -> NUTC -> RhBind -> .EXE
+.NET 的 AOT 解决方案在 Mono 中很早就出现了，Mono 平台支持 Android 以及 iOS 的 App 开发,由于 iOS 禁止第三方软件的 JIT 编译,
+在iOS 平台,Mono 使用的就是 Full AOT 策略.       
 
+Program.cs
+{% highlight cs %}
+using System;
+
+namespace hello
+{
+	class MainClass
+	{
+		public static void Main (string[] args)
+		{
+			Console.WriteLine ("Hello World!");
+		}
+	}
+}
+{% endhighlight %}  
+
+使用 Mono 编译:      
+>mcs Program.cs
+
+然后使用 mono AOT 编译成机器码:     
+>mono --aot=full,nrgctx-trampolines=8096,nimt-trampolines=8096,ntrampolines=4048 Program.exe
+
+使用 objdump 反汇编:     
+>objdump -d Program.exe.so >Program.s
+
+这里只反汇编了执行段,Program.s:      
+{% highlight asm %}
+
+Program.exe.so：     文件格式 elf64-x86-64
+
+
+Disassembly of section .text:
+
+0000000000001000 <hello_MainClass__ctor-0x10>:
+    1000:	90                   	nop
+    1001:	90                   	nop
+    1002:	90                   	nop
+    1003:	90                   	nop
+    1004:	90                   	nop
+    1005:	90                   	nop
+    1006:	90                   	nop
+    1007:	90                   	nop
+    1008:	90                   	nop
+    1009:	90                   	nop
+    100a:	90                   	nop
+    100b:	90                   	nop
+    100c:	90                   	nop
+    100d:	90                   	nop
+    100e:	90                   	nop
+    100f:	90                   	nop
+
+0000000000001010 <hello_MainClass__ctor>:
+    1010:	48 83 ec 08          	sub    $0x8,%rsp
+    1014:	48 83 c4 08          	add    $0x8,%rsp
+    1018:	c3                   	retq   
+    1019:	00 00                	add    %al,(%rax)
+    101b:	00 00                	add    %al,(%rax)
+    101d:	00 00                	add    %al,(%rax)
+	...
+
+0000000000001020 <hello_MainClass_Main_string__>:
+    1020:	48 83 ec 08          	sub    $0x8,%rsp
+    1024:	49 8b 3d e5 24 00 00 	mov    0x24e5(%rip),%rdi        # 3510 <__bss_start+0x20>
+    102b:	e8 20 00 00 00       	callq  1050 <plt_System_Console_WriteLine_string>
+    1030:	48 83 c4 08          	add    $0x8,%rsp
+    1034:	c3                   	retq   
+    1035:	00 00                	add    %al,(%rax)
+    1037:	00 90 90 90 90 00    	add    %dl,0x909090(%rax)
+	...
+
+0000000000001050 <plt_System_Console_WriteLine_string>:
+    1050:	ff 25 ca 24 00 00    	jmpq   *0x24ca(%rip)        # 3520 <__bss_start+0x30>
+    1056:	0e                   	(bad)  
+	...
+
+0000000000001060 <method_addresses>:
+    1060:	e8 ab ff ff ff       	callq  1010 <hello_MainClass__ctor>
+    1065:	e8 b6 ff ff ff       	callq  1020 <hello_MainClass_Main_string__>
+    106a:	e8 f1 ff ff ff       	callq  1060 <method_addresses>
+	...
+{% endhighlight %}
+
+.NET Framework 一直有一个工具, NGEN (Native Image Generator), NGEN 会将程序集简单的编译成机器码,在 C:\Windows\Microsoft.Net\assembly 
+目录就是 NGEN 的镜像. NGEN 依然无法脱离 .NET Framework,任然需要 JIT,程序运行的时候往往是 MSIL 和 MachineCode 混合运行.       
+Windows update 更新重启后,经常可以在任务管理器里面发现 NGEN 进程疯狂的执行任务.     
+在没有 .NET Native 时, Windows Phone 中,.NET App 在安装后就会通过 NGEN 转变为机器码,以此来提升运行速度,降低功耗.
+对于 .NET Native 的需求,随着 Microsoft 的 移动战略的实施变得尤为迫切.      
+早在2013年就有传闻，.NET将推出.NET Native,时至今日,基于 .NET 的 Windows 10 通用应用程序,都开始开启 .NET Native 支持.    
+
+{% highlight flow %}
+st=>start:App IL + FX -> MCG
+op1=>operation:Interop.g.cs
+op2=>operation:CSC
+op3=>operation:Interop.dll
+op4=>operation:Merge
+op5=>operation:IL transform
+op6=>operation:NUTC
+op7=>operation:RhBind
+e=>end:app.EXE
+{% endhighlight %}
 
 .NET Native的实现，在IR前期很大的程度上依赖Roslyn这类新型的编译器，而在IR后期，就得意于Phoenix编译器框架，.NET Native后端和Visual C/C++共用一套后端优化编译器。
 
