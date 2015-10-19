@@ -234,7 +234,7 @@ Roslyn APIs:
 在iOS 平台,Mono 使用的就是 Full AOT 策略.       
 
 Program.cs
-{% highlight cs %}
+{% highlight csharp %}
 using System;
 
 namespace hello
@@ -259,7 +259,7 @@ namespace hello
 >objdump -d Program.exe.so >Program.s
 
 这里只反汇编了执行段,Program.s:      
-{% highlight asm %}
+{% highlight cpp-objdump %}
 
 Program.exe.so：     文件格式 elf64-x86-64
 
@@ -322,32 +322,134 @@ Windows update 更新重启后,经常可以在任务管理器里面发现 NGEN �
 对于 .NET Native 的需求,随着 Microsoft 的 移动战略的实施变得尤为迫切.      
 早在2013年就有传闻，.NET将推出.NET Native,时至今日,基于 .NET 的 Windows 10 通用应用程序,都开始开启 .NET Native 支持.    
 
-{% highlight flow %}
-st=>start:App IL + FX -> MCG
-op1=>operation:Interop.g.cs
-op2=>operation:CSC
-op3=>operation:Interop.dll
-op4=>operation:Merge
-op5=>operation:IL transform
-op6=>operation:NUTC
-op7=>operation:RhBind
-e=>end:app.EXE
+.NET Native 基本的流程如下:    
+>App IL + FX -> MCG　-> Interop.g.cs -> CSC -> Interop.dll -> Merge -> IL transform -> NUTC -> RhBind -> .EXE
+
+.NET Native 工具链将所有依赖到的程序集反汇编成 C# 源码,使用 C# 编译器再编译成一个 dll, dll 再转 IR ,使用 nutc_driver 编译成机器码,
+而 nutc_driver 代码是使用了 Microsoft C++ 后端代码. 最后生成一个 dll 和一个 Bootstrap 的 EXE, dll 导出的函数为:      
+>RHBinder__ShimExeMain
+
+使用 Visual C++ 工具 dumpbin 查看符号信息：  
+>dumpbin /EXPORTS App2.dll
+
+得到的结果如下：   
+{% highlight cpp-objdump %}
+Microsoft (R) COFF/PE Dumper Version 14.00.23303.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+
+Dump of file app2.dll
+
+File Type: DLL
+
+  Section contains the following exports for 
+
+    00000000 characteristics
+           0 time date stamp Thu Jan  1 08:00:00 1970
+        0.00 version
+           1 ordinal base
+          20 number of functions
+          20 number of names
+
+    ordinal hint RVA      name
+
+          1    0 00258498 $thread_static_index = TlsIndexSection
+          2    1 00688FA0 AppendExceptionStackFrame = System::Exception.AppendExceptionStackFrame
+          3    2 004D6CC0 CheckStaticClassConstruction = System::Runtime::CompilerServices::ClassConstructorRunner.EnsureClassConstructorRun
+          4    3 0067B240 CreateCommandLine = System::Runtime::CommandLine.InternalCreateCommandLine
+          5    4 00681710 CtorCharArray = System::String.CtorCharArray
+          6    5 00681520 CtorCharArrayStartLength = System::String.CtorCharArrayStartLength
+          7    6 00680FC0 CtorCharCount = System::String.CtorCharCount
+          8    7 00681300 CtorCharPtr = System::String.CtorCharPtr
+          9    8 00681110 CtorCharPtrStartLength = System::String.CtorCharPtrStartLength
+         10    9 0067E450 FailFast = System::RuntimeExceptionHelpers.RuntimeFailFast
+         11    A 0067B110 GenericLookup = System::Runtime::TypeLoaderExports.GenericLookup
+         12    B 0067AFF0 GenericLookupAndAllocArray = System::Runtime::TypeLoaderExports.GenericLookupAndAllocArray
+         13    C 00462220 GenericLookupAndAllocObject = System::Runtime::TypeLoaderExports.GenericLookupAndAllocObject
+         14    D 0067B080 GenericLookupAndCallCtor = System::Runtime::TypeLoaderExports.GenericLookupAndCallCtor
+         15    E 0067AEE0 GenericLookupAndCast = System::Runtime::TypeLoaderExports.GenericLookupAndCast
+         16    F 0067AF60 GenericLookupAndCheckArrayElemType = System::Runtime::TypeLoaderExports.GenericLookupAndCheckArrayElemType
+         17   10 0067E500 GetRuntimeException = System::RuntimeExceptionHelpers.GetRuntimeException
+         18   11 0067B170 GetThreadStaticsForDynamicType = System::Runtime::TypeLoaderExports.GetThreadStaticsForDynamicType
+         19   12 0067AE50 InitializeFinalizerThread = System::Runtime::FinalizerInitRunner.DoInitialize
+         20   13 0027BF10 RHBinder__ShimExeMain = RHBinder__ShimExeMain
+
+  Summary
+
+       5A000 .data
+      1FE000 .rdata
+       66000 .reloc
+        3000 .rsrc
+      4F4000 .text
+        1000 .tkd0
+        1000 .tkd1
+        1000 .tkd2
+        1000 .tkd3
+        1000 .tkd4
+        1000 .tkd5
+        1000 .tkd6
+        1000 .tkd7
+        1000 .tks0
+        1000 .tks1
+        1000 .tks2
+        1000 .tks3
+        1000 .tks4
+        1000 .tks5
+        1000 .tks6
+        1000 .tks7
+
 {% endhighlight %}
 
-.NET Native的实现，在IR前期很大的程度上依赖Roslyn这类新型的编译器，而在IR后期，就得意于Phoenix编译器框架，.NET Native后端和Visual C/C++共用一套后端优化编译器。
+查看 App2.exe 导入的符号信息       
+>dumpbin /IMPORTS App2.exe
 
+输出如下：   
+{% highlight cpp-objdump %}
+Microsoft (R) COFF/PE Dumper Version 14.00.23303.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+
+Dump of file app2.exe
+
+File Type: EXECUTABLE IMAGE
+
+  Section contains the following imports:
+
+    App2.dll
+                402000 Import Address Table
+                401028 Import Name Table
+                     0 time date stamp
+              FFFFFFFF Index of first forwarder reference
+
+                    0 RHBinder__ShimExeMain
+
+  Summary
+
+        1000 .data
+        1000 .rdata
+        1000 .reloc
+        3000 .rsrc
+        1000 .text
+
+{% endhighlight %}
+
+.NET Native 的实现，在 IR 前期很大的程度上依赖 Roslyn 这类新型的编译器，而在 IR 后期，就得意于 Phoenix 编译器框架，
+.NET Native 后端和 Visual C/C++ 共用一套后端优化编译器。
+
+在 Microsoft Channel 9 有一个对 .NET Native 的介绍视频：
 [.NET Native Deep Dive](https://channel9.msdn.com/Events/dotnetConf/2014/-NET-Native-Deep-Dive)
 
+视频中的 PPT 可以下载：
 [.NET Native PPTX](http://files.channel9.msdn.com/thumbnail/45d78758-8ab8-4e62-8a73-2e6a4027b49c.pptx)  
 
-在 Visual Studio 2015 中   
+在 Visual Studio 2015 中，可以使用 NuGet 安装 .NET Native 的相关插件，以此来分析 .NET 引用能否被 .NET Native 支持。      
 >Install-Package Microsoft.NETNative.Analyzer
 
 或许对于微软来说，应该感到遗憾，Chris Lattner 并没有最终加入微软，而是加入了苹果公司。
 
 
 ####LLILC
-在.NET CoreCLR开源后，.NET开发团队也创建了基于LLVM的.NET Core编译器项目，包括JIT和AOT,不过目前AOT并没有编码实现。  
+在 .NET CoreCLR 开源后，.NET 开发团队也创建了基于 LLVM 的 .NET Core 编译器项目，包括 JIT 和 AOT ,不过目前 AOT 并没有编码实现。  
 
 ![AOT](https://raw.githubusercontent.com/dotnet/llilc/master/Documentation/Images/AOTArch.png)
 
