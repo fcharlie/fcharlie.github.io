@@ -4,6 +4,7 @@ title:  "Subversion 和 GIT"
 date:   2015-10-16 21:30:16
 categories: developer
 ---
+##前言 
 
 大多数时候，开发者需要学习的版本控制系统为 Subversion 或者是 GIT。
 这二者已然是两个版本控制流派的代表。在开发软件的过程中，往往是需要多个人参与，
@@ -25,10 +26,15 @@ Subversion 开始发挥作用，彼时，几乎所有开源的大型软件都是
 GIT 远远没有目前流行。后来参加工作后，就是代码托管的工作，对 Subversion 和 Git 有了一定程度的了解，
 逐渐有了自己的思考。
 
-###Subversion 兼容实现
+
+##Git 技术内幕
+Git 的受欢迎程度已经高于 Subversion,人们对 Git 的探索也就更进一步。
+
+##Git 开发
+
+##Subversion 内幕
+与  Git 完全不同的是，svn 的仓库存储在远程中央服务器上，开发者检出的代码只是特定版本，特定目录的代码，本地为工作目录。
 
 
-###Git 传输协议与实现
-
-
-###Git 内部解析
+##Subversion 兼容实现
+Github 基于 HTTP 协议的方式实现了对 Subversion 的兼容，而 GIT@OSC 基于 svn 协议方式实现了对 Subversion 的不完全兼容。

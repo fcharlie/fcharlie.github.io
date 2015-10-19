@@ -1,10 +1,10 @@
 ---
 layout: post
-title:  "Aeah of Time Compilation "
+title:  "软件的变革与 AOT "
 date:   2015-06-16 21:30:16
 categories: compiler
 ---
-#Ahead of Time
+##前言 
 AOT 即 Ahead of Time Compilation,即运行前编，与之对应的是 JIT。众所周知，程序的源码并不能够被处理器直接执行，
 编程语言基本上都是人类可读，编译器或者解释器就需要将源代码转变为 CPU 可以操作的指令。比如一个加法函数最终需要执行 
 addl 汇编指令对应的机器码。   
