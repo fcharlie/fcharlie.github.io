@@ -79,19 +79,19 @@ x86 上模拟执行 ARM 架构的程序也可以是这个套路。）但是这�
 
 
 ###传统的编译器  
-传统编译器需要经过前端(Frontend)，优化(Optimizer)，后端(Backend)然后将源代码转变为机器码，
+传统编译器需要经过前端(Frontend)，优化(Optimizer)，后端(Backend)然后将源代码转变为机器码。    
 ![SimpleCompiler](http://www.aosabook.org/images/llvm/SimpleCompiler.png)   
                              Three Major Components of a Three-Phase Compiler                           
 							                             
 如果需要增加一种新的平台的支持，这种模型无法提供更多的可重用的代码。   
 
-要添加其他语言的支持模型如下：  
+要添加其他语言的支持模型如下：      
 ![Retargetable](http://www.aosabook.org/images/llvm/RetargetableCompiler.png)                
                               Retargetablity
 
 
 ###基于 LLVM 的编译器  
-基于 LLVM 的编译器架构如下：   
+基于 LLVM 的编译器架构如下：      
 ![LLVMCompiler1](http://www.aosabook.org/images/llvm/LLVMCompiler1.png)   
                               LLVM's Implementation of the Three-Phase Design                
 							
@@ -165,7 +165,7 @@ Android 使用的是Dalvik的虚拟机，这与Java官方的JVM 技术上稍微�
 
 
 ####Android Runtime
-2014年6月，Google 推出 Android 5.0(Android Lollipop) ，ART 完全取代了 Dalvik。
+2014年6月，Google 推出 Android 5.0(Android Lollipop) ，ART 完全取代了 Dalvik。    
 ![ART View](https://upload.wikimedia.org/wikipedia/commons/2/25/ART_view.png)  
 ART 本质上一个混合的 AOT 方案，它还实现了 JVM 解释器。
 
@@ -180,40 +180,60 @@ Andy Rubin 先后在苹果 微软 谷歌公司工作过。
 .NET在设计上确实借鉴了Java的很多理念，并且超越了Java，这也是 Anders 从 Borland 就存在心中的构想。
 
 类似于 LLVM 的研究，微软很早就有，这个项目是：   
-*Phoenix Compiler and Shared Source Common Language Infrastructure*
+**Phoenix Compiler and Shared Source Common Language Infrastructure**
 
 现在的 Microsoft Visual C++ 就有 Phoenix 编译器架构的技术积累。
 
 Chris Lattner 曾于2004年在微软研究院实习，参与微软的 [Phoenix Compiler Framework](http://research.microsoft.com/en-us/collaboration/focus/cs/phoenix.aspx) 项目，
-很多时候技术是互相影响的。    
-在我刚进入大学的时候，刚刚学会编程，曾经下载过08版的 Phoenix Compiler 编译器工具，并且也试用过，不过到现在已经无法下载了。而Phoenix Compiler Framework与LLVM的理念确实很相似，
-并且可以得知的是，Phoenix很多的技术被整合到微软的Microsoft C/C++ Compiler，就技术上而言Phoenix与LLVM有许多相似之处。     
+很多时候技术是相互影响的，好的技术最后都会殊途同归。          
+在我刚进入大学的时候，刚刚学会编程，曾经下载过08版的 Phoenix Compiler 编译器工具，并且也试用过，不过到现在已经无法下载了。而 Phoenix Compiler Framework与LLVM的理念确实很相似，
+并且可以得知的是，Phoenix 很多的技术被整合到微软的 Microsoft C/C++ Compiler，就技术上而言 Phoenix 与 LLVM 有许多相似之处，比如都能转变成 IR，拥有软件优化和分析框架，
+然而具体的中间语言是不一样的。         
+
+Phoenix 的架构师 Andy Ayers 本人也是 LLILC 的核心成员。     
 
 >Phoenix不仅仅限于一个编译器，它还是一个软件优化和分析框架，能被其他编译器和工具使用。 它能生成二进制代码，也能输出MSIL程序集。源代码可以经过分析，
->并被表示为IR（中间表示，Intermediate Representation）形式，这种形式可以在后期被各种工具分析和处理。    
+>并被表示为 IR（中间表示，Intermediate Representation）形式，这种形式可以在后期被各种工具分析和处理。    
                                                          ----InfoQ: [Phoenix编译器框架说明](http://www.infoq.com/cn/news/2008/05/Phoenix-Compiler-Framework)     
 
 在 .NET 未开源时，微软研究院还提供了一个 .NET 的学习代码 “[Shared Source Common Language Infrastructure](http://www.microsoft.com/en-us/download/details.aspx?id=4917)”的源代码下载。
 
-为什么说些无关的东西？实际上，微软的 .NET Netive 实现离不开 Phoenix 编译器的技术研究。   
+为什么说些无关的东西？实际上，微软的 .NET Native 实现离不开 Phoenix 编译器的技术研究。   
 
+
+.NET Framework 三阶段图：      
 ![DotCLR](https://raw.githubusercontent.com/fstudio/Beaot/master/doc/Images/dotNet/CLR_diag.png)
+                               .Net Three-Phase 
 
+
+.NET Framewok Native & JIT 模型
 ![DotNetCoreCLR](https://raw.githubusercontent.com/fcharlie/site-res/master/compilers/dotnativecoreclr.png)
 
-####.NET Compiler Platform ("Roslyn")
 
-![Images](https://raw.githubusercontent.com/fstudio/Beaot/master/doc/Images/Roslyn.png)           
+####.NET Compiler Platform ("Roslyn")
+Roslyn 是 Microsoft 推出的新一代 C#/VB.NET 编译器,相对于传统的 .NET C# 编译器,整个生产流程结构非常清晰,
+和 C++ 中的 clang 类比丝毫不为过,而 Visual Studio 2015 也充分利用了 Roslyn 的优秀特性.     
+目前无论是 Microsoft 还是 Mono 都参与到了 Roslyn 的开发过程中,利用 Roslyn ,一些第三方的 C# AOT 解决方案迅速的发展起来.     
+
+编译器管道:      
+![Pipe](https://github.com/dotnet/roslyn/wiki/images/compiler-pipeline.png)
+
+编译器管道及对应的 API:      
+![API](https://github.com/dotnet/roslyn/wiki/images/compiler-pipeline-api.png)
+
+编译器 API 和 服务:     
+![svc](https://github.com/dotnet/roslyn/wiki/images/compiler-pipeline-lang-svc.png)
+
+Roslyn APIs:    
+![Roslyn](https://raw.githubusercontent.com/fstudio/Beaot/master/doc/Images/Roslyn.png)           
                                              
 
-
-放心 Roslyn是开源的基于C#的，Mono会移植到其他平台的。   
 
 ####.NET Native
 .NET 的 AOT 解决方案在 Mono 中很早就出现了，
 早在2013年就有传闻，.NET将推出.NET Native,.NET本就有一个NGEN工具，负责将.NET程序集一股脑的生成本机镜像。但NGEN依然无法脱离.NET平台，
 并且有大量的JIT，小型程序一般不会出现严重的性能问题，但是，当项目体积变得巨大时，类似于Visual Studio之类的工具，程序启动就会非常缓慢。
-必要的优化显得尤为重要。
+必要的优化显得尤为重要。   
 >App IL + FX -> MCG　-> Interop.g.cs -> CSC -> Interop.dll -> Merge -> IL transform -> NUTC -> RhBind -> .EXE
 
 
