@@ -185,7 +185,8 @@ Andy Rubin 先后在苹果 微软 谷歌公司工作过。
 现在的 Microsoft Visual C++ 就有 Phoenix 编译器架构的技术积累。
 
 Chris Lattner 曾于2004年在微软研究院实习，参与微软的 [Phoenix Compiler Framework](http://research.microsoft.com/en-us/collaboration/focus/cs/phoenix.aspx) 项目，
-很多时候技术是相互影响的，好的技术最后都会殊途同归。          
+或许对于微软来说，应该感到遗憾，Chris Lattner 并没有最终加入微软，而是加入了苹果公司。很多时候技术是相互影响的，
+好的技术最后都会殊途同归。          
 在我刚进入大学的时候，刚刚学会编程，曾经下载过08版的 Phoenix Compiler 编译器工具，并且也试用过，不过到现在已经无法下载了。而 Phoenix Compiler Framework与LLVM的理念确实很相似，
 并且可以得知的是，Phoenix 很多的技术被整合到微软的 Microsoft C/C++ Compiler，就技术上而言 Phoenix 与 LLVM 有许多相似之处，比如都能转变成 IR，拥有软件优化和分析框架，
 然而具体的中间语言是不一样的。         
@@ -210,7 +211,7 @@ Phoenix 的架构师 Andy Ayers 本人也是 LLILC 的核心成员。
 ![DotNetCoreCLR](https://raw.githubusercontent.com/fcharlie/site-res/master/compilers/dotnativecoreclr.png)
 
 
-####.NET Compiler Platform ("Roslyn")
+###.NET Compiler Platform ("Roslyn")
 Roslyn 是 Microsoft 推出的新一代 C#/VB.NET 编译器,相对于传统的 .NET C# 编译器,整个生产流程结构非常清晰,
 和 C++ 中的 clang 类比丝毫不为过,而 Visual Studio 2015 也充分利用了 Roslyn 的优秀特性.     
 目前无论是 Microsoft 还是 Mono 都参与到了 Roslyn 的开发过程中,利用 Roslyn ,一些第三方的 C# AOT 解决方案迅速的发展起来.     
@@ -229,7 +230,7 @@ Roslyn APIs:
                                              
 
 
-####.NET Native
+###.NET Native
 .NET 的 AOT 解决方案在 Mono 中很早就出现了，Mono 平台支持 Android 以及 iOS 的 App 开发,由于 iOS 禁止第三方软件的 JIT 编译,
 在iOS 平台,Mono 使用的就是 Full AOT 策略.       
 
@@ -445,50 +446,95 @@ File Type: EXECUTABLE IMAGE
 在 Visual Studio 2015 中，可以使用 NuGet 安装 .NET Native 的相关插件，以此来分析 .NET 引用能否被 .NET Native 支持。      
 >Install-Package Microsoft.NETNative.Analyzer
 
-或许对于微软来说，应该感到遗憾，Chris Lattner 并没有最终加入微软，而是加入了苹果公司。
+对于 .NET Native, 大多数人并不会感到满意，大多数 .NET 开发者都希望 .NET Native 能够扩展到 桌面平台，能够支持 WPF ...
+如果下面的这个项目能够成功，那么 .NET 的 AOT 也就指日可待。
 
 
-####LLILC
-在 .NET CoreCLR 开源后，.NET 开发团队也创建了基于 LLVM 的 .NET Core 编译器项目，包括 JIT 和 AOT ,不过目前 AOT 并没有编码实现。  
+###LLILC - LLVM-Based Compiler for .NET CoreCLR
+在 .NET CoreCLR 开源后，.NET 开发团队也创建了基于 LLVM 的 .NET Core 编译器项目 LLILC，实际上，在之前已经有了 C# Native, 
+SharpLang 之类的项目着手实现 .NET 的 AOT。然而这些项目大多是个人兴趣，支持有限。     
+LLILC 的核心开发者是 Phoenix 编译器框架的架构师 [Andy Ayers](https://github.com/AndyAyersMS),  大神本人也会在 gitter.im 上回答人们对 LLILC 的疑问。
+LLILC 包括 JIT 和 AOT ,不过目前 AOT 并没有编码实现。目前项目组的重心任然是 JIT 模块。     
 
-![AOT](https://raw.githubusercontent.com/dotnet/llilc/master/Documentation/Images/AOTArch.png)
+LLILC 的 JIT 架构
+![JIT](https://github.com/dotnet/llilc/raw/master/Documentation/Images/JITArch.png)
 
+LLILC 的 AOT 架构
+![AOT](https://github.com/dotnet/llilc/raw/master/Documentation/Images/AOTArch.png)
+
+MRT 也就是 .NET Native Runtime ，专门为 .NET Native 实现的一个精简运行时。
+
+LLILC 依然是非常的不完善，最后的究竟怎样仍需观望。
+
+从 .NET 还是 JVM 或者是 LLVM 来看，很多东西都是相似的，技术也在互相影响和渗透。
 
 ##4. 探索的脚步 
 
-####4.1 CSNative
-永远不会有完全统一的意见，总会有人去创造新的轮子。不谈其他，重复的创造能对已有的东西带来技术革新，在[codeplex.com](http://csnative.codeplex.com/)上,就有个伙计利用Roslyn API将C#编译成MSIL，然后将MSIL编译成LLVM IR,随后'LLVM System compiler' llc编译成Native code,用GCC将Object文件链接成exe，GC库是32位的 [libgc](http://www.hboehm.info/gc/)
+###4.1 CSNative
+永远不会有完全统一的意见，总会有人去创造新的轮子。不谈其他，重复的创造能对已有的东西带来技术革新，在 CodePlex上,
+就有个伙计实现了自己的 .NET Native 方案：[C# Native](http://csnative.codeplex.com/)；他利用 Roslyn API 将 C# 编译成 MSIL，
+然后将 MSIL 编译成 LLVM IR ,随后 'LLVM System compiler' llc 编译成 Native code ,用 GCC 将 Object 文件链接成 exe，
+GC库是32位的 [libgc](http://www.hboehm.info/gc/)， 现在已经转变了策略，直接生成 C++ 代码，使用 G++ 编译成二进制。
 
+{% highlight csharp %}
+using System;
 
-####4.2 SharpLang
-同样的，在Githu上，也有一个基于LLVM的C# Native的解决方案:[SharpLang](https://github.com/xen2/SharpLang)。在LLILC推出后，开发者 Virgile Bello 也就没有更新 SharpLang 了。
+class X {
+	public static int Main (string [] args)
+	{
+		Console.WriteLine ("Hello, World!");
+		return 0;
+	}
+}
+{% endhighlight %}
 
+Il2c 是一个利用 Roslyn 实现的 C#/MSIL to C++ 的编译器       
+>Il2c.exe helloworld.cs /corelib:CoreLib.dll
 
-####.NET
+生成 helloworld.cpp, 然后使用 g++ 编译成 exe :    
+>g++ -o helloworld.exe helloworld.cpp CoreLib.cpp -lstdc++ -lgcmt-lib -march=i686 -L .
+
+直接生成 Exe:    
+>Il2c.exe /exe helloworld.cs /corelib:CoreLib.dll
+
+C# Native 作者 AlexDev 本人也是 Babylon 3D (C#/native port) 的作者。  
+
+###4.2 SharpLang
+同样的，在 Github上，也有一个基于 LLVM 的 C# Native 的解决方案: [SharpLang](https://github.com/xen2/SharpLang)。
+在LLILC推出后，开发者 Virgile Bello 也就没有更新 SharpLang 了。
+
+##5. 框架图
+###.NET
 实际上无论是JVM还是.NET Framework 已经LLVM Framework在结构上是非常相似的，如下图：     
 ![Framework](https://raw.githubusercontent.com/fstudio/Beaot/master/doc/Images/dotNet/CLR_diag.png)    
                                         
 
-Developer History:     
-
+.NET 的功能演进:     
 ![dotNet](https://raw.githubusercontent.com/fstudio/Beaot/master/doc/Images/dotNet/DotNet.png)      
                                    
 
-
+从源码到运行：     
 ![Step](https://raw.githubusercontent.com/fstudio/Beaot/master/doc/Images/dotNet/Overview_of_the_Common_Language_Infrastructure.png)         
                                                         
 
-####JVM   
-
+###JVM   
+JVM 加载器：     
 ![JVM](https://raw.githubusercontent.com/fstudio/Beaot/master/doc/Images/JvmSpec7.png)        
                                                       
 
-####ECMAScript PNacl Asm.js WebAssembly
-
-[asm.js AOT](https://blog.mozilla.org/luke/2014/01/14/asm-js-aot-compilation-and-startup-performance/)  
-
+###ECMAScript PNacl Asm.js WebAssembly
+**asm.js** 是一个非常容易优化的JavaScript子集
+[asm.js AOT](https://blog.mozilla.org/luke/2014/01/14/asm-js-aot-compilation-and-startup-performance/)     
 ![asm.js-AOT](https://ffp4g1ylyit3jdyti1hqcvtb-wpengine.netdna-ssl.com/luke/files/2013/12/aot-diagram.png)  
 
+**PNacl**   
+本质上，PNaCl 通过编译本地的 C 和 C++ 代码到一个中间表示，而不是像在 Native Client 的特定于体系结构的表示。LLVM 类型的字节代码被包裹在一个可移植的执行体里面，这个执行体可以托管在一个 Web 服务器上，就像许多其它的网站资产一样。当该网站被访问的时候，Chrome 获取信息并将可移植的执行体转换成一个特定于体系结构的、便携式的、可执行的机器代码，直接为底层设备进行优化。这种转换方法意味着开发者不需要施行多次重新编译App，也可以在x86、ARM或MIPS设备上运行。
+
+**WebAssembly**     
+WebAssembly 是 Microsoft Google Mozille Apple 开发者合作开发的一项新技术，可以作为任何编程语言的编译目标，
+使应用程序可以运行在浏览器或其它代理中。
+
+[InfoQ WebAssembly：面向Web的通用二进制和文本格式](http://www.infoq.com/cn/news/2015/06/webassembly-wasm)
 
 
 ##备注  
@@ -498,8 +544,9 @@ BCC64.EXE, the C++ 64-bit Windows Compiler:
 [http://docwiki.embarcadero.com/RADStudio/XE6/en/BCC64.EXE,_the_C%2B%2B_64-bit_Windows_Compiler](http://docwiki.embarcadero.com/RADStudio/XE6/en/BCC64.EXE,_the_C%2B%2B_64-bit_Windows_Compiler)   
 Clang-based C++ Compilers:     
 [http://docwiki.embarcadero.com/RADStudio/XE6/en/Clang-based_C%2B%2B_Compilers](http://docwiki.embarcadero.com/RADStudio/XE6/en/Clang-based_C%2B%2B_Compilers)
-3. Phoenix Compiler Framework Wiki:
-[http://en.wikipedia.org/wiki/Phoenix_(compiler_framework)](http://en.wikipedia.org/wiki/Phoenix_(compiler_framework))           
-4. Dalvik Wiki:
-[http://en.wikipedia.org/wiki/Dalvik_(software)](http://en.wikipedia.org/wiki/Dalvik_(software))        
- 
+3. Phoenix Compiler Framework Wiki:     
+[http://en.wikipedia.org/wiki/Phoenix_(compiler_framework)](https://en.wikipedia.org/wiki/Phoenix_%28compiler_framework%29)           
+4. Dalvik Wiki:       
+[http://en.wikipedia.org/wiki/Dalvik_(software)](https://en.wikipedia.org/wiki/Dalvik_%28software%29)        
+5. LLILC News:     
+[InfoQ Microsoft Introduces LLILC, LLVM-based .NET/CoreCLR Compiler](http://www.infoq.com/news/2015/04/microsoft-llilc-llvm-compiler) 
