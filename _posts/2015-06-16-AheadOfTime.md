@@ -7,7 +7,7 @@ categories: compiler
 #Ahead of Time
 AOT 即Ahead of Time Compilation,即运行前编，与之对应的是JIT。众所周知，程序的源码并不能够被处理器直接执行，
 编程语言基本上都是人类可读，编译器或者解释器就需要将源代码转变为 CPU 可以操作的指令。比如一个加法函数最终需要执行 
-addl 汇编指定对于的机器码。
+addl 汇编指令对应的机器码。   
 add.c
 {% highlight cpp %}
 int add(int x,int y){
@@ -17,7 +17,7 @@ int add(int x,int y){
 
 >clang -S add.c
 
-add.s
+汇编文件 add.s
 {% highlight asm %}
 	.text
 	.def	 add;
@@ -59,39 +59,42 @@ x86 上模拟执行 ARM 架构的程序也可以是这个套路。）但是这�
 
 ##1. LLVM 编译器基础设施的发迹   
 数年前，LLVM的官网对于LLVM项目的介绍是: "Low Level Virtual Machine",低级虚拟机，而现在对LLVM的介绍是："The LLVM Compiler Infrastructure"，
-即编译器基础设施。  在程序员圈子中对LLVM最深刻的影响来自于Clang，C 家族编译器(C/C++ Objective-C/C++ Compiler)前端，Clang是LLVM最成功的实现，
-在平台支持上，Clang 短短几年达到了GNU C Compliton (GCC) 20年的高度。 Clang 在编译速度，占用内存，以及整个框架的设计上都是可圈可点的，
+即编译器基础设施。  在程序员圈子中对LLVM最深刻的影响来自于Clang，C 家族编译器(C/C++ /Objective-C/C++ Compiler)前端，Clang 是 LLVM 最成功的实现，
+在平台支持上，Clang 短短几年达到了 GNU C Compliton (GCC) 20年的高度。 Clang 在编译速度，占用内存，以及整个框架的设计上都是可圈可点的，
 对用户友好的开源许可证 *[The University of Illinois/NCSA Open Source License (NCSA)](http://opensource.org/licenses/UoI-NCSA.php)*. 
-实际上就有商业编译器依赖Clang实现，比如：Embarcadero™ C++ Builder的Win64编译器 bcc64就是完全基于Clang 实现（3.1 trunk）。
-而C++ Builder前身是Borland C/C++&Turbo C.  
-下面bcc64的命令实例:    
+实际上就有商业编译器依赖Clang实现，比如：Embarcadero™ C++ Builder 的 Win64 编译器 bcc64 就是完全基于 Clang 实现（3.1 trunk）。
+而 C++ Builder 前身是 Borland C/C++&Turbo C.     
+下面bcc64的命令实例:       
 >bcc64 -cc1 -D_RTLDLL -fborland-extensions -triple=x86_64-pc-win32-elf -emit-obj -std=c++11 -o Hello.o Hello.cpp   
 
-看过**《C/C++圣战》** 大抵也知道Borland C/C++ 曾经是多么的辉煌，而现在却选择了 Clang 来实现Win64工具链 （C++ Builder 10  32位也使用了 clang）。  
+看过**《C/C++圣战》** 大抵也知道 Borland C/C++ 曾经是多么的辉煌，而现在却选择了 Clang 来实现 Win64 工具链 （C++ Builder 10  32位也使用了 clang）。  
  
-一方面，单从 C 语言家族来讲 Clang基于库的模块化设计，易于 IDE 集成及其他用途的重用。比如 Sublime Text，VIM，Emacs 都有基于 Clang 实现 C/C++ 
-代码自动补全，Clang 提供一个 libclang 的库，可以编译成动态也可以编译成静态库，SublimeText 的 C/C++ 插件 SublimeClang 就是使用 libclang.dll(so/dylib)。   
-目前Clang在C++的标准上，远远优于其他主流编译器Microsoft C++(cl.exe),GCC (g++)。   
+一方面，单从 C 语言家族来讲 Clang 基于库的模块化设计，易于 IDE 集成及其他用途的重用。比如 Sublime Text，VIM，Emacs 都有基于 Clang 实现 C/C++ 
+代码自动补全，Clang 提供一个 libclang 的库，可以编译成动态也可以编译成静态库，SublimeText 的 C/C++ 插件 SublimeClang 就是使用 libclang.dll(so/dylib)。
+其他的编译器对于 IDE 集成的支持是远远不及的，比如 Visual Studio IDE 对于 C++ 的智能提示是使用  [EDG C++ Frontend ](http://www.edg.com/index.php?location=c_frontend)   
+目前 Clang 在 C++ 的标准上，远远优于其他主流编译器 Microsoft C++(cl),GCC (g++)。   
 另一方面，LLVM 实现了一套可扩展的编译器实现方案，任何人需要实现一个语言，只需要实现一个前段，然后将源码编译成 LLVM 字节码，也就是 LLVM IR, 然后 LLVM llc 将
-源码编译成不同平台的机器码，并且优化。比如最近正火的语言 Rust,后端也使用了 LLVM,以及 D语言编译器 ldc，Go 语言编译器 llgo 等等。而 LLVM 不仅仅拥有 AOT 的能力，
+源码编译成不同平台的机器码，并且优化。比如最近正火的语言 Rust 后端也使用了 LLVM,以及 D 语言编译器 ldc，Go 语言编译器 llgo 等等。而 LLVM 不仅仅拥有 AOT 的能力，
 而且还有 JIT 模块, [LLVM ExecutionEngine](http://llvm.org/svn/llvm-project/llvm/trunk/lib/ExecutionEngine/) ExecutionEngine 的 API 并不是非常稳定。
 
 
 ###传统的编译器  
 传统编译器需要经过前端(Frontend)，优化(Optimizer)，后端(Backend)然后将源代码转变为机器码，
 ![SimpleCompiler](http://www.aosabook.org/images/llvm/SimpleCompiler.png)   
-                             1. Three Major Components of a Three-Phase Compiler                                                 
+                             Three Major Components of a Three-Phase Compiler                           
+							                             
 如果需要增加一种新的平台的支持，这种模型无法提供更多的可重用的代码。   
 
 要添加其他语言的支持模型如下：  
 ![Retargetable](http://www.aosabook.org/images/llvm/RetargetableCompiler.png)                
-                              2. Retargetablity
+                              Retargetablity
 
 
 ###基于 LLVM 的编译器  
 基于 LLVM 的编译器架构如下：   
 ![LLVMCompiler1](http://www.aosabook.org/images/llvm/LLVMCompiler1.png)   
-                              3. LLVM's Implementation of the Three-Phase Design
+                              LLVM's Implementation of the Three-Phase Design                
+							
 基于 LLVM 的编译器前端将源码编译成 LLVM IR,然后在使用优化编译器编译成对应平台的机器码，一个很鲜明的对比是 D语言的编译器 DMD 与 ldc,DMD 是传统的编译器
 而 ldc 是基于 LLVM 的编译器，DMD 目前依然只支持 x86/x86_64 架构处理器，而 ldc 可以生成 ARM64,PPC,PPC64, mips64 架构的机器码
 [Dlang Compilers](http://wiki.dlang.org/Compilers#Comparison)   
@@ -128,13 +131,13 @@ attributes #0 = { nounwind uwtable "disable-tail-calls"="false" "less-precise-fp
 {% endhighlight %}
 
 
-使用以下命令即可：
+使用以下命令即可：    
 > clang add.ll -c
 
-也可以使用 llc 命令编译
+也可以使用 llc 命令编译   
 
-于2010年Chris Lattner 被ACM授予 "Programming Languages Software Award" 。2014年Chris Lattner作为苹果编译器开发团队的首席架构师，
-在Apple WWDC 2014 推出了Swift。而 Swift 就是基于 LLVM 的，使用如下命令编译 swift 代码，即可得到 LLVM IR 代码。   
+于2010年Chris Lattner 被 ACM 授予 "Programming Languages Software Award" 。2014年 Chris Lattner 作为苹果编译器开发团队的首席架构师，
+在 Apple WWDC 2014 推出了Swift。而 Swift 就是基于 LLVM 的，使用如下命令编译 swift 代码，即可得到 LLVM IR 代码。   
 >swiftc -S -emit-object hello.swift 
 
 {% highlight swift %}
@@ -145,7 +148,7 @@ print("Hello, world!");
 [通过 LLVM 在 Android 上运行 Swift 代码](http://romain.goyet.com/articles/running_swift_code_on_android/)
 
 整个 LLVM 项目推出了很多重量级工具，除了 Clang 之外，还有 LLVM 调试器  lldb, LLVM 连接器 lld,目前都可以在 Windows, Linux ,Mac ,以及 BSD 上运行，
-且是 XCode 的标配。
+目前 XCode 自带有这些工具，Windows 上，clang lld 都是能够安装集成到 Visual Studio 的。
 
 很多公司贡献了代码到 LLVM 项目中，或使用 LLVM 的工具改善自己的产品，比如 Google ,Google NDK 以及 PNacl 都使用了 LLVM 的工具，而 LLVM 的许多特性就是 
 Google 实现的，比如地址消毒剂 AddressSanitizer（GCC 目前也支持了）。还有 Intel OpenCL, Adobe, NVIDIA Nucda,Microsoft WinObjc。
@@ -162,7 +165,7 @@ Android 使用的是Dalvik的虚拟机，这与Java官方的JVM 技术上稍微�
 
 
 ####Android Runtime
-2014年6月，Google推出Android 5.0(Android Lollipop) ，ART完全取代了Dalvik。
+2014年6月，Google 推出 Android 5.0(Android Lollipop) ，ART 完全取代了 Dalvik。
 ![ART View](https://upload.wikimedia.org/wikipedia/commons/2/25/ART_view.png)  
 ART 本质上一个混合的 AOT 方案，它还实现了 JVM 解释器。
 
@@ -177,14 +180,14 @@ Andy Rubin 先后在苹果 微软 谷歌公司工作过。
 .NET在设计上确实借鉴了Java的很多理念，并且超越了Java，这也是 Anders 从 Borland 就存在心中的构想。
 
 类似于 LLVM 的研究，微软很早就有，这个项目是：   
->*Phoenix Compiler and Shared Source Common Language Infrastructure*
+*Phoenix Compiler and Shared Source Common Language Infrastructure*
 
 现在的 Microsoft Visual C++ 就有 Phoenix 编译器架构的技术积累。
 
 Chris Lattner 曾于2004年在微软研究院实习，参与微软的 [Phoenix Compiler Framework](http://research.microsoft.com/en-us/collaboration/focus/cs/phoenix.aspx) 项目，
-很多时候技术是互相影响的。
+很多时候技术是互相影响的。    
 在我刚进入大学的时候，刚刚学会编程，曾经下载过08版的 Phoenix Compiler 编译器工具，并且也试用过，不过到现在已经无法下载了。而Phoenix Compiler Framework与LLVM的理念确实很相似，
-并且可以得知的是，Phoenix很多的技术被整合到微软的Microsoft C/C++ Compiler，就技术上而言Phoenix与LLVM有许多相似之处。 
+并且可以得知的是，Phoenix很多的技术被整合到微软的Microsoft C/C++ Compiler，就技术上而言Phoenix与LLVM有许多相似之处。     
 
 >Phoenix不仅仅限于一个编译器，它还是一个软件优化和分析框架，能被其他编译器和工具使用。 它能生成二进制代码，也能输出MSIL程序集。源代码可以经过分析，
 >并被表示为IR（中间表示，Intermediate Representation）形式，这种形式可以在后期被各种工具分析和处理。    
@@ -192,7 +195,7 @@ Chris Lattner 曾于2004年在微软研究院实习，参与微软的 [Phoenix C
 
 在 .NET 未开源时，微软研究院还提供了一个 .NET 的学习代码 “[Shared Source Common Language Infrastructure](http://www.microsoft.com/en-us/download/details.aspx?id=4917)”的源代码下载。
 
-为什么说无关的东西？实际上，微软的 .NET Netive 实现离不开 Phoenix 编译器的技术研究。
+为什么说些无关的东西？实际上，微软的 .NET Netive 实现离不开 Phoenix 编译器的技术研究。   
 
 ![DotCLR](https://raw.githubusercontent.com/fstudio/Beaot/master/doc/Images/dotNet/CLR_diag.png)
 
@@ -204,7 +207,8 @@ Chris Lattner 曾于2004年在微软研究院实习，参与微软的 [Phoenix C
                                              
 
 
-放心 Roslyn是开源的基于C#的，Mono会移植到其他平台的。
+放心 Roslyn是开源的基于C#的，Mono会移植到其他平台的。   
+
 ####.NET Native
 .NET 的 AOT 解决方案在 Mono 中很早就出现了，
 早在2013年就有传闻，.NET将推出.NET Native,.NET本就有一个NGEN工具，负责将.NET程序集一股脑的生成本机镜像。但NGEN依然无法脱离.NET平台，
