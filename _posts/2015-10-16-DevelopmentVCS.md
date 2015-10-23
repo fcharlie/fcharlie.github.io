@@ -37,7 +37,7 @@ Git 智能协议实现了两类 RPC 调用，一个是 fetch-pack<->upload-pack,
 
 
 ##Git 开发演进
-开发 Git 的人大多知道 libgit2
+开发 Git 的人大多知道 libgit2,这是一个基于 C89 开发的 git 开发库，支持绝大多数 git 特性。
 
 ##Subversion 内幕
 与  Git 完全不同的是，svn 的仓库存储在远程中央服务器上，开发者检出的代码只是特定版本，特定目录的代码，本地为工作目录。

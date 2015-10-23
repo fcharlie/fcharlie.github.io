@@ -176,9 +176,9 @@ ART 本质上一个混合的 AOT 方案，它还实现了 JVM 解释器。
 Andy Rubin 先后在苹果 微软 谷歌公司工作过。
 
 ##.NET 与 AOT    
-说起.NET 就不得不谈到 [Anders Hejlsberg](http://zh.wikipedia.org/wiki/%E5%AE%89%E5%BE%B7%E6%96%AF%C2%B7%E6%B5%B7%E5%B0%94%E6%96%AF%E4%BC%AF%E6%A0%BC)此人，
-他来自丹麦，Turbo Pascal最开始就是他开发的，Delphi/C#之父，C#&.NET 的首席架构师，TypeScript 的首席架构师，主持开发了.NET Framework，Visual Basic.NET，
-以及最新的.NET 编译器 [Roslyn](http://msdn.microsoft.com/en-us/vstudio/roslyn.aspx) 。   
+说起.NET 就不得不谈到 [Anders Hejlsberg](http://zh.wikipedia.org/wiki/%E5%AE%89%E5%BE%B7%E6%96%AF%C2%B7%E6%B5%B7%E5%B0%94%E6%96%AF%E4%BC%AF%E6%A0%BC) 此人，
+他来自丹麦，Turbo Pascal 最开始就是他开发的，Delphi/C#之父，C#&.NET 的首席架构师，TypeScript 的首席架构师，主持开发了 .NET Framework，Visual Basic.NET，
+以及最新的 .NET 编译器 [Roslyn](http://msdn.microsoft.com/en-us/vstudio/roslyn.aspx) 。   
 值得注意的是 TypeScript 完全基于 ECMAScript 6标准草案开发，Java 的流行以至于微软也坐不住，在上个世纪末，微软也开发了自己的Java虚拟机，最初微软推出的是Visual J++，
 而在Anders加入微软后立即被委以重任，Visual J++在性能上甚至超越了Sun JVM，这个Sun带来了恐慌，Sun 以破坏兼容性将微软告上公堂，微软最终放弃了Java的开发，而C#与.NET也诞生了，
 .NET在设计上确实借鉴了Java的很多理念，并且超越了Java，这也是 Anders 从 Borland 就存在心中的构想。
