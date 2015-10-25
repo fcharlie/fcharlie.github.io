@@ -35,6 +35,13 @@ Git 支持多种协议 http, git , ssh, file ,以内部机制区分为哑协议�
 客户端通过 URL 直接拿取服务端的文件。  
 Git 智能协议实现了两类 RPC 调用，一个是 fetch-pack<->upload-pack, 另一个是 send-pack<->receive-pack。
 
+任何 Git 远程操作都需要获得远程仓库的引用列表，与自身的引用列表进行比对
+1. Fetch-Upload
+
+
+2. Send-Receive
+
+基于 HTTP 的智能协议和基于 SSH，Git 协议本质上并无太大的不同，都是通过这两类 RPC 调用，实现本地仓库和远程仓库的数据交换。
 
 ##Git 开发演进
 开发 Git 的人大多知道 libgit2,这是一个基于 C89 开发的 git 开发库，支持绝大多数 git 特性。
