@@ -65,7 +65,7 @@ git 仓库在磁盘上可以表现为两种形式，带有工作目录的普通�
 >mkdir gitrepo &&cd gitrepo &&git --init &&tree -a
 
 如下
-{% highlight %}
+{% highlight sh %}
 .
 ├── .git
 │   ├── branches
@@ -112,7 +112,7 @@ git 仓库在磁盘上可以表现为两种形式，带有工作目录的普通�
 
 >mkdir gitbare.git &&cd gitbare.git &&tree -a
 
-{% highlight  %}
+{% highlight  sh %}
 .
 ├── branches
 ├── config
