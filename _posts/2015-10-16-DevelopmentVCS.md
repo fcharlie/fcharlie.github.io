@@ -170,3 +170,11 @@ Git 智能协议实现了两类 RPC 调用，一个是 fetch-pack<->upload-pack,
 
 ##Subversion 兼容实现
 Github 基于 HTTP 协议的方式实现了对 Subversion 的兼容，而 GIT@OSC 基于 svn 协议方式实现了对 Subversion 的不完全兼容。
+
+##Subversion HTTP 协议实现
+
+在 Subversion 的路线图中，基于 WebDAV/DeltaV 的 HTTP 接入将被 基于 HTTP v2 的实现取代。
+
+
+[A Streamlined HTTP Protocol for Subversion](http://svn.apache.org/repos/asf/subversion/trunk/notes/http-and-webdav/http-protocol-v2.txt)
+##Subversion SVN 协议实现
