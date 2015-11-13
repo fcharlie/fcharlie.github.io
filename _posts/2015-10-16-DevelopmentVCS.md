@@ -182,20 +182,37 @@ Github 基于 HTTP 协议的方式实现了对 Subversion 的兼容，而 GIT@OS
 
 当客户端的连接过来时，服务器，通常说的 svnservice 将发送一段信息给客户端，告知服务器的能力。
 
-
+> ( minver:number maxver:number mechs:list ( cap:word ... ) )
 >( success ( 2 2 ( ) ( edit-pipeline svndiff1 absent-entries depth inherited-props log-revprops ) ) ) 
 
 
 Client
+> response: ( version:number ( cap:word ... ) url:string
+>              ? ra-client:string ( ? client:string ) )
 
 >( 2 ( edit-pipeline svndiff1 absent-entries depth mergeinfo log-revprops ) 36:svn://subversion.io/subversion/trunk 53:SVN/1.8.13-SlikSvn-1.8.13-X64 (x64-microsoft-windows) ( ) )
 
+
+服务器
+>( ( mech:word ... ) realm:string )
+
+realm [RFC2617](http://www.ietf.org/rfc/rfc2617.txt)
+
 >( success ( ( PLAIN ) 36:e967876f-5ea0-4ff2-9c55-ea2d1703221e ) ) 
 
-
+>( mech:word [ token:string ] )
+如果是 PLAIN 授权机制，这里就是用户名和密码经 Base64 编码了。
 > usernameNULpassword --> Base64 Encoded
 
+
 >( PLAIN ( 44:YWRtaW5Ac3VidmVyc2lvbi5pbyU1QzBwYXNzd29yZA== ) ) 
+
+这是服务器的下一步骤：
+
+>  challenge: ( step ( token:string ) )
+>           | ( failure ( message:string ) )
+>           | ( success [ token:string ] )
+
 
 >( failure ( 21:incorrect credentials ) ) 
 
