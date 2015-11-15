@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "基于清单的 Linux 服务启动器的实现"
+title:  "基于清单的启动器的实现"
 date:   2015-11-27 21:30:16
 categories: toolset
 ---
@@ -89,10 +89,32 @@ requestedPrivileges 表示运行的权限，asInvoker 表示同父进程一样�
 [Using System.Configuration.ConfigurationManager Example (C#)](http://blogs.msdn.com/b/aspnetue/archive/2008/10/02/system-configuration-configurationmanager-source-c.aspx)     
 
 ##LD 补全的 Launcher
+一般而言，Linux 进程依赖的 so 文件，如果不是通过 dlopen 动态加载的，都需要放到默认的 library 目录，也就是 /usr/lib, /usr/local/lib,
+或者是通过 export 命令设置 LD PATH，然后从 Shell 或 Shell 脚本启动进程。    
 
+>export LD_LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/lib
 
+比如 google chrome , p4merge 等大多是写一个 launcher 脚本。新的启动器基于 C++ 实现，使用 TOML 格式文件作为清单文件。 
 
-支持环境变量的解析
+###TOML 格式清单
+TOML (Tom's Obvious, Minimal Language) 是 Github 联合创始人 Tom Preston-Werner 设计的一种极简的配置文件，格式类似于 ini, 但比 ini 严格，
+支持整数，浮点，字符串，数组，布尔值，表格，时间日期。解析起来非常方便。主页 [Github TOML](https://github.com/toml-lang/toml)    
+
+TOML 格式清单如下：    
+{% highlight toml %}
+#launcher.manifest
+# OWNERDIR is process image directory
+[Launcher]
+LibraryPath="/opt/boost/lib"
+Path="${OWNERDIR}/../bin"
+Binary="launcher_child"
+{% endhighlight %}
+
+这里只设置了 LibraryPath Path Binary 。
+
+###清单的环境变量解析
+在上面的清单中，Path="${OWNERDIR}/../bin", 这需要解析，OWNERDIR 代表一个环境变量，这里是内置的，表示程序 launcher 自身的目录。 
+环境变量的解析如下：  
 {% highlight cpp %}
 /**
 *
@@ -317,6 +339,9 @@ bool BaseEnvironmentExpend(std::string &va) {
 }
 {% endhighlight %}
 
+###启动器的实现
+启动器启动后，查找清单文件，清单文件文件名为 launcher.manifest , 要作为其他进程的启动器，只需要重命名和修改清单文件即可。   
+Launcher 随后解析清单文件，并读取 LibraryPath, Path, Binray 等属性，设置好环境变量，最后通过 execvp 启动进程，输入的参数就是启动器的全部参数。   
 {% highlight cpp %}
 #include <stdio.h>
 #include <stdlib.h>
@@ -447,19 +472,11 @@ int main(int argc, char *const argv[]) {
   std::cout << "Subprocess result is: " << ret << std::endl;
   return 0;
 }
-
-{% endhighlight %}
-
-{% highlight toml %}
-#launcher.manifest
-# OWNERDIR is process image directory
-[Launcher]
-LibraryPath="/opt/boost/lib"
-Path="${OWNERDIR}/../bin"
-Binary="launcher_child"
 {% endhighlight %}
 
 
-##Java Native Launcher
+##Java Service Native Launcher
+由于工作需要，我曾经写过一个 Shell 的 Java 服务启动器。
+
 
 
