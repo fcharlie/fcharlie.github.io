@@ -476,7 +476,294 @@ int main(int argc, char *const argv[]) {
 
 
 ##Java Service Native Launcher
-由于工作需要，我曾经写过一个 Shell 的 Java 服务启动器。
+由于工作需要，我曾经写过一个 Shell 的 Java 服务启动器。如果不用第三方启动器，直接使用 JVM 官方启动器 java，
+需要输入很长的命令。比如运行 hello.jar 并传递参数，如下：       
+
+>java -jar hello.jar world
 
 
+
+如果运行的是一些服务，则可能是这样的：
+
+>java -server -Xms512m -Xmx512m -jar com.fuck.service.jar --poolsize=24 --ip=192.168.1.12
+
+很多时候，Java 开发者会使用 shell(batch) 脚本，或者第三方启动器来规避这些麻烦。
+
+###Java Service Manifest
+绝大多数人并不喜欢冗长的命令，我也不例外。   
+在设计 Java Launcher 的时候，我采用 TOML 格式作为启动器清单格式，文件格式如下      
+{% highlight toml %}
+#Launcher
+# OWNERDIR is process image directory
+[Runing]
+# limit 16 bytes
+Title="JSrv"
+IsService=true
+
+
+[Runtime]
+JDKPath="/opt/jdk"
+Package="${OWNERDIR}/app.jar"
+VMOptions=["-Xms512m","-Xmx512m"]
+ClassPath=["vendors"]
+
+[Service]
+IsDaemon=false
+# default -s --signal support stop restart
+EnableSignal=true
+PidFile="/tmp/jsrv.pids"
+Stdout="/opt/jsrv.stdout.log"
+Stderr="/opt/jsrv.stderr.log"
+DefaultArgs=["--config","config.example","--show-config"]
+{% endhighlight %}
+
+在这个清单文件中，我设计了两种模式，第一个是**基础模式**，也就是 IsService 为 false 的时候，这个时候，程序只会读取 Runtime 一节
+的所有配置信息。    
+* JDKPath 读取 jdk 所在目录，并查找到 libjvm.so 的位置。    
+* Package 是运行的 Jar 包的路径，也就是 MainClass 所在的Jar 包。
+* VMoptions 是 Java 虚拟机 运行参数， ClassPath 是 Jar 包所在目录。   
+
+在 基础模式中，所有输入的参数除了 Argv~0, 其他的参数都会被传递给 Java MainClass 。
+
+> jsrv helloworld
+
+假如 Package 是 hello.jar, 等价于：
+
+>java -Xms512m -Xmx512m -jar hello.jar helloworld
+
+另一种是 **服务模式** ，这种模式并不支持从命令行输入参数。当 IsService 为 true 时，启动器读取 Service 节的信息.    
+* IsDaemon 表示启动器是否以 守护进程的模式运行     
+* EnableSignal 表示开启 -s stop -s restart 参数    
+* PidFile 是记录守护进程 pid 的临时文件    
+* Stdout 是 stdout 重定向。  
+* Stderr 是 stderr 重定向     
+* DefaultArgs 这个数组是要传给 MainClass 的参数。    
+
+启动一个进程作为守护进程时，你需要将日志输出到文件。  
+
+一般而言，启动一个守护进程，先需要 fork 出一个子进程，然后退出父进程。 
+通过 setsid() 函数调用，让 init 进程收养它，使用 umask 设置默认权限，后面重定向标准输入输出，关闭文件句柄即可.       
+{% highlight cpp %}
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <stdint.h>
+#include <signal.h>
+#include <stdarg.h>
+#include <string.h>
+#include <fcntl.h>
+
+int create_daemon() {
+  int fd;
+  switch (fork()) {
+  case -1:
+    printf("fork() failed\n");
+    return -1;
+  case 0:
+    break;
+  default:
+    exit(0);
+  }
+  if (setsid() == -1) {
+    return -1;
+  }
+
+  umask(0);
+  fd = open("/dev/null", O_RDWR);
+  if (fd == -1) {
+    // open /dev/null failed
+    return -1;
+  }
+
+  if (dup2(fd, STDIN_FILENO) == -1) {
+    // dup2(STDIN) failed
+    return -1;
+  }
+
+  if (dup2(fd, STDOUT_FILENO) == -1) {
+    // dup2(STDOUT) failed
+    return -1;
+  }
+  if (fd > STDERR_FILENO) {
+    if (close(fd) == -1) {
+      return -1;
+    }
+  }
+  return 0;
+}
+{% endhighlight %}
+
+如果在 Windows 上运行一个守护进程，除了作为一个 Windows Service 还可以通过 WinMain 启动，在后台运行，如果从 main 启动，
+就需要关闭控制台，代码如下：   
+{% highlight cpp %}
+#include <cstdio>
+#include <Windows.h>
+
+int create_daemon()
+{
+  //do some thing and set io
+  FILE *fp;
+  if(freopen_s(&fp,"nul","w+b",stdout)!=0)
+    return -1;
+  fclose(fp);
+  if(freopen_s(&fp,"nul","w+b",stderr)!=0)
+    return -1;
+  fclose(fp);
+  FreeConsole();
+  return 0;
+}
+{% endhighlight %}
+
+启动器的处理流程可以借鉴上面的 LD 补全 启动器，在读取清单时，解析完 Runtime 一节后，读取 Runing.IsService 的信息，
+如果不为真，则返回，这时候执行的是基础模式，否则，继续读取 Service 一节的信息。  
+返回值如下：    
+{% highlight cpp %}
+enum KLauncherChannel {
+  kBasicVMRuntime = 0,
+  kServiceVMRuntime = 1,
+  kUnknownVMRuntime
+};
+{% endhighlight %}
+
+如果是服务模式还需要解析命令行参数，参数帮助信息如下：   
+{% highlight cpp %}
+static const char *kUsage =
+    "Usage: %s [options] <input> \n"
+    "    Flags:\n"
+    "        -h [-?|--help]\tprint jsrv usage information and exit\n"
+    "        -v [--version]\tprint jsrv version and exit\n"
+    "        -s [--signal]\tsend a signal to jsrv,argument: stop|restart  "
+    "\n";
+{% endhighlight %}
+
+解析完毕后，最后启动 JVM,执行代码并没有多少不同，执行 MainClass 的函数分别如下：   
+{% highlight cpp%}
+ int Exe(int Argc, char **Argv); /// Base mode
+ int Exe(std::vector<std::string> Args); /// Service mode
+{% endhighlight %}
+
+###JVM 的启动流程
+各个平台上的 java 以及 Windows 平台的 javaw 依然也只是 JVM 的一个启动器，这类程序需要通过调用 jvm.dll 或者 libjvm.so 导出的
+函数来启动 JVM。
+
+清单中设置了 JDKPath 信息，在 Linux 中，以 jdk8 为例，64位系统 libjvm.so 是 $JDKPath/jre/lib/amd64/server/libjvm.so，
+如果找不到 libjvm.so, 启动器还会从 /usr/lib/libjvm.so 。
+
+找到 libjvm.so 后，可以使用 dlopen 打开一个动态库句柄，dlsym 查找 Symbol, 获得函数地址，在 Windows 中 分别是 LoadLibrary 和 GetProcAddress    
+函数大致如下：   
+{% highlight cpp %}
+typedef jint (*VMInitMethord)(JavaVM **pvm, JNIEnv **env, void *args);
+
+static bool SearchJDKPath(const std::string &jdkPath, std::string &libjvm) {
+#ifdef __x86_64__
+  libjvm = jdkPath + "/jre/lib/amd64/server/libjvm.so";
+#else
+  libjvm = jdkPath + "/jre/lib/server/libjvm.so";
+#endif
+  if (access(libjvm.c_str(), X_OK) == 0)
+    return true;
+ // JDK9
+#ifdef __x86_64__
+  libjvm = jdkPath + "/lib/amd64/server/libjvm.so";
+#else
+  libjvm = jdkPath + "/lib/server/libjvm.so";
+#endif
+  if (access(libjvm.c_str(), X_OK) == 0)
+    return true;
+  if (access("/usr/lib/libjvm.so", X_OK) != 0)
+    return false;
+  libjvm = "/usr/lib/libjvm.so";
+  return true;
+}
+
+bool VMRuntime::VMRuntimeBind() {
+  std::string libjvm;
+  if (!SearchJDKPath(rc_.jdkdir, libjvm)) {
+    std::cerr << "Cannot found libjvm.so, jdk path is: " << rc_.jdkdir
+              << std::endl;
+    return false;
+  }
+  if ((vmHandle = dlopen(libjvm.c_str(), RTLD_NOW + RTLD_GLOBAL)) == nullptr) {
+    std::cerr << "Failure: dlopen open libjvm.so failed. " << std::endl;
+    return false;
+  }
+  if ((vmcall = (VMInitMethord)dlsym(vmHandle, "JNI_CreateJavaVM")) ==
+      nullptr) {
+    std::cerr << "Failure: cannot resolve JNI_CreateJavaVM !" << std::endl;
+    dlclose(vmHandle);
+    vmHandle = nullptr;
+    return false;
+  }
+  return true;
+}
+{% endhighlight %}
+
+成功得到 JNI_CreateJavaVM 函数指针后，就该设置 JavaVMOption 类型变量，上面的 清单中的 VMOptions 要依次绑定到 JavaVMOption,
+ClassPath 目录下的 jar 包，以及 Package 要绑定到 -Djava.class.path 上， 然后调用 JNI_CreateJavaVM 函数指针，获得一个 JavaVM 对象和
+JNIEnv 对象。
+
+Jar 包是基于 zip 格式的文件，内部的 META-INF/MANIFEST.MF 这一清单文件记录了 清单版本，Main-Class 以及 Class-Path, 可以从 Jar 包里面读取
+MainClass 。   
+我使用了 Github 用户 slyfoxza [slyfoxza/minecraftd](https://github.com/slyfoxza/minecraftd/blob/master/src/JarReader.cpp) 的 JarReader来获取
+MainClass,不过遗憾的是，通过 JarReader 得到的 MainClass 是用 '.' 区分的，而 FindClass 需要 '/' 区分。 我是用了一个帮助函数来替换所有的 点。  
+{% highlight cpp %}
+static void Replace(std::string &s, char c1, char c2) {
+  for (auto &c : s) {
+    if (c == c1)
+      c = c2;
+  }
+}
+{% endhighlight %}
+
+使用 env->FindClass 获取 MainClass, 类型为 jclass, 使用 env->GetStatuucMethodID 获取 MainClass 的方法 main, 后面就是将 参数转成 JVM String[] 类型
+随后调用静态方法即可， 大致如下：     
+{% highlight cpp %}
+int VMRuntime::Exe(std::vector<std::string> Args) {
+  if (!InitVMEnv()) {
+    std::cout << "Initialize VM failed !" << std::endl;
+    return 1;
+  }
+  JarReader jarReader(rc_.package);
+  auto mainClassString = jarReader.getMainClassName();
+  Replace(mainClassString, '.', '/');
+  jclass mainClass = env->FindClass(mainClassString.c_str());
+  if (!mainClass) {
+    std::cout << __LINE__ << " Cannot find MainClass: " << mainClassString
+              << std::endl;
+    return 2;
+  }
+  jmethodID mainMethod =
+      env->GetStaticMethodID(mainClass, "main", "([Ljava/lang/String;)V");
+  if (!mainMethod) {
+    std::cout << __LINE__ << "Cannot GetStaticMetodID " << std::endl;
+    return 3;
+  }
+  jclass stringClass = env->FindClass("java/lang/String");
+  jobjectArray args = env->NewObjectArray(Args.size(), stringClass, NULL);
+  int i = 0;
+  for (auto &Arg : Args) {
+    jstring jni_arg = env->NewStringUTF(Arg.c_str());
+    env->SetObjectArrayElement(args, i++, jni_arg);
+    env->DeleteLocalRef(jni_arg);
+  }
+  env->CallStaticVoidMethod(mainClass, mainMethod, args);
+  // env->ExceptionDescribe();
+  jthrowable exc = env->ExceptionOccurred();
+  if (exc) {
+
+    env->ExceptionDescribe();
+    env->ExceptionClear();
+    jclass newExcCls = env->FindClass("java/lang/IllegalArgumentException");
+    if (!newExcCls) {
+      env->ThrowNew(newExcCls, "Throw Exception");
+    }
+    return 4;
+  }
+  return 0;
+}
+{% endhighlight %}
+
+程序退出的时候需要析构这些对象。
+
+实际上一个大致的 JVM Launcher 也就这样了。
 
