@@ -480,6 +480,16 @@ LLILC 依然是非常的不完善，最后的究竟怎样仍需观望。
 
 从 .NET 还是 JVM 或者是 LLVM 来看，很多东西都是相似的，技术也在互相影响和渗透。
 
+###.NET Core Runtime & .NET Native
+
+[.NET Core Runtime](https://github.com/dotnet/corert)  
+
+[Introducing .NET Core: A Cross-Platform Runtime ](https://channel9.msdn.com/Events/Visual-Studio/Connect-event-2015/104)
+
+>dotnet compile --native   
+
+
+
 ##探索的脚步 
 
 ###4.1 CSNative
