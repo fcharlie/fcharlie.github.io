@@ -57,8 +57,9 @@ Mercurial 使用 Python 实现，或许这一点也限制了 Mercurial 的发展
 
 
 ##Git 技术内幕
-本节主要介绍 Git 的存储和传输
-###Git 存储
+本节主要介绍 Git 的存储和传输    
+
+###Git 存储     
 git 仓库在磁盘上可以表现为两种形式，带有工作目录的普通仓库和不带工作目录的裸仓库。   
 我们可以创建一个标准仓库：    
 
@@ -156,13 +157,65 @@ Git 支持多种协议 http, git , ssh, file ,以内部机制区分为哑协议�
 客户端通过 URL 直接拿取服务端的文件。  
 Git 智能协议实现了两类 RPC 调用，一个是 fetch-pack<->upload-pack, 另一个是 send-pack<->receive-pack。
 
-任何 Git 远程操作都需要获得远程仓库的引用列表，与自身的引用列表进行比对
-1. Fetch-Upload
-```
+任何 Git 远程操作都需要获得远程仓库的引用列表，与自身的引用列表进行比对      
 
-```
+这里以 HTTP 为例
+1. Fetch-Upload      
+Step 1:   
+Request       
+{% highlight sh %}
+C: GET $GIT_URL/info/refs?service=git-upload-pack HTTP/1.0
+{% endhighlight %}
+
+Response 
+{% highlight  sh %}
+S: 200 OK
+S: Content-Type: application/x-git-upload-pack-advertisement
+S: Cache-Control: no-cache
+S:
+S: 001e# service=git-upload-pack\n
+S: 004895dcfa3633004da0049d3d0fa03f80589cbcaf31 refs/heads/maint\0multi_ack\n
+S: 0042d049f6c27a2244e12041955e262a404c7faba355 refs/heads/master\n
+S: 003c2cb58b79488a98d2721cea644875a8dd0026b115 refs/tags/v1.0\n
+S: 003fa3c2e2402b99163d1d59756e5f207ae21cccba4c refs/tags/v1.0^{}\n
+{% endhighlight %}
+
+
+Step 2:    
+Request    
+{% highlight sh %}
+C: POST $GIT_URL/git-upload-pack HTTP/1.0
+C: Content-Type: application/x-git-upload-pack-request
+C:
+C: 0032want 0a53e9ddeaddad63ad106860237bbf53411d11a7\n
+C: 0032have 441b40d833fdfa93eb2908e52742248faf0ee993\n
+C: 0000
+{% endhighlight %}
+
+Response     
+{% highlight sh %}
+S: 200 OK
+S: Content-Type: application/x-git-upload-pack-result
+S: Cache-Control: no-cache
+S:
+S: ....ACK %s, continue
+S: ....NAK
+{% endhighlight %}
 
 2. Send-Receive
+实际上 push 的过程也是 GET 和 POST， 只不过，git-upload-pack 要变成 git-receive-pack ，POST 时，后者请求体中包含有 差异 package。 
+
+对于 git HTTP 来说，权限验证通常是 HTTP 的一套，也就是 WWW-Authenticate， 绝大多数的 HTTP 服务器也就支持 Basic。    
+即：    
+
+>user:password ->Base64 encode -->dXNlcjpwYXNzd29yZA==
+
+所以从安全上来说，如果使用 HTTP 而不是 HTTPS ， 对 GIT 远程仓库进行写操作简直就是在裸奔。    
+
+git HTTP 支持的 HTTP 返回码并不多， 200 30x 304 403 404 410  
+
+关于 HTTP 的更多文档细节可以去这个地址查看：
+[HTTP Protocol](https://www.kernel.org/pub/software/scm/git/docs/technical/http-protocol.html) 
 
 基于 HTTP 的智能协议和基于 SSH，Git 协议本质上并无太大的不同，都是通过这两类 RPC 调用，实现本地仓库和远程仓库的数据交换。
 
