@@ -240,22 +240,19 @@ SSH 则是通过 ssh 服务器在远程机器上运行 git-xxx-pack ，数据传
 
 
 
-
 ##Subversion 内幕
+此部分中 SVN 协议指 Subversion 客户端通过 TCP 3690 端口 访问 svnserver (以及兼容的服务程序) 的协议，即 Subversion protocol
+
 与  Git 完全不同的是，svn 的仓库存储在远程中央服务器上，开发者检出的代码只是特定版本，特定目录的代码，本地为工作目录。
 
-
-##Subversion 兼容实现
-Github 基于 HTTP 协议的方式实现了对 Subversion 的兼容，而 GIT@OSC 基于 svn 协议方式实现了对 Subversion 的不完全兼容。
-
-##Subversion HTTP 协议实现
+###Subversion HTTP 协议实现
 
 在 Subversion 的路线图中，基于 WebDAV/DeltaV 的 HTTP 接入将被 基于 HTTP v2 的实现取代。
 
 
 [A Streamlined HTTP Protocol for Subversion](http://svn.apache.org/repos/asf/subversion/trunk/notes/http-and-webdav/http-protocol-v2.txt)      
 
-##Subversion SVN 协议实现
+###Subversion SVN 协议实现
 与 HTTP 不同的是，一个完整的基于 SVN 协议的连接中，仓库的操作是上下文相关的。
 
 当客户端的连接过来时，服务器，通常说的 svnservice 将发送一段信息给客户端，告知服务器的能力。
@@ -340,13 +337,31 @@ Success
 ( success ( ) )
 {% endhighlight %}
 
+随后服务器再发送存储库 UUID, capabilities 给客户端
+{% highlight sh %}
+S: ( uuid:string repos-url:string ( cap:word ... ) )
+{% endhighlight %}
 
+Example:   
+{% highlight sh %}
+( ( 36:0f475597-c342-45b4-88c5-7dc0857b8ba4 36:svn://subversion.io/subversion/trunk ( edit-pipeline svndiff1 absent-entries depth inherited-props log-revprops ))
+{% endhighlight %}
 
-大多数协议细节可以从 Subversion 官方存储库查看 
+如果是 svn up/commit 或者其他的操作，这个时候会检查 uuid 是否匹配，当然也会检查 URL 是否匹配。
+
+如果客户端觉得一切都 OK 啦，那么就会开始下一阶段的操作，command 模式，这些规则可以从 Subversion 官方存储库查看 
 [Subversion Protocol](http://svn.apache.org/repos/asf/subversion/trunk/subversion/libsvn_ra_svn/protocol)    
 
-##Subversion 协议代理服务器的实现
+与 GIT 或者 SVN HTTP 不同的是，一个完整的 基于 svn 协议的 SVN 操作，只需要建立一次 socket，Subversion 客户端此时是阻塞的，并且屏蔽了 Ctrl+C 等
+信号， 仓库体积巨大时，这种对连接资源的占用非常突出，因为有数据读取， socket 并不会超时。单纯按并发来算，svn 服务器的并发就收到了限制。
 
+###Subversion 兼容实现
+Github 基于 HTTP 协议的方式实现了对 Subversion 的兼容，而 GIT@OSC 基于 svn 协议方式实现了对 Subversion 的不完全兼容。
+
+
+
+###Subversion 协议代理服务器的实现
+上一节分析了 SVN 协议
 
 
 
