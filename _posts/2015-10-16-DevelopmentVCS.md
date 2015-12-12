@@ -238,7 +238,7 @@ SSH 则是通过 ssh 服务器在远程机器上运行 git-xxx-pack ，数据传
 
 对于 GIT 操作，只需要实现 4个函数。
 
-{% highlight thrift%}
+{% highlight cpp%}
 service GitSmartService{
 	i32 Checksum(1:i32 client);
 	string FetchRemoteReferences(1:string repositoryPath);
@@ -380,7 +380,7 @@ Github 基于 HTTP 协议的方式实现了对 Subversion 的兼容，而 GIT@OS
 
 
 ###Subversion 协议代理服务器的实现
-上一节分析了 SVN 协议
+前文分析了 SVN 协议
 
 
 
