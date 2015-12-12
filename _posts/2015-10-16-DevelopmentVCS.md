@@ -232,8 +232,27 @@ SSH 则是通过 ssh 服务器在远程机器上运行 git-xxx-pack ，数据传
 ##Git 开发演进
 虽然 GIT 是分布式版本控制，但是对于代码托管平台来说又是一回事了。对于 HTTP 协议来说，像 NGINX 一样的服务器只需要实现动态 IP,
 然后通过 proxy 或者是 upstream 的方式实现 GIT 代码托管平台的 分布式就可以了。但是对于 SSH 来说比较麻烦。   
-###基于 RPC 的 GIT 分布式设计
 
+###基于 RPC 的 GIT 分布式设计
+分布式框架很多，其中著名的有 Apache Thrift ,此项目是 Facebook 开源并贡献给 Apache 基金会的，支持多种语言。  
+
+对于 GIT 操作，只需要实现 4个函数。
+
+{% highlight thrift%}
+service GitSmartService{
+	i32 Checksum(1:i32 client);
+	string FetchRemoteReferences(1:string repositoryPath);
+	binary FetchRemoteDiffPackage(1:string repositoryPath, 2:string clientReferences)
+	string PushRemoteRefereces(1:string repositoryPath);
+	string PushRemoteDiffPackage(1:string repositoryPath, 2:binary clientPackage);
+}
+{% endhighlight %}
+
+前端服务器上，编写 模拟 git-upload-pack 或者是 git-receive-pack 的程序。 
+存储服务器通过 pipe 读取存储机器上的 git-upload-pack /git-receive-pack 的输入输出即可。
+
+这个唯一的问题是实现异步比较麻烦，两者都需要实现异步模式，git 仓库可能非常大，一次性克隆传输数据几百 MB 或者上 GB, 
+这个时候 4nK 发非常必要。
 
 ###基于 libgit2 的 smart 协议实现
 开发 Git 的人大多知道 libgit2,这是一个基于 C89 开发的 git 开发库，支持绝大多数 git 特性。
