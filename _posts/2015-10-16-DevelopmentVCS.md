@@ -230,7 +230,8 @@ SSH 则是通过 ssh 服务器在远程机器上运行 git-xxx-pack ，数据传
 一些更多的技术内幕可以参考 社区大作 《Pro Git》
 
 ##Git 开发演进
-
+虽然 GIT 是分布式版本控制，但是对于代码托管平台来说又是一回事了。对于 HTTP 协议来说，像 NGINX 一样的服务器只需要实现动态 IP,
+然后通过 proxy 或者是 upstream 的方式实现 GIT 代码托管平台的 分布式就可以了。但是对于 SSH 来说比较麻烦。   
 ###基于 RPC 的 GIT 分布式设计
 
 
@@ -259,38 +260,93 @@ Github 基于 HTTP 协议的方式实现了对 Subversion 的兼容，而 GIT@OS
 
 当客户端的连接过来时，服务器，通常说的 svnservice 将发送一段信息给客户端，告知服务器的能力。
 
-> ( minver:number maxver:number mechs:list ( cap:word ... ) )
->( success ( 2 2 ( ) ( edit-pipeline svndiff1 absent-entries depth inherited-props log-revprops ) ) ) 
+{% highlight sh %}
+S: ( minver:number maxver:number mechs:list ( cap:word ... ) )
+{% endhighlight %}
+
+Example:   
+{% highlight sh %}
+( success ( 2 2 ( ) ( edit-pipeline svndiff1 absent-entries depth inherited-props log-revprops ) ) ) 
+{% endhighlight %}
 
 
-Client
-> response: ( version:number ( cap:word ... ) url:string
->              ? ra-client:string ( ? client:string ) )
+这个时候客户端获知了这些数据，如果无法兼容，服务器，那么将断开与服务器的连接，否则，将发送请求数据给服务器，格式如下：      
+{% highlight sh %}
+C: response: ( version:number ( cap:word ... ) url:string
+              ? ra-client:string ( ? client:string ) )
+{% endhighlight %}
 
->( 2 ( edit-pipeline svndiff1 absent-entries depth mergeinfo log-revprops ) 36:svn://subversion.io/subversion/trunk 53:SVN/1.8.13-SlikSvn-1.8.13-X64 (x64-microsoft-windows) ( ) )
+Example:    
+{% highlight sh %}
+( 2 ( edit-pipeline svndiff1 absent-entries depth mergeinfo log-revprops ) 36:svn://subversion.io/subversion/trunk 53:SVN/1.8.13-SlikSvn-1.8.13-X64 (x64-microsoft-windows) ( ) )
+{% endhighlight %}
+
+与 GIT 数据包类似的地方有一点，git 每一行数据前 4 个16进制字符代表本行的长度，而 这里的 10 进制字符代表 字符的长度，比如 URL 长度36，UA 53。
+
+服务器此时的行为就得通过解析 URL 获得中央仓库的位置，判断协议是否兼容，而 UA 有可能为空，格式并不是非常标准，所以这是值得注意的地方。  
+
+服务器将决定使用那种授权方式，MD5 一般是 Subversion 客户端默认的，无法第三方库支持，而 PLAIN 和 ANONYMOUS 需要 SASL 模块的支持，
+在 Ubuntu 上编译 svn,先安装 libsasl2-dev。
 
 
-服务器
->( ( mech:word ... ) realm:string )
+{% highlight sh %}
+S: ( ( mech:word ... ) realm:string )
+{% endhighlight %}
 
+
+客户端不支持此授权方式时，会输出错误信息，“无法协商验证方式”
+
+这里的 Realm 是 subversion 客户端存储用户账户用户名和密码信息的一个 key,只要 realm 一致，就会取相同的 用户名和密码。 
 realm [RFC2617](http://www.ietf.org/rfc/rfc2617.txt)
 
->( success ( ( PLAIN ) 36:e967876f-5ea0-4ff2-9c55-ea2d1703221e ) ) 
+Example:   
+{% highlight sh %}
+( success ( ( PLAIN ) 36:e967876f-5ea0-4ff2-9c55-ea2d1703221e ) ) 
+{% endhighlight %}
 
->( mech:word [ token:string ] )
-如果是 PLAIN 授权机制，这里就是用户名和密码经 Base64 编码了。
+如果是 MD5 ，验证协商如下：    
+{% highlight sh %}
+S: ( mech:word [ token:string ] )
+{% endhighlight %}
+这个 Token 是随机生成的 UUID, C++ 可以使用 boost 生成，也可以使用平台的 API 生成。   
+
+如果是 PLAIN 授权机制，这里就是用户名和密码经 Base64 编码了, 用 NUL(0) 分隔   
+
 > usernameNULpassword --> Base64 Encoded
 
+Example:   
+{% highlight sh %}
+( PLAIN ( 44:YWRtaW5Ac3VidmVyc2lvbi5pbyU1QzBwYXNzd29yZA== ) ) 
+{% endhighlight %}
 
->( PLAIN ( 44:YWRtaW5Ac3VidmVyc2lvbi5pbyU1QzBwYXNzd29yZA== ) ) 
+对于纯 svn 协议来说，使用 PLAIN 并不安全，且当 Subversion 只作为 GIT 代码托管平台的一个服务来说，
+使用 CRAM-MD5 并不利于服务整合，这也是一个缺陷了。
+
 
 这是服务器的下一步骤：
+{% highlight sh %}
+S:  challenge: ( step ( token:string ) )
+S:           | ( failure ( message:string ) )
+S:           | ( success [ token:string ] )
+{% endhighlight %}
 
->  challenge: ( step ( token:string ) )
->           | ( failure ( message:string ) )
->           | ( success [ token:string ] )
+Incorrect credentials:         
+{% highlight sh %}
+( failure ( 21:incorrect credentials ) ) 
+{% endhighlight %}
+
+Success    
+{% highlight sh %}
+( success ( ) )
+{% endhighlight %}
 
 
->( failure ( 21:incorrect credentials ) ) 
 
->( success ( ) )
+大多数协议细节可以从 Subversion 官方存储库查看 
+[Subversion Protocol](http://svn.apache.org/repos/asf/subversion/trunk/subversion/libsvn_ra_svn/protocol)    
+
+##Subversion 协议代理服务器的实现
+
+
+
+
