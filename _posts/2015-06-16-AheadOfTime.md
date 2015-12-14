@@ -480,13 +480,32 @@ LLILC 依然是非常的不完善，最后的究竟怎样仍需观望。
 
 从 .NET 还是 JVM 或者是 LLVM 来看，很多东西都是相似的，技术也在互相影响和渗透。
 
-###.NET Core Runtime & .NET Native   
-近期，.NET 推出了 .NET Core Runtime (CoreRT) 的项目，此项目和 .NET Core CLR 不同的是，CoreRT 提供了一套 .NET Native 的机制。
-即不使用 CoreCLR 而实现 .NET 应用在宿主机器上原生运行，此项目的代码来源于 CoreCLR ，也有部分与 UWA .NET Native 的代码类似。
+###.NET Core Runtime (CoreRT)    
+近期，.NET 推出了 .NET Core Runtime (CoreRT) 的项目，此项目和 .NET Core Runtime (CLR) 不同的是，CoreRT 提供了一套 
+.NET AOT 的机制,可以将 .NET 程序 编译成原生代码，不依赖 .NET 运行时而运行在宿主机器上。此项目的大部分代码来源于 CoreCLR ，
+也有部分与 UWA .NET Native 的代码类似。
+
+这种 AOT 的优化的好处，文档中也有介绍   
+- 编译后生成一个单文件，所有的依赖，包括 CoreRT    
+- 启动时是机器码，不需要生成机器码，也不要加载 JIT 编译器    
+- 可以使用其他优化编译器，包括 LLILC ,IL to CPP
+
+目前支持的是 Console App, 计划支持 ASP.NET 。 
+
+CoreRT 有两个方式生成机器码，第一个 使用是直接编译 IL 成机器码，默认情况下， RyuJIT 作为一个 AOT 编译器将 IL 编译成机器码，
+实际上这是一个很巧妙的策略，在 CoreCLR 中， RyuJIT 又变成了一个简单的 JIT 编译器。在前文中提到的 LLILC ，也可以作为 CoreRT 的
+AOT 编译器。
+
+另一个方式是将 C# 代码编译成 C++ 代码，然后调用对应平台的 C++ 编译器优化编译成机器码。
+
+在 CoreRT 介绍文档中， 提到了 UTC for UWP apps  也可以作为 CoreRT 的 AOT 编译器 
+
 
 项目地址： [.NET Core Runtime](https://github.com/dotnet/corert)   
 
 Channel9 视频： [Introducing .NET Core: A Cross-Platform Runtime ](https://channel9.msdn.com/Events/Visual-Studio/Connect-event-2015/104)
+
+CoreRT 介绍：  [Intro to .NET Native and CoreRT](https://github.com/dotnet/corert/blob/master/Documentation/intro-to-corert.md)
 
 目前，在 dotnet.github.io 页面可以获取 Windows , Ubuntu, 以及 Mac OS X 的安装包，这个是每日构建的。   
 
@@ -506,7 +525,7 @@ Channel9 视频： [Introducing .NET Core: A Cross-Platform Runtime ](https://ch
 
 >dotnet compile --native --cpp
 
-实际上此项目还相当不完善，不过可以预见此项目会给人们带来眼前一亮的感觉。  
+实际上此项目还相当不完善，dotnet 工具链偶尔是无法运行的，不过可以预见此项目会给人们带来眼前一亮的感觉。  
 
 ##探索的脚步 
 
