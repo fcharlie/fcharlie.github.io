@@ -5,7 +5,7 @@ date:   2015-06-11 16:58:16
 categories: container
 ---
 
-##Windows 权限策略的发展
+##Windows 权限策略的发展      
 从 Windows 8开始，我在使用 Windows 系统的同时也就不再关闭 UAC 了，并且不再安装任何国产的安全软件，这些软件仗着运行在管理员权限上肆意的推行
 “全家桶策略”，Windows 多年来一直是最流行的操作系统，大多数人的焦点都会放在上面，也包括黑客，各种企业，早期Windows系统在权限的管理上非常粗放。
 无论是恶意软件还是其他软件都可以获得较高的权限，这样就能够对系统大肆修改，并且直接或间接破化系统，收集数据，妨碍竞争对手。   
@@ -17,7 +17,7 @@ Windows XP 是历史上最受欢迎的版本之一，然而，一直以来XP的�
 权限被极大的限制，很多危险的操作无法进行，微软通过 Windows Store 进行应用分发，能够控制来源，这样能够极大的降低恶意软件的困扰。   
 而 AppContainer 同样能够支持传统的 Desktop 应用，本文将介绍 通过 AppContainer 启动一个桌面程序，当然，先从降权说起。
 
-##UAC 降权
+##UAC 降权    
 基于 Win32 的应用程序，如果要提权，非常简单，第一可以在 manifest 文件中写入 'requireAdministrator' Visual Studio 项目属性中可以设置。
 
 {% highlight xml %}
@@ -61,10 +61,12 @@ Windows XP 是历史上最受欢迎的版本之一，然而，一直以来XP的�
 
 {% endhighlight %}   
 使用这些接口创建一个计划任务，值得注意的是，计划任务的创建需要管理员权限运行，本程序的功能就是从管理员降权到标准用户，所以这个限制没有影响。  
-在这个过程中最有价值的代码是：  
+在这个过程中最有价值的代码是：   
+ 
 {% highlight cpp %}  
  DO(iPrin->put_RunLevel(TASK_RUNLEVEL_LUA))
-{% endhighlight %}    
+{% endhighlight %}     
+
 [MSDN](https://msdn.microsoft.com/en-us/library/windows/desktop/aa383572(v=vs.85).aspx) 的描述中，表示以较低权限运行，与之对应的是 “TASK_RUNLEVEL_HIGHEST”。 
 通过计划任务降权的完整代码： [UAC 降权测试](https://github.com/fstudio/Phoenix/blob/master/test/Container/uacdown.cpp) 
 从 Process Explorer 的进程属性就可以看到：
@@ -72,7 +74,7 @@ Windows XP 是历史上最受欢迎的版本之一，然而，一直以来XP的�
 如果用户名是内置的 Administrator，并且开启了 [对内置管理员使用批准模式](https://technet.microsoft.com/zh-cn/library/dd834795.aspx) 至少在Windows 8.1 (Windows Server 2012 R2)会失败的。
 所以这个时候需要采取第二种策略。
 
-##使用 Explorer 的 Token 启动进程
+##使用 Explorer 的 Token 启动进程    
 简单点就是拿桌面进程的 Token，然后使用桌面的 Token 启动进程。这需要桌面正在运行 （Explorer 作为桌面进程正在运行），也就是常说的桌面得存在，并且权限是标准的。
 
 {% highlight cpp %}
@@ -156,7 +158,7 @@ cleanup:
 
 当然，通过人肉合成一个 Token 启动进程也是能够实现降低程序权限的，这些比较复杂，本文也就不细说了。
 
-##启动低完整性进程
+##启动低完整性进程     
 强制完整性控制（英语：Mandatory Integrity Control）是一个在微软Windows操作系统中从Windows Vista开始引入，并沿用到后续版本系统的核心安全功能。强制完整性控制通过完整性级别标签来为运行于同一登录会话的进程提供隔离。此机制的目的是在一个潜在不可信的上下文（与同一账户下运行的其他较为可信的上下文相比）中选择性地限制特定进程和软件组件的访问权限。
 Windows Vista 定义了四个完整性级别:
 
@@ -368,10 +370,10 @@ int wmain(int argc,wchar_t *argv[])
     return 0;
 }
 {% endhighlight %}
-使用 Process Explorer 查看进程属性可得到下图：
+使用 Process Explorer 查看进程属性可得到下图：     
 ![AppContainer](https://raw.githubusercontent.com/fstudio/Phoenix/master/doc/Container/Images/appcontainer.png)   
 
-当我们操作时，可以看到如下结果：
+当我们操作时，可以看到如下结果：   
 ![Open](https://raw.githubusercontent.com/fstudio/Phoenix/master/doc/Container/Images/appcontainer-open.png)   
 
 除了 IE ,Google 的开源浏览器 Chromium 也在沙箱代码中添加了 AppContainer 的支持：  

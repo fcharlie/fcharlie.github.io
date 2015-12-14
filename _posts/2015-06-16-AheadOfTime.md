@@ -480,15 +480,33 @@ LLILC 依然是非常的不完善，最后的究竟怎样仍需观望。
 
 从 .NET 还是 JVM 或者是 LLVM 来看，很多东西都是相似的，技术也在互相影响和渗透。
 
-###.NET Core Runtime & .NET Native
+###.NET Core Runtime & .NET Native   
+近期，.NET 推出了 .NET Core Runtime (CoreRT) 的项目，此项目和 .NET Core CLR 不同的是，CoreRT 提供了一套 .NET Native 的机制。
+即不使用 CoreCLR 而实现 .NET 应用在宿主机器上原生运行，此项目的代码来源于 CoreCLR ，也有部分与 UWA .NET Native 的代码类似。
 
-[.NET Core Runtime](https://github.com/dotnet/corert)  
+项目地址： [.NET Core Runtime](https://github.com/dotnet/corert)   
 
-[Introducing .NET Core: A Cross-Platform Runtime ](https://channel9.msdn.com/Events/Visual-Studio/Connect-event-2015/104)
+Channel9 视频： [Introducing .NET Core: A Cross-Platform Runtime ](https://channel9.msdn.com/Events/Visual-Studio/Connect-event-2015/104)
 
+目前，在 dotnet.github.io 页面可以获取 Windows , Ubuntu, 以及 Mac OS X 的安装包，这个是每日构建的。   
+
+初始化一个 dotnet 项目
+
+>dotnet init
+
+安装依赖
+
+>dotnet restore
+
+直接使用 RyuJIT 编译成机器码：    
+ 
 >dotnet compile --native   
 
+编译生成 C++ 代码：   
 
+>dotnet compile --native --cpp
+
+实际上此项目还相当不完善，不过可以预见此项目会给人们带来眼前一亮的感觉。  
 
 ##探索的脚步 
 
