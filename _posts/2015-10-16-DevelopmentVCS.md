@@ -229,15 +229,16 @@ SSH 则是通过 ssh 服务器在远程机器上运行 git-xxx-pack ，数据传
 
 一些更多的技术内幕可以参考 社区大作 《Pro Git》
 
-##Git 开发演进
+##Git 代码托管平台的开发演进     
 虽然 GIT 是分布式版本控制，但是对于代码托管平台来说又是一回事了。对于 HTTP 协议来说，像 NGINX 一样的服务器只需要实现动态 IP,
 然后通过 proxy 或者是 upstream 的方式实现 GIT 代码托管平台的 分布式就可以了。但是对于 SSH 来说比较麻烦。   
 
-###基于 RPC 的 GIT 分布式设计
-分布式框架很多，其中著名的有 Apache Thrift ,此项目是 Facebook 开源并贡献给 Apache 基金会的，支持多种语言。  
-
-对于 GIT 操作，只需要实现 4个函数。
-
+###基于 RPC 的 GIT 分布式设计    
+客户端访问仓库时，路由智能到达 DNS 所记录的机器或者是无差别代理的机器(前端机器)，往往不能到达特定的存储机器，
+开发者使用分布式文件系统或者 分布式 RPC 或者代理等多种方案实现 前端到存储的关键一步。这里主要说分布式 RPC 与
+GIT smart 的应用。     
+分布式 RPC 框架很多，其中著名的有 Apache Thrift ,此项目是 Facebook 开源并贡献给 Apache 基金会的，支持多种语言。   
+对于 GIT 操作，只需要实现 4个函数。一下是 Thrift 接口文件的一部分：    
 {% highlight cpp%}
 service GitSmartService{
 	i32 Checksum(1:i32 client);
@@ -248,14 +249,57 @@ service GitSmartService{
 }
 {% endhighlight %}
 
-前端服务器上，编写 模拟 git-upload-pack 或者是 git-receive-pack 的程序。 
-存储服务器通过 pipe 读取存储机器上的 git-upload-pack /git-receive-pack 的输入输出即可。
+然后存储服务器通过 pipe 读取存储机器上的 git-upload-pack /git-receive-pack 的输入输出。
+在 Linux 上通过管道读取 git upload-pack 的输出：     
+{% highlight cpp%}
+int FetchRemoteReferencesCli(std::string &result,const std::string &path){
+	result.clear();
+	int pid,fd[2];
+	if(pipe(fd)<0){
+		printf("oops\n");
+	}
+	if((pid=fork())<0){
+		printf("fork failed \n");
+		return -1;
+	}else if(pid==0){
+		if(fd[1]!=STDOUT_FILENO){
+			if (dup2(fd[1], STDOUT_FILENO) != STDOUT_FILENO){  
+				return -1; 
+			} 
+            close(fd[1]);  
+		}
+		if(execlp("git","git","upload-pack","--stateless-rpc","--advertise-refs",path.c_str(),NULL)==-1){
+			printf("execlp failed \n");
+			exit(0);
+		}
+	}else{
+		char buffer[4096]={0};
+		close(fd[1]);
+		int n=0;
+		while((n=read(fd[0],buffer,4096))){
+			result.append(buffer,n);
+		}
+		close(fd[0]);
+	}
+	return 0;
+}
+{% endhighlight %}
 
+
+前端服务器上，编写 模拟 git-upload-pack 或者是 git-receive-pack 的程序。用户通过 ssh 访问远程仓库时执行的 git 工具变成了模拟后的 
+git-upload-pack /git-receive-pack, 当使用 HTTP 访问时，可以整合成 RPC 客户端整合直接整合进 HTTP 服务器，比如 NGINX 模块，
+或者也可 使用 传统的 Git Smart HTTP 库的方式，总的来说 Thrift 有多种语言支持，Git Smart HTTP 整合 Thrift RPC 并不成问题。    
 这个唯一的问题是实现异步比较麻烦，两者都需要实现异步模式，git 仓库可能非常大，一次性克隆传输数据几百 MB 或者上 GB, 
-这个时候 4nK 发非常必要。
+这个时候 4nK 发送非常必要。
 
-###基于 libgit2 的 smart 协议实现
-开发 Git 的人大多知道 libgit2,这是一个基于 C89 开发的 git 开发库，支持绝大多数 git 特性。
+###基于 libgit2 的 smart 协议实现     
+GIT 除了 Linus 本人实现，kernel.org 托管的官方版本外，还有 jgit,libgit2 等，git 是一系列命令组成，几乎没有剥离出共享库的能力，
+这样的后果导致其他语言使用 git 时，不得不使用管道等进程间通讯的模式与 git 工具交互。而 jgit 使用 Java 实现，基本上没有其他流行语言的绑定能力。  
+libgit2 是一个 GIT 的兼容实现，基于 C89 开发，支持绝大多数 git 特性。开发非常活跃，有多种语言绑定，如 C# Ruby 等，
+其中 C# 绑定 Libgit2Sharp 被 VisualStudio, Github for Windows 等使用，而 Ruby 绑定 Rugged ，被 Github, GIT@OSC 等代码托管平台使用。
+
+libgit2 并没有合适的 GIT smart 服务器后端实现，多数情况下，libgit2 主要面向的是客户端，由于 git 是分布式的，对于仓库的读写也就客户端
+和服务器的行为也是类似的。
 
 
 
