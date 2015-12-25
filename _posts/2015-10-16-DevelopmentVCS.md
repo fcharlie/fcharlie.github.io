@@ -466,7 +466,40 @@ Github 基于 HTTP 协议的方式实现了对 Subversion 的兼容，而 GIT@OS
 
 
 ###Subversion 协议代理服务器的实现
-前文分析了 SVN 协议
+前面并不完全的分析了 SVN 协议，但是那些协议内容足够实现一个 SVN 协议动态代理服务器了。
+
+在客户端 C 和代理服务器 S 建立连接后， S 向 C 发送一个数据包：
+
++ 服务器头
+{% highlight sh %}
+#S to C
+( success ( 2 2 ( ) ( edit-pipeline svndiff1 absent-entries depth inherited-props log-revprops ) ) )
+{% endhighlight %}
 
 
+C 接收到 S 的数据后，必须做出选择，并发送第一个请求给 S。     
+{% highlight sh %}
+#C to S
+( 2 ( edit-pipeline svndiff1 absent-entries depth mergeinfo log-revprops ) 43:svn://subversion.io/apache/subversion/trunk 53:SVN/1.8.13-SlikSvn-1.8.13-X64 (x64-microsoft-windows) ( ) )
+{% endhighlight %}
 
+S 接收到 C 的请求后，解析 数据包，提取到 URL 为 svn://subversion.io/apache/subversion/trunk , 而 Gitlab 的规则是 host/user/repo, 
+如果不同用户的存储库放在不同机器上，这个时候提取到用户为 apache, 交由路由选择模块去处理得到后端的地址，也就是真实 svnserve 的 IP 和端口。
+
+建立与后端服务器 B 的连接。这个时候 S 读取 B 的数据包，也就是前面的服务器头,接收完毕直接丢弃即可，然后将客户端 C 的头请求转发给后端服务器。   
+{% highlight sh %}
+#S to B
+( 2 ( edit-pipeline svndiff1 absent-entries depth mergeinfo log-revprops ) 43:svn://subversion.io/apache/subversion/trunk 53:SVN/1.8.13-SlikSvn-1.8.13-X64 (x64-microsoft-windows) ( ) )
+{% endhighlight %}
+
+
+至此，代理服务器的后面就不必关系细节了，通常使用 Boost.ASIO 等异步框架，
+
+{% highlight sh %}
+Client <---> Proxy Server <---> Backend Subversion Server
+{% endhighlight %}
+
+一个基本的 SVN 协议动态代理服务器就实现了。
+
+##结尾
+无论 GIT 还是 SVN, 不断的演进也是非常需要的。
