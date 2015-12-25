@@ -304,20 +304,62 @@ libgit2 并没有合适的 GIT smart 服务器后端实现，多数情况下，l
 
 
 ##Subversion 内幕
-此部分中 SVN 协议指 Subversion 客户端通过 TCP 3690 端口 访问 svnserver (以及兼容的服务程序) 的协议，即 Subversion protocol
+此部分中 **SVN 协议** 指 Apache Subversion 程序 svn（以及兼容的客户端） 与远程服务器上的 Apache Subversion svnserve （以及兼容的服务器） 进程通讯的协议，
+即 Subversion protocol，协议默认端口是 3690，基于 TCP, 传输数据使用 ABNF 范式。
 
-与  Git 完全不同的是，svn 的仓库存储在远程中央服务器上，开发者检出的代码只是特定版本，特定目录的代码，本地为工作目录。
+在这里支出，与  Git 完全不同的是，svn 的仓库存储在远程中央服务器上，开发者检出的代码只是特定版本，特定目录的代码，本地为工作拷贝。
 
 ###Subversion HTTP 协议实现
+Subversion HTTP 协议是一种 基于  WebDAV/DeltaV  的协议，WebDAV 在 HTTP 1.1 的基础上扩展了多个 Method, 绝大多数的服务器并不支持 WebDAV,
+这样的后果就是，除了 Apache 可以使用 mod_dav_svn 插件，基本上再也没有其他的服务器能快速的支持 Subversion 的 HTTP 协议了。代理还是可以的。
 
-在 Subversion 的路线图中，基于 WebDAV/DeltaV 的 HTTP 接入将被 基于 HTTP v2 的实现取代。
+WebDAV 协议在 HTTP 1.1 的基础上 使用 XML 的方式呈现数据，对于 Subversion 这种集中式版本控制系统来说，绝大多数操作都是在线的，
+WebDAV 包裹这些操作就变得很繁琐。
 
+比如一个 update-report 请求：   
+{% highlight xml %}
+  <S:update-report send-all="true" xmlns:S="svn:">
+    <S:src-path>http://localhost:8080/repos/test/httpd/support</S:src-path>
+    <S:target-revision>2</S:target-revision>
+    <S:entry rev="2"  start-empty="true"></S:entry>
+  </S:update-report>
+{% endhighlight %}
 
+然后服务器返回：     
+{% highlight xml %}
+<S:update-report xmlns:S="svn:" xmlns:V="..." xmlns:D="DAV:" send-all="true">
+  <S:target-revision rev="2"/>
+  <S:open-directory rev="2">
+    <D:checked-in>
+      <D:href>/repos/test/!svn/ver/2/httpd/support</D:href>
+    </D:checked-in>
+    <S:set-prop name="svn:entry:committed-rev">2</S:set-prop>
+    ... more set props ...
+    <S:add-file name="ab.c">
+      <D:checked-in>
+        <D:href>/repos/test/!svn/ver/2/httpd/support/ab.c</D:href>
+      </D:checked-in>
+      <S:set-prop name="svn:entry:committed-rev">2</S:set-prop>
+      ... more set props for the file ...
+      <S:txdelta>...base64-encoded file content...</S:txdelta>
+    </S:add-file>
+    <S:add-directory name="os" bc-url="/repos/test/!svn/bc/2/httpd/os">
+      <D:checked-in>
+        <D:href>/repos/test/!svn/ver/2/httpd/os</D:href>
+      </D:checked-in>
+      ...directory contents...
+    </S:add-directory>
+  </S:open-directory>
+</S:update-report>
+{% endhighlight %}
+
+不同的请求，xml 的内容也完全不同，Subversion HTTP 协议的复杂也让很多开发者望而却步。 
+
+在 Subversion 的路线图中，基于 WebDAV/DeltaV 的 HTTP 接入将被 基于 HTTP v2 的实现取代。   
 [A Streamlined HTTP Protocol for Subversion](http://svn.apache.org/repos/asf/subversion/trunk/notes/http-and-webdav/http-protocol-v2.txt)      
 
 ###Subversion SVN 协议实现
-与 HTTP 不同的是，一个完整的基于 SVN 协议的连接中，仓库的操作是上下文相关的。
-
+与 HTTP 不同的是，一个完整的基于 SVN 协议的连接中，仓库的操作是上下文相关的。   
 当客户端的连接过来时，服务器，通常说的 svnservice 将发送一段信息给客户端，告知服务器的能力。
 
 {% highlight sh %}
