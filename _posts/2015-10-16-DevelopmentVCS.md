@@ -111,7 +111,7 @@ git 仓库在磁盘上可以表现为两种形式，带有工作目录的普通�
 
 实际上我们创建一个裸仓库会发现和普通仓库的 .git 目录结构是一致的。
 
->mkdir gitbare.git &&cd gitbare.git &&tree -a
+>mkdir gitbare.git &&cd gitbare.git &&git init --bare &&tree -a
 
 {% highlight  sh %}
 .
@@ -150,9 +150,13 @@ git 仓库在磁盘上可以表现为两种形式，带有工作目录的普通�
 二者不同的机制带来的直接差别就是一旦中央服务器宕机，git 可以迅速的迁移到其他服务器，并且数据的丢失的可能性很小，
 而 Subversion 服务器就没有这么好的运气了。
 
-每一次提交，git 都会把修改的文件快照，还有更新的目录结构，以及提交信息，打包成一个个 object，这些 object 被loose object, 所以 git 的 object 可能是 blob tree commit 等。打包的过程会使用 zip 压缩，这种被广泛运用的压缩格式实上压缩率较低，压缩速度也慢，但好处有广泛的支持，专利上。
+每一次提交，git 都会把修改的文件快照，还有更新的目录结构，以及提交信息，打包成一个个 object，这些 object 被loose object,
+ 所以 git 的 object 可能是 blob tree commit 等。打包的过程会使用 zip 压缩，这种被广泛运用的压缩格式实上压缩率较低，压缩速度也慢，
+ 但好处有广泛的支持，专利上比较友好。
 
-如果调用 git gc 命令后，git-gc 会将这些 object 打包成 pack 文件，这些内容在  ProGit 都有详细说明。
+如果调用 git gc 命令后，git-gc 会将这些 object 打包成 pack 文件，gc 过后保存文件差异，但这样是有代价的，我司的代码托管平台某台机器一日触发了 GC,
+然后 CPU 占用突然上升，抢占其他进程资源，直接导致用户体验下降，如果使用的是分布式文件系统，这种现象将更加突出。关于 git gc 更多的内容可以查看 
+ProGit ，或者去查阅 git 技术文档。
 
 ###Git 传输协议
 Git 支持多种协议 http, git , ssh, file ,以内部机制区分为哑协议和智能协议，哑协议非常简单，简单的说，
@@ -232,8 +236,20 @@ SSH 则是通过 ssh 服务器在远程机器上运行 git-xxx-pack ，数据传
 一些更多的技术内幕可以参考 社区大作 《Pro Git》
 
 ##Git 代码托管平台的开发演进     
-虽然 GIT 是分布式版本控制，但是对于代码托管平台来说又是一回事了。对于 HTTP 协议来说，像 NGINX 一样的服务器只需要实现动态 IP,
-然后通过 proxy 或者是 upstream 的方式实现 GIT 代码托管平台的 分布式就可以了。但是对于 SSH 来说比较麻烦。   
+虽然 GIT 是分布式版本控制，但是对于代码托管平台来说又是一回事了。传统的代码托管平台服务主要运行在一台计算机上，
+额外的存储机器通过例如 NFS 之类的分布式文件系统被挂载到服务所在机器，成为一个存储目录。
+
+这样的坏处显而易见:       
+1. 网络流量过于集中，这点很好解释，网络入口都是服务所在的机器，对于 git 这样频繁 IO 读写的服务，NFS 有缓存，也显得力不从心。
+2. 运算过于集中，git-upload-pack git-receive-pack 都运行在服务机器上，无论是将 loose object 打包成 package 还是 解包 package 成 loose object，
+都是运算密集型。CPU 飙升也就很常见了。
+
+如果要偷懒实现一个折衷的分布式方案，动态代理算是不错的选择，对于 HTTP 协议来说，重定向和代理都是很常见的，
+使用 NGINX 之类的服务器就可以方便的实现代理，然后编写模块实现动态获取路由即可,更进一步使用 upstream 的方式
+来复用连接，提高效率。而 GIT 的 HTTP 访问与 托管服务的 web 页面都可以用这种策略实现分布式。
+
+对于 SSH 来说，除了端口转发就是动态反向代理了。当然也可以使用 RPC, 通过编写 RPC 客户端伪装成 git-upload-pack 或
+git-receive-pack 实现 SSH 的分布式。
 
 ###基于 RPC 的 GIT 分布式设计    
 客户端访问仓库时，路由智能到达 DNS 所记录的机器或者是无差别代理的机器(前端机器)，往往不能到达特定的存储机器，
@@ -309,7 +325,7 @@ libgit2 并没有合适的 GIT smart 服务器后端实现，多数情况下，l
 此部分中 **SVN 协议** 指 Apache Subversion 程序 svn（以及兼容的客户端） 与远程服务器上的 Apache Subversion svnserve （以及兼容的服务器） 进程通讯的协议，
 即 Subversion protocol，协议默认端口是 3690，基于 TCP, 传输数据使用 ABNF 范式。
 
-在这里支出，与  Git 完全不同的是，svn 的仓库存储在远程中央服务器上，开发者检出的代码只是特定版本，特定目录的代码，本地为工作拷贝。
+在这里指出，与  Git 完全不同的是，svn 的仓库存储在远程中央服务器上，开发者检出的代码只是特定版本，特定目录的代码，本地为工作拷贝。
 
 ###Subversion HTTP 协议实现
 Subversion HTTP 协议是一种 基于  WebDAV/DeltaV  的协议，WebDAV 在 HTTP 1.1 的基础上扩展了多个 Method, 绝大多数的服务器并不支持 WebDAV,
