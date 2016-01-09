@@ -240,7 +240,7 @@ SSH 则是通过 ssh 服务器在远程机器上运行 git-xxx-pack ，数据传
 额外的存储机器通过例如 NFS 之类的分布式文件系统被挂载到服务所在机器，成为一个存储目录。
 
 这样的坏处显而易见:       
-1. 网络流量过于集中，这点很好解释，网络入口都是服务所在的机器，对于 git 这样频繁 IO 读写的服务，NFS 有缓存，也显得力不从心。
+1. 网络流量过于集中，这点很好解释，网络入口都是服务所在的机器，对于 git 这样频繁 IO 读写的服务，NFS 有缓存，也显得力不从心。      
 2. 运算过于集中，git-upload-pack git-receive-pack 都运行在服务机器上，无论是将 loose object 打包成 package 还是 解包 package 成 loose object，
 都是运算密集型。CPU 飙升也就很常见了。
 
@@ -510,6 +510,7 @@ S 接收到 C 的请求后，解析 数据包，提取到 URL 为 svn://subversi
 ( 2 ( edit-pipeline svndiff1 absent-entries depth mergeinfo log-revprops ) 43:svn://subversion.io/apache/subversion/trunk 53:SVN/1.8.13-SlikSvn-1.8.13-X64 (x64-microsoft-windows) ( ) )
 {% endhighlight %}
 
+这里值得注意的是 svnkit SubversionJavahl 并没有添加 UA 字符串，所以解析时略过即可。
 
 至此，代理服务器的后面就不必关系细节了，通常使用 Boost.ASIO 等异步框架，
 
