@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Subversion 和 GIT"
+title:  "Subversion 和 GIT 开发者演进之 2015"
 date:   2015-10-16 21:30:16
 categories: developer
 ---
@@ -145,8 +145,10 @@ git 仓库在磁盘上可以表现为两种形式，带有工作目录的普通�
 当我们创建一个仓库时，默认情况下会创建工作目录，在工作目录下有个 .git 的子目录，这才是存储库的目录。
 而我们通常修改代码的目录称之为工作目录。
 
-总所周知，git 是分布式版本控制系统，这就意味着，只要获得了 .git 目录的完整数据，就可以在任意位置恢复成一个带有工作目录的仓库。
-对于 Subversion 一样的集中式版本控制系统，就相当于 .git 目录被托管在中央服务器上，而本地的 .svn 只是工作目录的元数据。
+众所周知，git 是分布式版本控制系统，这就意味着，只要获得了 .git 目录的完整数据，就可以在任意位置恢复成一个带有工作目录的仓库。
+而 GIT 克隆一个存储库也仅仅是将 .git/objects 目录下的 object 和 .git/refs (.git/packed-refs|.git/info/refs) 所存储的引用列表传输到本地，并应用。
+
+对于 Subversion 一样的集中式版本控制系统，就相当于 .git 目录被托管在中央服务器上，而本地的 .svn 只是工作目录的元数据。  
 二者不同的机制带来的直接差别就是一旦中央服务器宕机，git 可以迅速的迁移到其他服务器，并且数据的丢失的可能性很小，
 而 Subversion 服务器就没有这么好的运气了。
 
@@ -480,11 +482,16 @@ Example:
 
 ###Subversion 兼容实现
 Github 基于 HTTP 协议的方式实现了对 Subversion 的兼容，而 GIT@OSC 基于 svn 协议方式实现了对 Subversion 的不完全兼容。
+基于 HTTP 协议实现的 Subversion 兼容服务和 基于 SVN 协议的 Subversion 兼容服务二者并不能说谁就一定好，HTTP 协议很容易导致网关超时，
+  
 
 
 
 ###Subversion 协议代理服务器的实现
-前面并不完全的分析了 SVN 协议，但是那些协议内容足够实现一个 SVN 协议动态代理服务器了。
+前面 SVN 协议，虽然不全，但是那些协议内容足够实现一个 SVN 协议动态代理服务器了。普通代理服务器的实现比较简单，具有路由能力的代理服务器
+则有点难度，主要难度体现在需要解析特定协议的请求内容，然后得到用户请求资源所在的服务器。
+
+笔者在 2015 年底实现了一个 SVN 协议动态代理服务器，以下是实现思路  
 
 在客户端 C 和代理服务器 S 建立连接后， S 向 C 发送一个数据包：
 
@@ -510,9 +517,10 @@ S 接收到 C 的请求后，解析 数据包，提取到 URL 为 svn://subversi
 ( 2 ( edit-pipeline svndiff1 absent-entries depth mergeinfo log-revprops ) 43:svn://subversion.io/apache/subversion/trunk 53:SVN/1.8.13-SlikSvn-1.8.13-X64 (x64-microsoft-windows) ( ) )
 {% endhighlight %}
 
-这里值得注意的是 svnkit SubversionJavahl 并没有添加 UA 字符串，所以解析时略过即可。
+这里值得注意的是 svnkit，Subversion Javahl 并没有添加 UA 字符串，所以解析时略过即可。
 
-至此，代理服务器的后面就不必关系细节了，通常使用 Boost.ASIO 等异步框架，
+至此，代理服务器的后面就不必关系细节了，通常使用 Boost.ASIO 等异步框架，在使用 Boost.ASIO 时，先以阻塞的方式与客户端通信，待到与后端存储服务器
+建立连接后才使用异步的方式转发数据包。
 
 {% highlight sh %}
 Client <---> Proxy Server <---> Backend Subversion Server
@@ -521,4 +529,4 @@ Client <---> Proxy Server <---> Backend Subversion Server
 一个基本的 SVN 协议动态代理服务器就实现了。
 
 ##结尾
-无论 GIT 还是 SVN, 不断的演进也是非常需要的。
+如果你不是专业的 Git 或者 Subversion 开发者，你可能会觉得上面的内容没什么用处，实际上也没什么技术难度。
