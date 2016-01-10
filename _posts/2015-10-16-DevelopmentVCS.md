@@ -482,10 +482,15 @@ Example:
 
 ###Subversion 兼容实现
 Github 基于 HTTP 协议的方式实现了对 Subversion 的兼容，而 GIT@OSC 基于 svn 协议方式实现了对 Subversion 的不完全兼容。
+
 基于 HTTP 协议实现的 Subversion 兼容服务和 基于 SVN 协议的 Subversion 兼容服务二者并不能说谁就一定好，HTTP 协议很容易导致网关超时，
-  
+多大数情况下，一次完整的操作时成千上万的 HTTP 请求构成，HTTP 协议支持需要 HTTP 服务器能够支持 WebDAV, XML 解析过程比较麻烦，
+Subversion 官方也计划使用 HTTP v2 取代 WebDAV，但 HTTP 协议的好处还是有的，比如很多企业并不一定开放 SVN 端口 3690，
+可以和 gitlab 之类的服务整合。
 
+而 SVN 协议也有不好的地方，比如连接时间过长，服务器并发上不去，容易阻塞，与 HTTP 服务整合不便，但同时 SVN 协议能够支持较大存储库。
 
+实际上兼容实现 SVN 接入往往没有原生的 SVN 服务好，这点事毋庸置疑的。
 
 ###Subversion 协议代理服务器的实现
 前面 SVN 协议，虽然不全，但是那些协议内容足够实现一个 SVN 协议动态代理服务器了。普通代理服务器的实现比较简单，具有路由能力的代理服务器
