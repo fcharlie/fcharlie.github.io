@@ -2,6 +2,7 @@
 layout: post
 title:  "Subversion 和 GIT 开发者演进之 2015"
 date:   2015-10-16 21:30:16
+published: true
 categories: developer
 ---
 ##前言

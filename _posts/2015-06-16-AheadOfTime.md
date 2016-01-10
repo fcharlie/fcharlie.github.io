@@ -2,6 +2,7 @@
 layout: post
 title:  "软件的变革与 AOT "
 date:   2015-06-16 21:30:16
+published: true
 categories: compiler
 ---
 ##前言 
