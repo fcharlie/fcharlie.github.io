@@ -381,7 +381,7 @@ WebDAV 包裹这些操作就变得很繁琐。
 
 ###Subversion SVN 协议实现
 与 HTTP 不同的是，一个完整的基于 SVN 协议的连接中，仓库的操作是上下文相关的。   
-当客户端的连接过来时，服务器，通常说的 svnservice 将发送一段信息给客户端，告知服务器的能力。
+当客户端的连接过来时，服务器，通常说的 svnservice 将发送一段信息给客户端，告知服务器的能力,这个过程叫握手 Handshake。
 
 {% highlight sh %}
 S: ( minver:number maxver:number mechs:list ( cap:word ... ) )

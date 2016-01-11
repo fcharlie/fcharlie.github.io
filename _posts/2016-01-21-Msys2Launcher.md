@@ -23,7 +23,8 @@ Kubuntu 有 Kconsole。而在 Windows 平台上，终端模拟器还是比较少
 
 Mintty 子系统是 WINDOWS ,是一个地地道道的 GUI 程序，这意味着，它有完整的消息循环，当然可以有更多的自定义设置。
 
-Windows 子系统 ( Link version 14)：    
+Windows 有多种子系统，可以通过 MSDN,TechNet 文档查看，在 winnt.h (wdk ntimage.h) 中也有定义。    
+也可以通过 Visual C++ 链接器查看 ( Link version 14)：      
 
 >BOOT_APPLICATION | CONSOLE | EFI_APPLICATION | EFI_BOOT_SERVICE_DRIVER | EFI_ROM |
 >EFI_RUNTIME_DRIVER | NATIVE | POSIX | WINDOWS | WINDOWSCE
@@ -33,3 +34,91 @@ Windows 子系统 ( Link version 14)：
 
 
 #MSYS2 launcher
+
+## Win32 API 的使用
+ISO C 提供了一系列的字符串函数，如 strcpy strcat 等，在 C11 标准中，添加了 _s 的安全字符串函数，Visual C/C++ 很早
+就实现了安全字符串函数，而 Mingw 同样支持安全字符串函数。实际上，Mingw CRT 和 msvcrt.dll 也是休戚相关的。而 
+Cygwin 在支持安全字符函数和宽字符版本函数并不是很完善。
+
+{% highlight cpp%}
+#ifndef __CYGWIN__
+#define  SECURITY_WIN32
+#include <Security.h>
+#include <StrSafe.h>
+#else
+#define STRSAFE_MAX_CCH 2147483647
+#define STRSAFE_E_INVALID_PARAMETER ((HRESULT)0x80070057L)
+
+inline HRESULT StringCchLengthW(
+  LPCWSTR psz,
+  size_t  cchMax,
+  size_t  *pcchLength)
+{
+  HRESULT hr = S_OK;
+  size_t cchMaxPrev = cchMax;
+  while(cchMax && (*psz!=L'\0')) {
+    psz++;
+    cchMax--;
+  }
+  if(cchMax==0)
+    hr = STRSAFE_E_INVALID_PARAMETER;
+  if(pcchLength) {
+    if(SUCCEEDED(hr))
+      *pcchLength = cchMaxPrev - cchMax;
+    else
+      *pcchLength = 0;
+  }
+  return hr;
+}
+
+inline HRESULT StringCchCopyW(
+  LPWSTR  pszDest,
+  size_t  cchDest,
+  LPCWSTR pszSrc)
+{
+  HRESULT hr=S_OK;
+  if(cchDest==0||pszDest==nullptr)
+    return STRSAFE_E_INVALID_PARAMETER;
+  while(cchDest &&(*pszSrc!=L'\0')){
+    *pszDest++=*pszSrc++;
+    cchDest--;
+  }
+  if(cchDest==0){
+    pszDest--;
+    hr=STRSAFE_E_INVALID_PARAMETER;
+  }
+  *pszDest=L'\0';
+  return hr;
+}
+
+inline HRESULT StringCchCatW(
+  LPWSTR  pszDest,
+  size_t  cchDest,
+  LPCWSTR pszSrc)
+{
+  HRESULT hr = S_OK;
+  if(cchDest==0||pszDest==nullptr)
+    return STRSAFE_E_INVALID_PARAMETER;
+  size_t lengthDest;
+  if(StringCchLengthW(pszDest,cchDest,&lengthDest)!=S_OK){
+    hr=STRSAFE_E_INVALID_PARAMETER;
+  }else{
+    hr=StringCchCopyW(pszDest+lengthDest,cchDest-lengthDest,pszSrc);
+  }
+  return hr;
+}
+
+#endif
+{% endhighlight %}
+
+C++ 提供宽字符版本的字符串类 std::wstring 
+
+{% highlight cpp%}
+typedef basic_string<char, char_traits<char>, allocator<char>> string;
+typedef basic_string<wchar_t, char_traits<wchar_t>, allocator<wchar_t>> wstring;
+typedef basic_string<char16_t, char_traits<char16_t>, allocator<char16_t>> u16string;
+typedef basic_string<char32_t, char_traits<char32_t>, allocator<char32_t>> u32string;
+{% endhighlight %}
+
+由于 CreateProcessW 第二个参数 lpCommandLine 使用的并不是 const WCHAR * ，为了避免缓冲区被修改，如果使用 
+std::wstring 需要将命令行字符串拷贝到新的缓冲区，这样一来，std::wstring 的优势反而没有了。
