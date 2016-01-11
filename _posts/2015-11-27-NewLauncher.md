@@ -2,6 +2,7 @@
 layout: post
 title:  "基于清单的启动器的实现"
 date:   2015-11-27 21:30:16
+published: true
 categories: toolset
 ---
 #Launcher

@@ -2,6 +2,7 @@
 layout: post
 title:  "Windows AppContainer 降权，隔离与安全"
 date:   2015-06-11 16:58:16
+published: true
 categories: container
 ---
 
