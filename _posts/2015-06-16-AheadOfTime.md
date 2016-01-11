@@ -566,6 +566,8 @@ C# Native 作者 AlexDev 本人也是 Babylon 3D (C#/native port) 的作者。
 在LLILC推出后，开发者 Virgile Bello 也就没有更新 SharpLang 了。
 
 ##其他
+一些相关技术的图片：
+
 ###.NET
 实际上无论是 JVM 还是 .NET Framework 以及 LLVM Framework 在结构上是非常相似的，如下图：     
 ![Framework](https://raw.githubusercontent.com/fstudio/Beaot/master/doc/Images/dotNet/CLR_diag.png)    
