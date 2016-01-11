@@ -445,7 +445,7 @@ File Type: EXECUTABLE IMAGE
 
 {% endhighlight %}
 
-.NET Native 的实现，在 IR 前期很大的程度上依赖 Roslyn 这类新型的编译器，而在 IR 后期，就得意于 Phoenix 编译器框架，
+.NET Native 的实现，在 IR 前期很大的程度上依赖 Roslyn 这类新型的编译器，而在 IR 后期，就得益于 Phoenix 编译器框架，
 .NET Native 后端和 Visual C/C++ 共用一套后端优化编译器。
 
 在 Microsoft Channel 9 有一个对 .NET Native 的介绍视频：
@@ -459,7 +459,6 @@ File Type: EXECUTABLE IMAGE
 >Install-Package Microsoft.NETNative.Analyzer
 
 对于 .NET Native, 大多数人并不会感到满意，大多数 .NET 开发者都希望 .NET Native 能够扩展到 桌面平台，能够支持 WPF ...
-如果下面的这个项目能够成功，那么 .NET 的 AOT 也就指日可待。
 
 
 ###LLILC - LLVM-Based Compiler for .NET CoreCLR
