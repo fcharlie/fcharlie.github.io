@@ -193,14 +193,14 @@ ConvertTo-Json $PackageMap |Out-File -Force -FilePath "$SelfFolder\Package.lock.
  
  -NoNewWindow 表示不启动新窗口，-Wait 表示等待执行完毕。
  
- #PowerShell 加载 Visual Studio 环境
- 前文中 param 可以是限制函数的参数，也可以限制脚本文件的参数。比如在下面脚本中，ValidateSet 表示参数只能是这四种。   
- {% highlight powershell %}
+#PowerShell 加载 Visual Studio 环境    
+前文中 param 可以是限制函数的参数，也可以限制脚本文件的参数。比如在下面脚本中，ValidateSet 表示参数只能是这四种。   
+{% highlight powershell %}
  param (
     [ValidateSet("x86", "x64", "ARM", "ARM64")]
     [String]$Arch="x64"
 )
- {% endhighlight%}
+{% endhighlight%}
  
 如果没有 param 限制参数，在脚本中获取参数需要处理 $argv 数组， $argv.Count 表示 参数个数, 以下面命令为例，param 处理参数后，脚本中变量 $Arch 的值就是参数的 x64。 
 
