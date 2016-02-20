@@ -6,7 +6,7 @@ published: false
 categories: toolset
 ---
 #前言
-在我前面的博客中，曾经写过一片 [《基于清单的启动器的实现》](http://forcemz.net/toolset/2015/11/27/NewLauncher.html) ,说了几类新的 Launcher ，
+在我前面的博客中，曾经写过一篇 [《基于清单的启动器的实现》](http://forcemz.net/toolset/2015/11/27/NewLauncher.html) ,说了几类新的 Launcher ，
 而在本文中，依旧说的是启动器，这次说的是 MSYS2 启动器，顺带说一说 使用 Win32 API 在 MSVC，Mingw64, Cygwin 中相互兼容的策略。
 
 #Minimal GNU（POSIX）system on Windows     
