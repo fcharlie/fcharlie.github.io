@@ -5,7 +5,7 @@ date:   2015-11-27 21:30:16
 published: true
 categories: toolset
 ---
-#Launcher
+# Launcher
 Launcher (启动器) 是一类非常有用的工具，这类工具的意义就在于设置好特定的环境以特定的参数启动特定的进程。
 很多软件也用到了 launcher, 比如 Chrome，还有 Android Studio, 在 Windows 平台上，可见的是 studio.exe,
 事实上，Android Studio 是基于 Intellij IDEA 开发的，IDE 代码是基于 Java 的，所谓的 studio.exe 其实就是个启动器，加载 jvm.dll 罢了。
@@ -89,7 +89,7 @@ requestedPrivileges 表示运行的权限，asInvoker 表示同父进程一样�
 [ConfigurationManager](https://msdn.microsoft.com/zh-cn/library/system.configuration.configurationmanager)      
 [Using System.Configuration.ConfigurationManager Example (C#)](http://blogs.msdn.com/b/aspnetue/archive/2008/10/02/system-configuration-configurationmanager-source-c.aspx)     
 
-##LD 补全的 Launcher
+## LD 补全的 Launcher
 一般而言，Linux 进程依赖的 so 文件，如果不是通过 dlopen 动态加载的，都需要放到默认的 library 目录，也就是 /usr/lib, /usr/local/lib,
 或者是通过 export 命令设置 LD PATH，然后从 Shell 或 Shell 脚本启动进程。    
 
@@ -97,7 +97,7 @@ requestedPrivileges 表示运行的权限，asInvoker 表示同父进程一样�
 
 比如 google chrome , p4merge 等大多是写一个 launcher 脚本。新的启动器基于 C++ 实现，使用 TOML 格式文件作为清单文件。 
 
-###TOML 格式清单
+### TOML 格式清单
 TOML (Tom's Obvious, Minimal Language) 是 Github 联合创始人 Tom Preston-Werner 设计的一种极简的配置文件，格式类似于 ini, 但比 ini 严格，
 支持整数，浮点，字符串，数组，布尔值，表格，时间日期。解析起来非常方便。主页 [Github TOML](https://github.com/toml-lang/toml)    
 
@@ -113,7 +113,7 @@ Binary="launcher_child"
 
 这里只设置了 LibraryPath Path Binary 。
 
-###清单的环境变量解析
+### 清单的环境变量解析
 在上面的清单中，Path="${OWNERDIR}/../bin", 这需要解析，OWNERDIR 代表一个环境变量，这里是内置的，表示程序 launcher 自身的目录。 
 环境变量的解析如下：  
 {% highlight cpp %}
@@ -340,7 +340,7 @@ bool BaseEnvironmentExpend(std::string &va) {
 }
 {% endhighlight %}
 
-###启动器的实现
+### 启动器的实现
 启动器启动后，查找清单文件，清单文件文件名为 launcher.manifest , 要作为其他进程的启动器，只需要重命名和修改清单文件即可。   
 Launcher 随后解析清单文件，并读取 LibraryPath, Path, Binray 等属性，设置好环境变量，最后通过 execvp 启动进程，输入的参数就是启动器的全部参数。   
 {% highlight cpp %}
@@ -476,7 +476,7 @@ int main(int argc, char *const argv[]) {
 {% endhighlight %}
 
 
-##Java Service Native Launcher
+## Java Service Native Launcher
 由于工作需要，我曾经写过一个 Shell 的 Java 服务启动器。如果不用第三方启动器，直接使用 JVM 官方启动器 java，
 需要输入很长的命令。比如运行 hello.jar 并传递参数，如下：       
 
@@ -490,7 +490,7 @@ int main(int argc, char *const argv[]) {
 
 很多时候，Java 开发者会使用 shell(batch) 脚本，或者第三方启动器来规避这些麻烦。
 
-###Java Service Manifest
+### Java Service Manifest
 绝大多数人并不喜欢冗长的命令，我也不例外。   
 在设计 Java Launcher 的时候，我采用 TOML 格式作为启动器清单格式，文件格式如下      
 {% highlight toml %}
@@ -643,7 +643,7 @@ static const char *kUsage =
  int Exe(std::vector<std::string> Args); /// Service mode
 {% endhighlight %}
 
-###JVM 的启动流程
+### JVM 的启动流程
 各个平台上的 java 以及 Windows 平台的 javaw 依然也只是 JVM 的一个启动器，这类程序需要通过调用 jvm.dll 或者 libjvm.so 导出的
 函数来启动 JVM。
 

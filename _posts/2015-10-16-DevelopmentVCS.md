@@ -5,7 +5,7 @@ date:   2015-10-16 21:30:16
 published: true
 categories: developer
 ---
-##前言
+## 前言
 在开发软件的过程中，往往是需要多个人参与，版本控制系统的协同工作的重要性不言而喻，除此之外，
 版本控制软件对整个开发流程的记录对于缺陷追踪也是非常重要的。版本控制系统也是软件开发的基础设施。
 
@@ -18,7 +18,7 @@ GIT 远远没有目前流行。后来参加工作后，就是代码托管的工�
 
 大多数人对版本控制系统的解读都是站在使用者的角度，而本文是基于一个代码托管的开发者立场。
 
-##版本控制系统见闻
+## 版本控制系统见闻
 版本控制系统的历史可以追溯到20世纪70年代，这是一个军方开发的 CCC （变更和配置控制）系统，名字叫做 
 [CA Software Change Manager](https://en.wikipedia.org/wiki/CA_Software_Change_Manager)  随后，版本控制系统开始发展起来。     
 
@@ -57,10 +57,10 @@ Mercurial 使用 Python 实现，或许这一点也限制了 Mercurial 的发展
 大多数时候，开发者需要学习的版本控制系统为 Subversion 或者是 GIT。这二者已然是两个版本控制流派的代表。  
 
 
-##Git 技术内幕
+## Git 技术内幕
 本节主要介绍 Git 的存储和传输    
 
-###Git 存储     
+### Git 存储     
 git 仓库在磁盘上可以表现为两种形式，带有工作目录的普通仓库和不带工作目录的裸仓库。   
 我们可以创建一个标准仓库：    
 
@@ -161,7 +161,7 @@ git 仓库在磁盘上可以表现为两种形式，带有工作目录的普通�
 然后 CPU 占用突然上升，抢占其他进程资源，直接导致用户体验下降，如果使用的是分布式文件系统，这种现象将更加突出。关于 git gc 更多的内容可以查看 
 ProGit ，或者去查阅 git 技术文档。
 
-###Git 传输协议
+### Git 传输协议
 Git 支持多种协议 http, git , ssh, file ,以内部机制区分为哑协议和智能协议，哑协议非常简单，简单的说，
 客户端通过 URL 直接拿取服务端的文件。  
 Git 智能协议实现了两类 RPC 调用，一个是 fetch-pack<->upload-pack, 另一个是 send-pack<->receive-pack。
@@ -238,7 +238,7 @@ SSH 则是通过 ssh 服务器在远程机器上运行 git-xxx-pack ，数据传
 
 一些更多的技术内幕可以参考 社区大作 《Pro Git》
 
-##Git 代码托管平台的开发演进     
+## Git 代码托管平台的开发演进     
 虽然 GIT 是分布式版本控制，但是对于代码托管平台来说又是一回事了。传统的代码托管平台服务主要运行在一台计算机上，
 额外的存储机器通过例如 NFS 之类的分布式文件系统被挂载到服务所在机器，成为一个存储目录。
 
@@ -254,7 +254,7 @@ SSH 则是通过 ssh 服务器在远程机器上运行 git-xxx-pack ，数据传
 对于 SSH 来说，除了端口转发就是动态反向代理了。当然也可以使用 RPC, 通过编写 RPC 客户端伪装成 git-upload-pack 或
 git-receive-pack 实现 SSH 的分布式。
 
-###基于 RPC 的 GIT 分布式设计    
+### 基于 RPC 的 GIT 分布式设计    
 客户端访问仓库时，路由智能到达 DNS 所记录的机器或者是无差别代理的机器(前端机器)，往往不能到达特定的存储机器，
 开发者使用分布式文件系统或者 分布式 RPC 或者代理等多种方案实现 前端到存储的关键一步。这里主要说分布式 RPC 与
 GIT smart 的应用。     
@@ -313,7 +313,7 @@ git-upload-pack /git-receive-pack, 当使用 HTTP 访问时，可以整合成 RP
 这个唯一的问题是实现异步比较麻烦，两者都需要实现异步模式，git 仓库可能非常大，一次性克隆传输数据几百 MB 或者上 GB, 
 这个时候 4nK 发送非常必要。
 
-###基于 libgit2 的 smart 协议实现     
+### 基于 libgit2 的 smart 协议实现     
 GIT 除了 Linus 本人实现，kernel.org 托管的官方版本外，还有 jgit,libgit2 等，git 是一系列命令组成，几乎没有剥离出共享库的能力，
 这样的后果导致其他语言使用 git 时，不得不使用管道等进程间通讯的模式与 git 工具交互。而 jgit 使用 Java 实现，基本上没有其他流行语言的绑定能力。  
 libgit2 是一个 GIT 的兼容实现，基于 C89 开发，支持绝大多数 git 特性。开发非常活跃，有多种语言绑定，如 C# Ruby 等，
@@ -324,13 +324,13 @@ libgit2 并没有合适的 GIT smart 服务器后端实现，多数情况下，l
 
 
 
-##Subversion 内幕
+## Subversion 内幕
 此部分中 **SVN 协议** 指 Apache Subversion 程序 svn（以及兼容的客户端） 与远程服务器上的 Apache Subversion svnserve （以及兼容的服务器） 进程通讯的协议，
 即 Subversion protocol，协议默认端口是 3690，基于 TCP, 传输数据使用 ABNF 范式。
 
 在这里指出，与  Git 完全不同的是，svn 的仓库存储在远程中央服务器上，开发者检出的代码只是特定版本，特定目录的代码，本地为工作拷贝。
 
-###Subversion HTTP 协议实现
+### Subversion HTTP 协议实现
 Subversion HTTP 协议是一种 基于  WebDAV/DeltaV  的协议，WebDAV 在 HTTP 1.1 的基础上扩展了多个 Method, 绝大多数的服务器并不支持 WebDAV,
 这样的后果就是，除了 Apache 可以使用 mod_dav_svn 插件，基本上再也没有其他的服务器能快速的支持 Subversion 的 HTTP 协议了。代理还是可以的。
 
@@ -379,7 +379,7 @@ WebDAV 包裹这些操作就变得很繁琐。
 在 Subversion 的路线图中，基于 WebDAV/DeltaV 的 HTTP 接入将被 基于 HTTP v2 的实现取代。   
 [A Streamlined HTTP Protocol for Subversion](http://svn.apache.org/repos/asf/subversion/trunk/notes/http-and-webdav/http-protocol-v2.txt)      
 
-###Subversion SVN 协议实现
+### Subversion SVN 协议实现
 与 HTTP 不同的是，一个完整的基于 SVN 协议的连接中，仓库的操作是上下文相关的。   
 当客户端的连接过来时，服务器，通常说的 svnservice 将发送一段信息给客户端，告知服务器的能力,这个过程叫握手 Handshake。
 
@@ -481,7 +481,7 @@ Example:
 与 GIT 或者 SVN HTTP 不同的是，一个完整的 基于 svn 协议的 SVN 操作，只需要建立一次 socket，Subversion 客户端此时是阻塞的，并且屏蔽了 Ctrl+C 等
 信号， 仓库体积巨大时，这种对连接资源的占用非常突出，因为有数据读取， socket 并不会超时。单纯按并发来算，svn 服务器的并发就收到了限制。
 
-###Subversion 兼容实现
+### Subversion 兼容实现
 Github 基于 HTTP 协议的方式实现了对 Subversion 的兼容，而 GIT@OSC 基于 svn 协议方式实现了对 Subversion 的不完全兼容。
 
 基于 HTTP 协议实现的 Subversion 兼容服务和 基于 SVN 协议的 Subversion 兼容服务二者并不能说谁就一定好，HTTP 协议很容易导致网关超时，
@@ -493,7 +493,7 @@ Subversion 官方也计划使用 HTTP v2 取代 WebDAV，但 HTTP 协议的好�
 
 实际上兼容实现 SVN 接入往往没有原生的 SVN 服务好，这点事毋庸置疑的。
 
-###Subversion 协议代理服务器的实现
+### Subversion 协议代理服务器的实现
 前面 SVN 协议，虽然不全，但是那些协议内容足够实现一个 SVN 协议动态代理服务器了。普通代理服务器的实现比较简单，具有路由能力的代理服务器
 则有点难度，主要难度体现在需要解析特定协议的请求内容，然后得到用户请求资源所在的服务器。
 
@@ -534,5 +534,5 @@ Client <---> Proxy Server <---> Backend Subversion Server
 
 一个基本的 SVN 协议动态代理服务器就实现了。
 
-##结尾
+## 结尾
 如果你不是专业的 Git 或者 Subversion 开发者，你可能会觉得上面的内容没什么用处，实际上也没什么技术难度。

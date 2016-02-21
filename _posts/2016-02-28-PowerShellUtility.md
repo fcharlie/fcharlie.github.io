@@ -5,7 +5,7 @@ date:   2016-01-21 21:30:16
 published: true
 categories: toolset
 ---
-#前言
+# 前言
 远古时，Windows 用户使用 Batch 或者 VB Script 等脚本来实现一些自动化的任务，Batch 和 Unix Shell Script 具有相似的地位。   
 由于技术人员日益增长的工具需求与 Batch 自身局限性的矛盾，Microsoft 推出了 Windows PowerShell，基于 .NET 的 Shell Script 环境。  
 PowerShell 利用自身特性保持了 与 cmd 命令 的兼容，通过 Alias 特性，实现了与 Bash 基本命令一致的命令，cat 是 Get-Content 的别名，
@@ -68,12 +68,12 @@ Function Expand-ZipPackage
 
 
 
-#关于 ClangBuilder
+# 关于 ClangBuilder
 [ClangBuilder](https://github.com/fstudio/clangbuilder) 是一个基于 PowerShell 实现的 Windows 平台 自动化构建 Clang 的环境，
 本文将结合 ClangBuilder 来讨论 PowerShell 的功能与特性。
 
 
-#PowerShell 实现在线安装
+# PowerShell 实现在线安装
 在 PowerShell 中，有个 Cmdlet Invoke-Expression (Alias iex ) 可以将字符串当做 PowerShell Script 执行，这样可以从网上下载安装脚本并执行：  
 
 {% highlight powershell %}
@@ -146,7 +146,7 @@ Get-DownloadFile -FileUrl $OfficaUrl -FileSavePath $DownloadInstallPackage
  
 整个安装脚本源码： [WebInstall.ps1](https://github.com/fstudio/clangbuilder/blob/master/bin/Installer/WebInstall.ps1)
  
-#PowerShell 绿色安装
+# PowerShell 绿色安装
 Restore Packages [RestorePackages.ps1](https://github.com/fstudio/clangbuilder/blob/master/Packages/RestorePackages.ps1)   
 PowerShell 操作 JSON 非常方便，可以将 JSON 文本转变为  Object 对象，也可以将 Object 对象转变为 JSON 文本。
 {% highlight powershell %}
@@ -193,7 +193,7 @@ ConvertTo-Json $PackageMap |Out-File -Force -FilePath "$SelfFolder\Package.lock.
  
  -NoNewWindow 表示不启动新窗口，-Wait 表示等待执行完毕。
  
-#PowerShell 加载 Visual Studio 环境    
+# PowerShell 加载 Visual Studio 环境    
 前文中 param 可以是限制函数的参数，也可以限制脚本文件的参数。比如在下面脚本中，ValidateSet 表示参数只能是这四种。   
 {% highlight powershell %}
  param (
@@ -210,6 +210,6 @@ ConvertTo-Json $PackageMap |Out-File -Force -FilePath "$SelfFolder\Package.lock.
 
 关于 Visual Studio 环境脚本在 [bin/Model](https://github.com/fstudio/clangbuilder/blob/master/bin/Model) 
 
-#PowerShell 其他资料
+# PowerShell 其他资料
 
 [Windows PowerShell: Build a Better Function](https://technet.microsoft.com/en-us/magazine/hh360993.aspx)

@@ -6,7 +6,7 @@ published: true
 categories: container
 ---
 
-##Windows 权限策略的发展      
+# Windows 权限策略的发展      
 从 Windows 8开始，我在使用 Windows 系统的同时也就不再关闭 UAC 了，并且不再安装任何国产的安全软件，这些软件仗着运行在管理员权限上肆意的推行
 “全家桶策略”，Windows 多年来一直是最流行的操作系统，大多数人的焦点都会放在上面，也包括黑客，各种企业，早期Windows系统在权限的管理上非常粗放。
 无论是恶意软件还是其他软件都可以获得较高的权限，这样就能够对系统大肆修改，并且直接或间接破化系统，收集数据，妨碍竞争对手。   
@@ -18,7 +18,7 @@ Windows XP 是历史上最受欢迎的版本之一，然而，一直以来XP的�
 权限被极大的限制，很多危险的操作无法进行，微软通过 Windows Store 进行应用分发，能够控制来源，这样能够极大的降低恶意软件的困扰。   
 而 AppContainer 同样能够支持传统的 Desktop 应用，本文将介绍 通过 AppContainer 启动一个桌面程序，当然，先从降权说起。
 
-##UAC 降权    
+# UAC 降权    
 基于 Win32 的应用程序，如果要提权，非常简单，第一可以在 manifest 文件中写入 'requireAdministrator' Visual Studio 项目属性中可以设置。
 
 {% highlight xml %}
@@ -42,7 +42,7 @@ Windows XP 是历史上最受欢迎的版本之一，然而，一直以来XP的�
 
 但是如果需要降权，微软没有直接的方案供开发者选择。常见的选择有 通过拿到 Explorer 的 token 启动进程，或者是通过计划任务启动进程。
 
-##计划任务降权
+# 计划任务降权
 使用计划任务降权大概需要十几个 COM 接口:
 
 {% highlight cpp %}
@@ -75,7 +75,7 @@ Windows XP 是历史上最受欢迎的版本之一，然而，一直以来XP的�
 如果用户名是内置的 Administrator，并且开启了 [对内置管理员使用批准模式](https://technet.microsoft.com/zh-cn/library/dd834795.aspx) 至少在Windows 8.1 (Windows Server 2012 R2)会失败的。
 所以这个时候需要采取第二种策略。
 
-##使用 Explorer 的 Token 启动进程    
+# 使用 Explorer 的 Token 启动进程    
 简单点就是拿桌面进程的 Token，然后使用桌面的 Token 启动进程。这需要桌面正在运行 （Explorer 作为桌面进程正在运行），也就是常说的桌面得存在，并且权限是标准的。
 
 {% highlight cpp %}
@@ -159,7 +159,7 @@ cleanup:
 
 当然，通过人肉合成一个 Token 启动进程也是能够实现降低程序权限的，这些比较复杂，本文也就不细说了。
 
-##启动低完整性进程     
+# 启动低完整性进程     
 强制完整性控制（英语：Mandatory Integrity Control）是一个在微软Windows操作系统中从Windows Vista开始引入，并沿用到后续版本系统的核心安全功能。强制完整性控制通过完整性级别标签来为运行于同一登录会话的进程提供隔离。此机制的目的是在一个潜在不可信的上下文（与同一账户下运行的其他较为可信的上下文相比）中选择性地限制特定进程和软件组件的访问权限。
 Windows Vista 定义了四个完整性级别:
 
@@ -382,11 +382,11 @@ int wmain(int argc,wchar_t *argv[])
 
 Windows 的系统安全正得益于以上种种技术的出现，程序不是说想干什么就能干什么了。危险的系统操作被限制，特别是 AppContainer ，应用之间的隔离加深，跨应用的数据难以窃取。
 
-##其他
+# 其他
 很多开发者在 Windows 上使用沙箱来实现安全隔离，而沙箱本质上也是利用权限隔离以及 Hook 之类的技术来实现。而容器则可以在权限隔离的基础上添加资源限制来实现，类似于作业对象限制资源，当然，如果要更加安全，隔离更加深入，必须从内核上做出努力。
 开发者并不一定要专注在容器，安全上，然而一定不要滥用权限。
 
-##备注：
+# 备注：
 1. 用户账户控制(UAC): [https://en.wikipedia.org/wiki/User_Account_Control](https://en.wikipedia.org/wiki/User_Account_Control)    
 2. 资源管理器在开启内置管理员的批准模式下降权是成功的，据说也是采用的计划任务降权？      
 

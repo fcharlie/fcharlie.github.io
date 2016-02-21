@@ -5,7 +5,7 @@ date:   2015-06-16 21:30:16
 published: true
 categories: compiler
 ---
-##前言 
+## 前言 
 AOT 即 Ahead of Time Compilation,即运行前编，与之对应的是 JIT。众所周知，程序的源码并不能够被处理器直接执行，
 编程语言基本上都是人类可读，编译器或者解释器就需要将源代码转变为 CPU 可以操作的指令。比如一个加法函数最终需要执行 
 addl 汇编指令对应的机器码。   
@@ -58,7 +58,7 @@ x86 上模拟执行 ARM 架构的程序也可以是这个套路。）但是这�
 
 
 
-##LLVM 编译器基础设施的发迹   
+## LLVM 编译器基础设施的发迹   
 数年前，LLVM 的官网对于 LLVM 项目的介绍是: "Low Level Virtual Machine",低级虚拟机，而现在对 LLVM 的介绍是："The LLVM Compiler Infrastructure"，
 即编译器基础设施。  在程序员圈子中对 LLVM 最深刻的影响来自于 Clang，C 家族编译器(C/C++ /Objective-C/C++ Compiler)前端，Clang 是 LLVM 最成功的实现，
 在平台支持上，Clang 短短几年达到了 GNU C Compliton (GCC) 20年的高度。 Clang 在编译速度，占用内存，以及整个框架的设计上都是可圈可点的，
@@ -80,7 +80,7 @@ x86 上模拟执行 ARM 架构的程序也可以是这个套路。）但是这�
 而且还有 JIT 模块, [LLVM ExecutionEngine](http://llvm.org/svn/llvm-project/llvm/trunk/lib/ExecutionEngine/) ExecutionEngine 的 API 并不是非常稳定。
 
 
-###传统的编译器  
+### 传统的编译器  
 传统编译器需要经过前端(Frontend)，优化(Optimizer)，后端(Backend)然后将源代码转变为机器码。    
 ![SimpleCompiler](http://www.aosabook.org/images/llvm/SimpleCompiler.png)   
                              Three Major Components of a Three-Phase Compiler                           
@@ -92,7 +92,7 @@ x86 上模拟执行 ARM 架构的程序也可以是这个套路。）但是这�
                               Retargetablity
 
 
-###基于 LLVM 的编译器  
+### 基于 LLVM 的编译器  
 基于 LLVM 的编译器架构如下：      
 ![LLVMCompiler1](http://www.aosabook.org/images/llvm/LLVMCompiler1.png)   
                               LLVM's Implementation of the Three-Phase Design                
@@ -158,7 +158,7 @@ print("Hello, world!");
 很多公司贡献了代码到 LLVM 项目中，或使用 LLVM 的工具改善自己的产品，比如 Google ,Google NDK 以及 PNacl 都使用了 LLVM 的工具，而 LLVM 的许多特性就是 
 Google 实现的，比如地址消毒剂 AddressSanitizer（GCC 目前也支持了）。还有 Intel OpenCL, Adobe, NVIDIA Nucda,Microsoft WinObjc。
 
-##Android 与 AOT  
+## Android 与 AOT  
 LLVM 优异的架构并没有被 Android 广泛使用。
 Android 最初由 Andy Rubin 开发作为数码相机的操作系统，使用 Linux 内核，后来发现市场需求不大被改造成智能手机操作系统反而获得了巨大成功。
 Rubin 选择了具有很大争议的 Java 作为 Android 的应用开发语言，Java 基于 JVM，能够在支持 JVM 的平台上运行，Java 的开发者非常多，
@@ -169,14 +169,14 @@ Rubin 选择了具有很大争议的 Java 作为 Android 的应用开发语言�
 时常发现某某 JavaScript 升级换代，性能增加一倍。
 
 
-####Android Runtime
+#### Android Runtime
 2014年6月，Google 推出 Android 5.0(Android Lollipop) ，ART 完全取代了 Dalvik。    
 ![ART View](https://upload.wikimedia.org/wikipedia/commons/2/25/ART_view.png)  
 ART 本质上一个混合的 AOT 方案，它还实现了 JVM 解释器。
 
 Andy Rubin 先后在苹果 微软 谷歌公司工作过。
 
-##.NET 与 AOT    
+## .NET 与 AOT    
 说起.NET 就不得不谈到 [Anders Hejlsberg](http://zh.wikipedia.org/wiki/%E5%AE%89%E5%BE%B7%E6%96%AF%C2%B7%E6%B5%B7%E5%B0%94%E6%96%AF%E4%BC%AF%E6%A0%BC) 此人，
 他来自丹麦，Turbo Pascal 最开始就是他开发的，Delphi/C#之父，C#&.NET 的首席架构师，TypeScript 的首席架构师，主持开发了 .NET Framework，Visual Basic.NET，
 以及最新的 .NET 编译器 [Roslyn](http://msdn.microsoft.com/en-us/vstudio/roslyn.aspx) 。   
@@ -216,7 +216,7 @@ Phoenix 的架构师 Andy Ayers 本人也是 LLILC 的核心成员。
 ![DotNetCoreCLR](https://raw.githubusercontent.com/fcharlie/site-res/master/compilers/dotnativecoreclr.png)
 
 
-###.NET Compiler Platform ("Roslyn")
+### .NET Compiler Platform ("Roslyn")
 Roslyn 是 Microsoft 推出的新一代 C#/VB.NET 编译器,相对于传统的 .NET C# 编译器,整个生产流程结构非常清晰,
 和 C++ 中的 clang 类比丝毫不为过,而 Visual Studio 2015 也充分利用了 Roslyn 的优秀特性.     
 目前无论是 Microsoft 还是 Mono 都参与到了 Roslyn 的开发过程中,利用 Roslyn ,一些第三方的 C# AOT 解决方案迅速的发展起来.     
@@ -235,7 +235,7 @@ Roslyn APIs:
                                              
 
 
-###.NET Native
+### .NET Native
 .NET 的 AOT 解决方案在 Mono 中很早就出现了，Mono 平台支持 Android 以及 iOS 的 App 开发,由于 iOS 禁止第三方软件的 JIT 编译,
 在iOS 平台,Mono 使用的就是 Full AOT 策略.       
 
@@ -462,7 +462,7 @@ File Type: EXECUTABLE IMAGE
 对于 .NET Native, 大多数人并不会感到满意，大多数 .NET 开发者都希望 .NET Native 能够扩展到 桌面平台，能够支持 WPF ...
 
 
-###LLILC - LLVM-Based Compiler for .NET CoreCLR
+### LLILC - LLVM-Based Compiler for .NET CoreCLR
 在 .NET CoreCLR 开源后，.NET 开发团队也创建了基于 LLVM 的 .NET Core 编译器项目 LLILC，实际上，在之前已经有了 C# Native, 
 SharpLang 之类的项目着手实现 .NET 的 AOT。然而这些项目大多是个人兴趣，支持有限。     
 LLILC 的核心开发者是 Phoenix 编译器框架的架构师 [Andy Ayers](https://github.com/AndyAyersMS),  大神本人也会在 gitter.im 上回答人们对 LLILC 的疑问。
@@ -480,7 +480,7 @@ LLILC 依然是非常的不完善，最后的究竟怎样仍需观望。
 
 从 .NET 还是 JVM 或者是 LLVM 来看，很多东西都是相似的，技术也在互相影响和渗透。
 
-###.NET Core Runtime (CoreRT)    
+### .NET Core Runtime (CoreRT)    
 近期，.NET 推出了 .NET Core Runtime (CoreRT) 的项目，此项目和 .NET Core Runtime (CLR) 不同的是，CoreRT 提供了一套 
 .NET AOT 的机制,可以将 .NET 程序 编译成原生代码，不依赖 .NET 运行时而运行在宿主机器上。此项目的大部分代码来源于 CoreCLR ，
 也有部分与 UWA .NET Native 的代码类似。
@@ -527,9 +527,9 @@ CoreRT 介绍：  [Intro to .NET Native and CoreRT](https://github.com/dotnet/co
 
 实际上此项目还相当不完善，dotnet 工具链偶尔是无法运行的，不过可以预见此项目会给人们带来眼前一亮的感觉。  
 
-##探索的脚步 
+## 探索的脚步 
 
-###4.1 CSNative
+### 4.1 CSNative
 永远不会有完全统一的意见，总会有人去创造新的轮子。不谈其他，重复的创造能对已有的东西带来技术革新，在 CodePlex上,
 就有个伙计实现了自己的 .NET Native 方案：[C# Native](http://csnative.codeplex.com/)；他利用 Roslyn API 将 C# 编译成 MSIL，
 然后将 MSIL 编译成 LLVM IR ,随后 'LLVM System compiler' llc 编译成 Native code ,用 GCC 将 Object 文件链接成 exe，
@@ -561,14 +561,14 @@ Il2c 是一个利用 Roslyn 实现的 C#/MSIL to C++ 的编译器
 
 C# Native 作者 AlexDev 本人也是 Babylon 3D (C#/native port) 的作者。  
 
-###4.2 SharpLang
+### 4.2 SharpLang
 同样的，在 Github上，也有一个基于 LLVM 的 C# Native 的解决方案: [SharpLang](https://github.com/xen2/SharpLang)。
 在LLILC推出后，开发者 Virgile Bello 也就没有更新 SharpLang 了。
 
-##其他
+## 其他
 一些相关技术的图片：
 
-###.NET
+### .NET
 实际上无论是 JVM 还是 .NET Framework 以及 LLVM Framework 在结构上是非常相似的，如下图：     
 ![Framework](https://raw.githubusercontent.com/fstudio/Beaot/master/doc/Images/dotNet/CLR_diag.png)    
                                         
@@ -581,12 +581,12 @@ C# Native 作者 AlexDev 本人也是 Babylon 3D (C#/native port) 的作者。
 ![Step](https://raw.githubusercontent.com/fstudio/Beaot/master/doc/Images/dotNet/Overview_of_the_Common_Language_Infrastructure.png)         
                                                         
 
-###JVM   
+### JVM   
 JVM 加载器：     
 ![JVM](https://raw.githubusercontent.com/fstudio/Beaot/master/doc/Images/JvmSpec7.png)        
                                                       
 
-###Web AOT
+### Web AOT
 **asm.js** 是一个非常容易优化的 JavaScript 子集: 
 [asm.js AOT](https://blog.mozilla.org/luke/2014/01/14/asm-js-aot-compilation-and-startup-performance/)     
 ![asm.js-AOT](https://ffp4g1ylyit3jdyti1hqcvtb-wpengine.netdna-ssl.com/luke/files/2013/12/aot-diagram.png)  
@@ -601,7 +601,7 @@ WebAssembly 是 Microsoft Google Mozille Apple 开发者合作开发的一项新
 [InfoQ WebAssembly：面向Web的通用二进制和文本格式](http://www.infoq.com/cn/news/2015/06/webassembly-wasm)
 
 
-##备注  
+# 备注  
 1. LLVM [http://www.aosabook.org/en/llvm.html](http://www.aosabook.org/en/llvm.html)     
 2. Embarcadero C++ Builder:    
 [BCC64.EXE, the C++ 64-bit Windows Compiler](http://docwiki.embarcadero.com/RADStudio/XE6/en/BCC64.EXE,_the_C%2B%2B_64-bit_Windows_Compiler)     
