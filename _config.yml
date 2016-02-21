@@ -1,4 +1,4 @@
-# Site settings
+name: "Charlie‘s Reflections"
 title: Charlie's Reflections
 email: forcemz@outlook.com
 description: "Create New code"
@@ -7,8 +7,16 @@ url: "http://forcemz.net" # the base hostname & protocol for your site
 twitter_username: sinopre
 github_username:  fcharlie
 
+timezone: Asia/Shanghai
 # Build settings
 markdown: kramdown
-
 kramdown:
   input: GFM
+
+highlighter: rouge
+
+permalink: pretty
+
+gems:
+- jekyll-paginate
+- github-pages
