@@ -37,19 +37,28 @@ E-mail: forcemz@outlook.com
 
 框架:     
 - Boost Boost.Asio   
+- Qt  
+- WTL   
+- Win32  
 - ASP.NET   
 - WPF      
 - webpy   
 - nginx Perl   
 - Vibe.d   
 - Rails  
+- Puma  
 
 操作系统：   
 - Linux ,多线程，多进程，网络编程。   
 - Windows Win32 程序开发，主要是 GUI 程序。  
-- FreeBSD 源码  
+- FreeBSD   
+- ReactOS  
+- Minix  
+- Hurd  
+- Haiku  
 
-** 备注** 通常来说，本人精通 git 和 svn。  
+
+** 备注 ** 通常来说，本人精通 git 和 svn。  
 
 
 # 个人作品    
@@ -61,5 +70,8 @@ E-mail: forcemz@outlook.com
 - whois Windows 平台 whois 实现。 URL: [http://git.oschina.net/ipvb/whois](http://git.oschina.net/ipvb/whois)  
 - PE Analyzer 基于 C++ & Direct2D 开发的 PE 格式检查软件。URL: [https://github.com/fcharlie/PEAnalyzer](https://github.com/fcharlie/PEAnalyzer)        
 - MsysLauncher MSYS2 运行环境启动器。URL: [https://github.com/fcharlie/msys2-launcher](https://github.com/fcharlie/msys2-launcher)     
+- Windows 平台 WiFi 无线承载网络开启助手。 [https://github.com/fcharlie/WiFiAssistant](https://github.com/fcharlie/WiFiAssistant)
 
-
+# 其他
+- make GNU make 移植到 MSVC [https://github.com/fstudio/make](https://github.com/fstudio/make)
+- bmake BSD make 移植到 Windows 平台 [https://github.com/fstudio/nmake](https://github.com/fstudio/nmake)   
