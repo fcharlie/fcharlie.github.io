@@ -73,5 +73,4 @@ E-mail: forcemz@outlook.com
 - Windows 平台 WiFi 无线承载网络开启助手。 [https://github.com/fcharlie/WiFiAssistant](https://github.com/fcharlie/WiFiAssistant)
 
 # 其他
-- make GNU make 移植到 MSVC [https://github.com/fstudio/make](https://github.com/fstudio/make)
-- bmake BSD make 移植到 Windows 平台 [https://github.com/fstudio/nmake](https://github.com/fstudio/nmake)   
+- bmake BSD make 移植到 Windows 平台，欢迎参与 ！ [https://github.com/fstudio/nmake](https://github.com/fstudio/nmake)   
