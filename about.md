@@ -69,7 +69,7 @@ E-mail: forcemz@outlook.com
 
 - Puma  
 
-操作系统：   
+## 操作系统：   
 
 - Linux ,
 多线程，多进程，网络编程。   
@@ -88,7 +88,7 @@ Win32 程序开发，主要是 GUI 程序。
 - Haiku  
 
 
-** 备注 ** 通常来说，本人精通 git 和 svn。  
+通常来说，本人精通 git 和 svn。  
 
 
 # 个人作品    
