@@ -65,31 +65,31 @@ E-mail: forcemz@outlook.com
 博客站点 [http://forcemz.net/](http://forcemz.net/)         
 
 - Clangbuilder 基于 PowerShell 开发的 Windows 平台 LLVM 自动构建工具集。  
-   URL: [https://github.com/fstudio/clangbuilder](https://github.com/fstudio/clangbuilder)      
+   [https://github.com/fstudio/clangbuilder](https://github.com/fstudio/clangbuilder)      
 
 - svnsrv 开源跨平台的 svn 协议动态代理服务器。  
-   URL: [http://git.oschina.net/oschina/svnsrv](http://git.oschina.net/oschina/svnsrv)     
+   [http://git.oschina.net/oschina/svnsrv](http://git.oschina.net/oschina/svnsrv)     
    
 - iBurnMgr 基于 C++ & Direct2D 开发的 USB 启动盘制作软件。  
-   URL: [https://github.com/fcharlie/iBurnMgr](https://github.com/fcharlie/iBurnMgr)      
+   [https://github.com/fcharlie/iBurnMgr](https://github.com/fcharlie/iBurnMgr)      
    
 - Ginkgo 基于 WPF 开发的 Metro 风格 Batch 编辑器。  
-   URL: [https://github.com/fstudio/Ginkgo](https://github.com/fstudio/Ginkgo)      
+   [https://github.com/fstudio/Ginkgo](https://github.com/fstudio/Ginkgo)      
    
 - whois Windows 平台 whois 实现。   
-   URL: [http://git.oschina.net/ipvb/whois](http://git.oschina.net/ipvb/whois)    
+   [http://git.oschina.net/ipvb/whois](http://git.oschina.net/ipvb/whois)    
    
 - PE Analyzer 基于 C++ & Direct2D 开发的 PE 格式检查软件。  
-   URL: [https://github.com/fcharlie/PEAnalyzer](https://github.com/fcharlie/PEAnalyzer)        
+   [https://github.com/fcharlie/PEAnalyzer](https://github.com/fcharlie/PEAnalyzer)        
     
 - MsysLauncher MSYS2 运行环境启动器。  
-   URL: [https://github.com/fcharlie/msys2-launcher](https://github.com/fcharlie/msys2-launcher)     
+   [https://github.com/fcharlie/msys2-launcher](https://github.com/fcharlie/msys2-launcher)     
    
 - WiFiAssistant Windows 平台 WiFi 无线承载网络开启助手。  
-   URL: [https://github.com/fcharlie/WiFiAssistant](https://github.com/fcharlie/WiFiAssistant)     
+   [https://github.com/fcharlie/WiFiAssistant](https://github.com/fcharlie/WiFiAssistant)     
    
 - Exile 基于 Microsoft cpprestsdk 以及 HTTP.sys 的 Git Smart HTTP Server。   
-  URL: [https://github.com/fstudio/Exile](https://github.com/fstudio/Exile)     
+   [https://github.com/fstudio/Exile](https://github.com/fstudio/Exile)     
 
 # 其他
 - bmake BSD make 移植到 Windows 平台，欢迎参与 ！ [https://github.com/fstudio/bmake](https://github.com/fstudio/bmake)   
