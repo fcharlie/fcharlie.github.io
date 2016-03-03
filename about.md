@@ -70,12 +70,21 @@ E-mail: forcemz@outlook.com
 - Puma  
 
 操作系统：   
-- Linux ,多线程，多进程，网络编程。   
-- Windows Win32 程序开发，主要是 GUI 程序。  
+
+- Linux ,
+多线程，多进程，网络编程。   
+
+- Windows 
+Win32 程序开发，主要是 GUI 程序。  
+
 - FreeBSD   
-- ReactOS  
+
+- ReactOS   
+
 - Minix  
+
 - Hurd  
+
 - Haiku  
 
 
