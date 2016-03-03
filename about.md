@@ -22,7 +22,7 @@ E-mail: forcemz@outlook.com
 - 从事 GIT 基础服务的开发，如网页爬虫（基于 Python）， GIT HTTP 智能服务，即 GIT 的 HTTP(S) 协议访问，基于 Perl，Ruby。    
 
 - 作为核心开发者实现 GIT@OSC 分布式改造，基于 C++ 实现多线程安全的路由选择库（连接池支持）；基于 NGINX 模块开发支持 HTTP 动态代理；
-基于 Boost.Asio 实现 SVN 协议动态代理服务器，   此服务器提供跨平台开源版本，即下面的 svnsrv；基于 Boost.Asio Hook 实现 git-upload-pack git-receive-pack 的
+基于 Boost.Asio 实现 SVN 协议动态代理服务器，   此服务器提供跨平台开源版本，即下面的 svnsrv；基于 Boost.Asio Hook 实现 git-upload-pack git-receive-pack 和
 Git Smart 服务 git-smart-service ，取代 git 默认的 upload-pack/receive-pack 从而使得 Git 无论是 HTTP smart 还是 SSH 还是 Git 协议都能通过动态代理实现分布式。
 
 # 技能     
