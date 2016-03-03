@@ -25,27 +25,46 @@ E-mail: forcemz@outlook.com
 包括但不限于以下语言和框架：  
 语言:        
 - C/C++     
+
 - C#   
+
 - PowerShell     
+
 - D     
+
 - Perl
+
 - Shell     
+
 - Python   
+
 - Makefile   
+
 - Ruby       
+
 - Java      
 
 框架:     
 - Boost Boost.Asio   
+
 - Qt  
+
 - WTL   
+
 - Win32  
+
 - ASP.NET   
+
 - WPF      
+
 - webpy   
+
 - nginx Perl   
+
 - Vibe.d   
+
 - Rails  
+
 - Puma  
 
 操作系统：   
