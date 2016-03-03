@@ -7,19 +7,22 @@ permalink: /about/
 
 # 简介       
 李博文 (Force.Charlie)  
-E-mail: forcemz@outlook.com
+E-mail: forcemz@outlook.com  
 
 
 # 教育  
 2010.09 ~2014.06 本科 湘南学院 计算机系 通信工程  
-2012~2014 年主导开发基于 ASP.NET 的 ACM 在线测评系统。
+2012.05~2014.06 年主导开发基于 ASP.NET 的 ACM 在线测评系统。
 
 # 工作经验     
 2014.06~ 至今 深圳市奥思网络科技有限公司（开源中国），软件工程师       
 - 实现 GIT@OSC 代码托管平台 SVN 协议接入，属于国内第一家,基于 Java。        
+
 - 从事 GIT 基础服务的开发，如网页爬虫（基于 Python）， GIT HTTP 智能服务，即 GIT 的 HTTP(S) 协议访问，基于 Perl，Ruby。    
-- 作为核心开发者实现 GIT@OSC 分布式改造，包括，但不限于 HTTP 分布式方案（NGINX 模块开发），
-分布式路由库，SVN 协议分布式解决方案，SSH 协议分布式方案。基于 C 和 C++ 。   
+
+- 作为核心开发者实现 GIT@OSC 分布式改造，基于 C++ 实现多线程安全的路由选择库（连接池支持）；基于 NGINX 模块开发支持 HTTP 动态代理；
+基于 Boost.Asio 实现 SVN 协议动态代理服务器，   此服务器提供跨平台开源版本，即下面的 svnsrv；基于 Boost.Asio Hook 实现 git-upload-pack git-receive-pack 的
+Git Smart 服务 git-smart-service ，取代 git 默认的 upload-pack/receive-pack 从而使得 Git 无论是 HTTP smart 还是 SSH 还是 Git 协议都能通过动态代理实现分布式。
 
 # 技能     
 包括但不限于以下语言和框架：  
@@ -69,7 +72,7 @@ E-mail: forcemz@outlook.com
 
 - Puma  
 
-## 操作系统：   
+ 操作系统：   
 
 - Linux ,
 多线程，多进程，网络编程。   
