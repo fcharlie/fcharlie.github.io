@@ -2,12 +2,34 @@
 layout: post
 title:  "Windows Containers 初窥 (一)"
 date:   2016-04-23 21:30:16
-published: false
+published: true
 categories: builder
 ---
 
 # Windows Containers
 
+随着 Windows 10 Redstone 和 Windows Server 2016 发布日益临近,一些重要的功能也逐渐披露到公众面前。
+比如 Windows Container ，Container 功能应该是 Windows 8 AppContainer 以来，Windows 应用隔离技术的的一个大的补充。
+
+从 Windows 8 开始，Windows 推出了 Store App, Store App 运行在一个 AppContainer 中， 操作系统通过 AppContainer 技术
+实现了进程权限的隔离，由于 UAC 的限制，App 无法访问大多数的文件系统目录，也不能进行一些重要的操作，许多系统对进程 UAC 
+权限存在依赖的 API 也无法被直接调用。一些系统的 Store App 只得依赖各种 Runtime Broker 通过 LPC 来实现重要的操作。
+
+对于 Store App 来说，使用全新的 API 和不同以往的安全策略，在 AppContainer 中运行恰到好处，而 Win32 App 同样可以运行在
+AppContainer 中，不过，依赖传统配置和文件系统的应用程序如若使用 AppConatiner ，大量的功能将无法使用，这就使得 Windows 面临
+一个困境，成千上万的 Win32 App 却无法在运行在新的 
+在以前的文章中，我曾经写过一个如何启动基于 Windows AppConatiner 的传统 Win32 应用程序：
+[Windows AppContainer 降权，隔离与安全](http://forcemz.net/container/2015/06/12/AppContainer/)
+
+
+## Container 要素
+
+对于一个合格的 容器机制来说，
+
+
+## 附注
+
+以下是 container.dll 和 containerxml.dll 的导出函数
 {% highlight text %}
 // container.dll
 void container::AddRuntimeVirtualKeysToContainer(void *,unsigned long,struct _WC_VKEY_INFO *)
@@ -133,3 +155,12 @@ void container::xml::ReadFromXml(class std::basic_string<unsigned short,struct s
 WcCreateDescriptionFromXml
 WcDestroyDescription
 {% endhighlight %}
+
+默认情况下， wchar_t 在 Visual C++ 中是一种内置类型，std::wstring CharT 类型为 wchar_t,而在这些导出符号中，则是 unsigned short 。
+
+
+## Resources
+
++ [Quick Nano Server PXE boot demo](https://channel9.msdn.com/Blogs/Regular-IT-Guy/Quick-Nano-Server-PXE-boot-demo/player)
++ [Library OS PDF](http://research.microsoft.com/pubs/141071/asplos2011-drawbridge.pdf)
++ [Graphene Library OS - Github](https://github.com/oscarlab/graphene)

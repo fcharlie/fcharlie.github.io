@@ -261,118 +261,138 @@ int wmain(int argc,wchar_t *argv[])
 下面是一个完整的例子。
 
 {% highlight cpp %}
-#include <vector>
+#include <ShlObj.h>
+#include <Userenv.h>
+#include <functional>
 #include <memory>
 #include <type_traits>
-#include <Windows.h>
-#include <sddl.h>
-#include <Userenv.h>
-#include <iostream>
+#include <vector>
+#define APPCONTAINER_PROFILE_NAME L"Force.Charlie.AppLoader.AppContainer"
+#define APPCONTAINER_PROFILE_DISPLAYNAME L"Force.Charlie.AppLoader.AppContainer"
+#define APPCONTAINER_PROFILE_DESCRIPTION L"AppLoader AppContainer"
 
-#pragma comment(lib,"Userenv")
-#pragma comment(lib,"Shlwapi")
-#pragma comment(lib,"kernel32")
-#pragma comment(lib,"user32")
-#pragma comment(lib,"Advapi32")
-#pragma comment(lib,"Ole32")
-#pragma comment(lib,"Shell32")
-
-typedef std::shared_ptr<std::remove_pointer<PSID>::type> SHARED_SID;
-
-bool SetCapability(const WELL_KNOWN_SID_TYPE type, std::vector<SID_AND_ATTRIBUTES> &list, std::vector<SHARED_SID> &sidList) {
-  SHARED_SID capabilitySid(new unsigned char[SECURITY_MAX_SID_SIZE]);
-  DWORD sidListSize = SECURITY_MAX_SID_SIZE;
-  if (::CreateWellKnownSid(type, NULL, capabilitySid.get(), &sidListSize) == FALSE) {
-    return false;
+class AppContainerContext {
+public:
+  typedef std::vector<SID_AND_ATTRIBUTES> TCapabilitiesList;
+  AppContainerContext() : appContainerSid(nullptr) {}
+  ~AppContainerContext() {
+    ///
+    if (appContainerSid) {
+      FreeSid(appContainerSid);
+    }
+    for (auto &c : mCapabilities) {
+      if (c.Sid) {
+        HeapFree(GetProcessHeap(), 0, c.Sid);
+      }
+    }
   }
-  if (::IsWellKnownSid(capabilitySid.get(), type) == FALSE) {
-    return false;
-  }
-  SID_AND_ATTRIBUTES attr;
-  attr.Sid = capabilitySid.get();
-  attr.Attributes = SE_GROUP_ENABLED;
-  list.push_back(attr);
-  sidList.push_back(capabilitySid);
-  return true;
-}
-
-static bool MakeWellKnownSIDAttributes(std::vector<SID_AND_ATTRIBUTES> &capabilities,std::vector<SHARED_SID> &capabilitiesSidList)
-{
-
-    const WELL_KNOWN_SID_TYPE capabilitiyTypeList[] = {
-        WinCapabilityInternetClientSid, WinCapabilityInternetClientServerSid, WinCapabilityPrivateNetworkClientServerSid,
-        WinCapabilityPicturesLibrarySid, WinCapabilityVideosLibrarySid, WinCapabilityMusicLibrarySid,
-        WinCapabilityDocumentsLibrarySid, WinCapabilitySharedUserCertificatesSid, WinCapabilityEnterpriseAuthenticationSid,
-        WinCapabilityRemovableStorageSid,
-    };
-    for(auto type:capabilitiyTypeList) {
-        if (!SetCapability(type, capabilities, capabilitiesSidList)) {
-            return false;
-        }
+  bool AppContainerContextInitialize() {
+    if (!MakeWellKnownSIDAttributes()) {
+      return false;
+    }
+    auto hr = DeleteAppContainerProfile(APPCONTAINER_PROFILE_NAME);
+    if (::CreateAppContainerProfile(
+            APPCONTAINER_PROFILE_NAME, APPCONTAINER_PROFILE_DISPLAYNAME,
+            APPCONTAINER_PROFILE_DESCRIPTION,
+            (mCapabilities.empty() ? NULL : mCapabilities.data()),
+            (DWORD)mCapabilities.size(), &appContainerSid) != S_OK) {
+      return false;
     }
     return true;
-}
+  }
+  PSID GetAppContainerSid() const { return appContainerSid; }
+  TCapabilitiesList &Capabilitis() { return mCapabilities; }
 
+private:
+  bool MakeWellKnownSIDAttributes() {
+    const WELL_KNOWN_SID_TYPE capabilitiyTypeList[] = {
+        WinCapabilityInternetClientSid,
+        WinCapabilityInternetClientServerSid,
+        WinCapabilityPrivateNetworkClientServerSid,
+        WinCapabilityPicturesLibrarySid,
+        WinCapabilityVideosLibrarySid,
+        WinCapabilityMusicLibrarySid,
+        WinCapabilityDocumentsLibrarySid,
+        WinCapabilitySharedUserCertificatesSid,
+        WinCapabilityEnterpriseAuthenticationSid,
+        WinCapabilityRemovableStorageSid,
+    };
+    for (auto c : capabilitiyTypeList) {
+      PSID sid = HeapAlloc(GetProcessHeap(), 0, SECURITY_MAX_SID_SIZE);
+      if (sid == nullptr) {
+        return false;
+      }
+      DWORD sidListSize = SECURITY_MAX_SID_SIZE;
+      if (::CreateWellKnownSid(c, NULL, sid, &sidListSize) == FALSE) {
+        HeapFree(GetProcessHeap(), 0, sid);
+        continue;
+      }
+      if (::IsWellKnownSid(sid, c) == FALSE) {
+        HeapFree(GetProcessHeap(), 0, sid);
+        continue;
+      }
+      SID_AND_ATTRIBUTES attr;
+      attr.Sid = sid;
+      attr.Attributes = SE_GROUP_ENABLED;
+      mCapabilities.push_back(attr);
+    }
+    return true;
+  }
+  PSID appContainerSid;
+  TCapabilitiesList mCapabilities;
+};
 
-HRESULT AppContainerLauncherProcess(LPCWSTR app,LPCWSTR cmdArgs,LPCWSTR workDir)
-{
-    wchar_t appContainerName[]=L"Phoenix.Container.AppContainer.Profile.v1.test";
-    wchar_t appContainerDisplayName[]=L"Phoenix.Container.AppContainer.Profile.v1.test\0";
-    wchar_t appContainerDesc[]=L"Phoenix Container Default AppContainer Profile  Test,Revision 1\0";
-    DeleteAppContainerProfile(appContainerName);///Remove this AppContainerProfile
-    std::vector<SID_AND_ATTRIBUTES> capabilities;
-    std::vector<SHARED_SID> capabilitiesSidList;
-    if(!MakeWellKnownSIDAttributes(capabilities,capabilitiesSidList))
-        return S_FALSE;
-    PSID sidImpl;
-    HRESULT hr=::CreateAppContainerProfile(appContainerName,
-        appContainerDisplayName,
-        appContainerDesc,
-        (capabilities.empty() ? NULL : &capabilities.front()), capabilities.size(), &sidImpl);
-    if(hr!=S_OK){
-        std::cout<<"CreateAppContainerProfile Failed"<<std::endl;
-        return hr;
-    }
-    wchar_t *psArgs=nullptr;
-    psArgs=_wcsdup(cmdArgs);
-    PROCESS_INFORMATION pi;
-    STARTUPINFOEX siex = { sizeof(STARTUPINFOEX) };
-    siex.StartupInfo.cb = sizeof(STARTUPINFOEXW);
-    SIZE_T cbAttributeListSize = 0;
-    BOOL bReturn = InitializeProcThreadAttributeList(
-        NULL, 3, 0, &cbAttributeListSize);
-    siex.lpAttributeList = (PPROC_THREAD_ATTRIBUTE_LIST)HeapAlloc(GetProcessHeap(), 0, cbAttributeListSize);
-    bReturn = InitializeProcThreadAttributeList(siex.lpAttributeList, 3, 0, &cbAttributeListSize);
-    SECURITY_CAPABILITIES sc;
-    sc.AppContainerSid = sidImpl;
-    sc.Capabilities = (capabilities.empty() ? NULL : &capabilities.front());
-    sc.CapabilityCount = capabilities.size();
-    sc.Reserved = 0;
-    if(UpdateProcThreadAttribute(siex.lpAttributeList, 0,
-        PROC_THREAD_ATTRIBUTE_SECURITY_CAPABILITIES,
-        &sc,
-        sizeof(sc) ,
-        NULL, NULL)==FALSE)
-    {
-        goto Cleanup;
-    }
-    BOOL bRet=CreateProcessW(app, psArgs, nullptr, nullptr,
-        FALSE, EXTENDED_STARTUPINFO_PRESENT, NULL, workDir, reinterpret_cast<LPSTARTUPINFOW>(&siex), &pi);
-    ::CloseHandle(pi.hThread);
-    ::CloseHandle(pi.hProcess);
-Cleanup:
+BOOL WINAPI CreateAppContainerProcessEx(LPCWSTR lpApplication,
+                                        LPWSTR lpCommandline,
+                                        LPCWSTR lpEvnironment,
+                                        LPCWSTR lpDirectory) {
+  AppContainerContext context;
+  if (!context.AppContainerContextInitialize()) {
+    return FALSE;
+  }
+  PROCESS_INFORMATION pi ;
+  STARTUPINFOEX siex = {sizeof(STARTUPINFOEX)};
+  siex.StartupInfo.cb = sizeof(siex);
+  SIZE_T cbAttributeListSize = 0;
+  InitializeProcThreadAttributeList(NULL, 3, 0, &cbAttributeListSize);
+  siex.lpAttributeList = (PPROC_THREAD_ATTRIBUTE_LIST)HeapAlloc(
+      GetProcessHeap(), 0, cbAttributeListSize);
+  BOOL bReturn = TRUE;
+  if ((bReturn = InitializeProcThreadAttributeList(
+           siex.lpAttributeList, 3, 0, &cbAttributeListSize)) == FALSE) {
+    return FALSE;
+  }
+  SECURITY_CAPABILITIES sc;
+  sc.AppContainerSid = context.GetAppContainerSid();
+  sc.Capabilities =
+      (context.Capabilitis().empty() ? NULL : context.Capabilitis().data());
+  sc.CapabilityCount = static_cast<DWORD>(context.Capabilitis().size());
+  sc.Reserved = 0;
+  if ((bReturn = UpdateProcThreadAttribute(
+           siex.lpAttributeList, 0, PROC_THREAD_ATTRIBUTE_SECURITY_CAPABILITIES,
+           &sc, sizeof(sc), NULL, NULL)) == FALSE) {
     DeleteProcThreadAttributeList(siex.lpAttributeList);
-    DeleteAppContainerProfile(appContainerName);
-    free(psArgs);
-    FreeSid(sidImpl);
-    return hr;
+    return FALSE;
+  }
+  bReturn =
+      CreateProcessW(lpApplication, lpCommandline, nullptr, nullptr, FALSE,
+                     EXTENDED_STARTUPINFO_PRESENT | CREATE_UNICODE_ENVIRONMENT,
+                     (LPVOID)lpEvnironment, lpDirectory,
+                     reinterpret_cast<STARTUPINFOW *>(&siex), &pi);
+  if (bReturn) {
+    CloseHandle(pi.hThread);
+    CloseHandle(pi.hProcess);
+  }
+  DeleteProcThreadAttributeList(siex.lpAttributeList);
+  return bReturn;
 }
 
 int wmain(int argc,wchar_t *argv[])
 {
-    if(argc>=2)
-    {
-        std::wcout<<L"Start AppContainer App: "<<argv[1]<<L"\t Return Code[HRESULT]: "<<AppContainerLauncherProcess(nullptr,argv[1],nullptr)<<std::endl;
+    wchar_t cmd[4096]=L"cmd.exe";
+    if(!CreateAppContainerProcessEx(null,cmd,null,null)){
+        fprintf("create AppConatiner Process failed !\n");
+        return 1;
     }
     return 0;
 }
