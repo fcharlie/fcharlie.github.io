@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "Windows Containers 初窥 (一)"
-date:   2016-04-23 21:30:16
+date:   2016-04-23 18:30:00
 published: true
 categories: builder
 ---
@@ -17,15 +17,28 @@ categories: builder
 
 对于 Store App 来说，使用全新的 API 和不同以往的安全策略，在 AppContainer 中运行恰到好处，而 Win32 App 同样可以运行在
 AppContainer 中，不过，依赖传统配置和文件系统的应用程序如若使用 AppConatiner ，大量的功能将无法使用，这就使得 Windows 面临
-一个困境，成千上万的 Win32 App 却无法在运行在新的 
+一个困境，经历二十多年的积累，Win32 应用的存量已经非常可观，然而 Win32 应用却无法在 Store 中运行，Store 中 App 稀少。
 在以前的文章中，我曾经写过一个如何启动基于 Windows AppConatiner 的传统 Win32 应用程序：
 [Windows AppContainer 降权，隔离与安全](http://forcemz.net/container/2015/06/12/AppContainer/)
 
 
+在 Windows 10 Redstone Insider 14316 中，只存在于 Windows Server 2016 TP 的 Container 作为一个可选的功能被添加到了 企业版镜像中，
+在 Windows 10 Redstone Insider 14328 中，Container 被添加到专业版功能当中。笔者才有幸去了解其中的奥秘。
+
+
 ## Container 要素
 
-对于一个合格的 容器机制来说，
+对于一个合格的 容器技术来说，既要做到开箱即用又要做到移除无痕，并且能够对应用的资源做出一个合理的限制和隔离。
 
+目前最为火热的
+
+
+## Windows Container 窥视
+
+在 Linux 中，Linux containers 的实现离不开 Namespace， 
+对于 Windows Container ，Microsoft 目前公布的资料非常少，通过各种报道和 'Drawbridge'
+
+在 WOW64 系统中，同样存在 Container.dll ，说明 Container 技术在 Win32 中是存在的。
 
 ## 附注
 
