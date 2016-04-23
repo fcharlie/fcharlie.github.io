@@ -6,6 +6,7 @@ published: true
 categories: compiler
 ---
 ## 前言 
+ 
 AOT 即 Ahead of Time Compilation,即运行前编，与之对应的是 JIT。众所周知，程序的源码并不能够被处理器直接执行，
 编程语言基本上都是人类可读，编译器或者解释器就需要将源代码转变为 CPU 可以操作的指令。比如一个加法函数最终需要执行 
 addl 汇编指令对应的机器码。   
@@ -58,7 +59,8 @@ x86 上模拟执行 ARM 架构的程序也可以是这个套路。）但是这�
 
 
 
-## LLVM 编译器基础设施的发迹   
+## LLVM 编译器基础设施的发迹
+
 数年前，LLVM 的官网对于 LLVM 项目的介绍是: "Low Level Virtual Machine",低级虚拟机，而现在对 LLVM 的介绍是："The LLVM Compiler Infrastructure"，
 即编译器基础设施。  在程序员圈子中对 LLVM 最深刻的影响来自于 Clang，C 家族编译器(C/C++ /Objective-C/C++ Compiler)前端，Clang 是 LLVM 最成功的实现，
 在平台支持上，Clang 短短几年达到了 GNU C Compliton (GCC) 20年的高度。 Clang 在编译速度，占用内存，以及整个框架的设计上都是可圈可点的，
@@ -80,7 +82,8 @@ x86 上模拟执行 ARM 架构的程序也可以是这个套路。）但是这�
 而且还有 JIT 模块, [LLVM ExecutionEngine](http://llvm.org/svn/llvm-project/llvm/trunk/lib/ExecutionEngine/) ExecutionEngine 的 API 并不是非常稳定。
 
 
-### 传统的编译器  
+### 传统的编译器
+
 传统编译器需要经过前端(Frontend)，优化(Optimizer)，后端(Backend)然后将源代码转变为机器码。    
 ![SimpleCompiler](http://www.aosabook.org/images/llvm/SimpleCompiler.png)   
                              Three Major Components of a Three-Phase Compiler                           

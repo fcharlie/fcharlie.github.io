@@ -43,7 +43,7 @@ if($Str -match "Po*"){
     #to do
 }
 
-{% endhighlight%}
+{% endhighlight %}
 
 与严格缩进的语言相比，这种由花括号包裹的代码快能够避免很大一部分因格式带来的错误。
 
