@@ -1,8 +1,8 @@
 name: "Charlie‘s Reflections"
 title: Charlie's Reflections
 email: forcemz@outlook.com
-description: "Create New code"
-baseurl: "/blog" # the subpath of your site, e.g. /blog/
+description: "Reflections"
+baseurl: "" # the subpath of your site, e.g. /blog/
 url: "" # the base hostname & protocol for your site
 twitter_username: sinopre
 github_username:  fcharlie
