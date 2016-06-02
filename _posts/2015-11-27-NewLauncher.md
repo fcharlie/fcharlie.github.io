@@ -716,7 +716,7 @@ static void Replace(std::string &s, char c1, char c2) {
 }
 {% endhighlight %}
 
-使用 env->FindClass 获取 MainClass, 类型为 jclass, 使用 env->GetStatuucMethodID 获取 MainClass 的方法 main, 后面就是将 参数转成 JVM String[] 类型
+使用 env->FindClass 获取 MainClass, 类型为 jclass, 使用 env->GetStaticMethodID 获取 MainClass 的方法 main, 后面就是将 参数转成 JVM String[] 类型
 随后调用静态方法即可， 大致如下：     
 {% highlight cpp %}
 int VMRuntime::Exe(std::vector<std::string> Args) {
