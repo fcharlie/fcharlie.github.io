@@ -24,7 +24,7 @@ categories: git
 
 下文是一个表格，关于目录结构和描述信息。
 
-| 路径 | 目录（F）\ 文件 （F） | 描述 |
+| 路径 | 目录（D）\ 文件 （F） | 描述 |
 |--------|-------|----------|
 | objects | D | 松散对象和包文件 |
 | refs | D | 引用，包括头引用，标签引用，和远程引用 |
@@ -94,6 +94,17 @@ blob 就是真实的文件，而 tree 就是将文件按目录结构和属性组
 
 Pack 文件的设计使得 git 仓库可以更好的节省磁盘空间，有利于服务器之间传输数据。
 
+### Pack 文件
+
+文档地址：[Git pack format](https://github.com/git/git/blob/master/Documentation/technical/pack-format.txt)
+
+### Idx 文件
+
+如果直接去解析 pack 文件是很麻烦的一件事，而我们只需要将大文件扫描出来，并不需要做其他工作，
+所以，我们可以了解 idx 文件格式，然后做出一些取舍。
+
+idx 文件的格式也在 pack 文件格式文档中。
+
 ## 仓库大小限制和文件大小检测
 
 在 Unix/Linux 或者 Bash On Windows 中，可以使用下面这个例子
@@ -143,6 +154,9 @@ private:
   uint64_t size_ = 0;
 };
 {% endhighlight %}
+
+当然也可以使用 ftw 这样的函数，不过并不一定高效，比如 libc musl 就是使用 opendir 来
+实现的 ftw。这样一来性能反而下降了。
 
 在 Windows 中，遍历目录可以使用 FindFirstFile/FindNextFile 这个两个 API。
 
