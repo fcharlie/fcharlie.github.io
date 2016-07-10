@@ -92,5 +92,92 @@ blob 就是真实的文件，而 tree 就是将文件按目录结构和属性组
 
 ## Pack 文件格式
 
+Pack 文件的设计使得 git 仓库可以更好的节省磁盘空间，有利于服务器之间传输数据。
+
 ## 仓库大小限制和文件大小检测
 
+在 Unix/Linux 或者 Bash On Windows 中，可以使用下面这个例子
+
+{% highlight cpp %}
+class ScanningFolder {
+public:
+  bool FolderSizeResolve(const std::string &dir__) {
+    DIR *dir = opendir(dir__.c_str());
+    if (dir == nullptr) {
+      fprintf(stderr, "opendir: %s\n", strerror(errno));
+      return false;
+    }
+    // folder self
+    size_ += 4096;
+    dirent *dirent_ = nullptr;
+    while ((dirent_ = readdir(dir))) {
+      if (dirent_->d_type & DT_REG) {
+        std::string file = dir__ + "/" + dirent_->d_name;
+        struct stat stat_;
+        if (stat(file.c_str(), &stat_) != 0) {
+          fprintf(stderr, "ERROR: %s\n", strerror(errno));
+          closedir(dir);
+          return false;
+        } else {
+          // S_BLKSIZE 512
+          size_ += stat_.st_blocks * S_BLKSIZE;
+        }
+      } else if (dirent_->d_type & DT_DIR) {
+        if (strcmp(dirent_->d_name, ".") == 0 ||
+            strcmp(dirent_->d_name, "..") == 0) {
+          continue;
+        }
+        std::string newdir = dir__ + "/" + dirent_->d_name;
+        if (!FolderSizeResolve(newdir)) {
+          closedir(dir);
+          return false;
+        }
+      }
+    }
+    closedir(dir);
+    return true;
+  }
+  uint64_t Size() const { return this->size_; }
+
+private:
+  uint64_t size_ = 0;
+};
+{% endhighlight %}
+
+在 Windows 中，遍历目录可以使用 FindFirstFile/FindNextFile 这个两个 API。
+
+{% highlight cpp %}
+class FolderSize {
+public:
+  FolderSize(const std::wstring &dir) : size_(-1) {}
+  int64_t Size() const { return size_; }
+
+private:
+  bool TraverseFolder(const std::wstring &dir) {
+    WIN32_FIND_DATAW find_data;
+    HANDLE hFind = FindFirstFileW(dir.c_str(), &find_data);
+    if (hFind == INVALID_HANDLE_VALUE) {
+      return false;
+    }
+    while (true) {
+      if (find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+        if (wcscmp(find_data.cFileName, L".") != 0) {
+          std::wstring xdir = dir;
+          xdir.push_back('\\');
+          xdir.append(find_data.cFileName);
+          TraverseFolder(xdir);
+        }
+      } else {
+        size_ +=
+            ((int64_t)find_data.nFileSizeHigh << 32 + find_data.nFileSizeLow);
+      }
+      if (!::FindNextFileW(hFind, &find_data)) {
+        break;
+      }
+    }
+    FindClose(hFind);
+    return true;
+  }
+  int64_t size_;
+};
+{% endhighlight %}
