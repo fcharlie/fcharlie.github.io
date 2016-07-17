@@ -170,3 +170,8 @@ fail:
 
 一般而言，Windows 平台的 IO 并不能重定向到 socket，实际上，你如果使用 IOCP 也可以达到相应的效率。还有，Windows 的 socket API WSASocket WSADuplicateSocket 
 复制句柄 DuplicateHandle ，这些可以好好利用。
+
+## 其他
+
+对于非代码托管平台的从业者来说，上面的相关内容可能显得无足轻重，不过，网络编程都是殊途同归，最后核心理念都是类似的。关于 git-daemon
+如果笔者有时间会实现一个跨平台的简易版并开源。
