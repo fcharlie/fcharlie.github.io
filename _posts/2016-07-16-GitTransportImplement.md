@@ -24,10 +24,11 @@ git 协议实现，将会得到很大的性能提升。
 
 git 协议的技术文档可以从 git 源码目录的 `Documentation/technical` 找到，即 [Packfile transfer protocols](https://github.com/git/git/blob/master/Documentation/technical/pack-protocol.txt)
 创建 TCP 连接后，git 客户端率先发送请求体，请求格式基于 BNF 的描述如下：
-   git-proto-request = request-command SP pathname NUL [ host-parameter NUL ]
-   request-command   = "git-upload-pack" / "git-receive-pack" / "git-upload-archive"   ; case sensitive
-   pathname          = *( %x01-ff ) ; exclude NUL
-   host-parameter    = "host=" hostname [ ":" port ]
+
+    git-proto-request = request-command SP pathname NUL [ host-parameter NUL ]
+    request-command   = "git-upload-pack" / "git-receive-pack" / "git-upload-archive"   ; case sensitive
+    pathname          = *( %x01-ff ) ; exclude NUL
+    host-parameter    = "host=" hostname [ ":" port ]
 
 一个例子如下：
 
