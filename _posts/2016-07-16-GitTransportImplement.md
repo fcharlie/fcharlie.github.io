@@ -140,11 +140,33 @@ fail:
 {% endhighlight %}
 
 在 Windows Visual C++ 中，popen 源码在 `C:\Program Files (x86)\Windows Kits\10\Source\${SDKVersion}\ucrt\conio\popen.cpp` ，
-Windows 32 GUI 程序，即 subsystem 是 Windows 的程序，使用 popen 可能导致程序无限失去响应。
+按照 MSDN 文档说明，Windows 32 GUI 程序，即 subsystem 是 Windows 的程序，使用 popen 可能导致程序无限失去响应。
 
-所以在实现 git 协议时，尽量不要使用 popen 来实现 git 协议。
+所以在笔者实现 git-daemon 及其他 git 服务器时，都不会使用 popen 这个函数。
+
+为了支持跨平台和简化编程，笔者在实现 svn 代理服务器时就使用了 Boost Asio 库，后来也用 Asio 实现过一个 git 远程命令服务，
+每一个客户端与服务器连接后，服务器启动程序，需要创建 3 条管道，分别是 子进程的标准输入 输出 错误，即 stdout stdin stderr，
+然后注册读写异步事件，将子进程的输出与错误写入到 socket 发送出去，读取 socket 写入到子进程的标准输入中。
+
+在 POSIX 系统中，boost 有一个文件描述符类 `boost::asio::posix::stream_descriptor` 这个类不能是常规文件，以前用 go 做 HTTP 前端
+没注意就 coredump 掉。
+
+在 Windows 系统中，boost 有文件句柄类 `boost::asio::windows::stream_handle` 此处的文件应当支持随机读取，比如命名管道（当然
+在 Windows 系统的，匿名管道实际上也是命名管道的一种特例实现）。
+
+以上两种类都支持 `async_read` `async_write` ，所以可以很方便的实现异步的读取。
 
 
+上面的做法，唯一的缺陷是性能并不是非常高，代码逻辑也比较复杂，当然好处是，错误异常可控一些。
 
+在 Linux 网络通信中，类似与 git 协议这样读取子进程输入输出的服务程序的传统做法是，将 子进程的 IO 重定向到 socket，
+值得注意的是 boost 中 socket 是异步非阻塞的，然而，git 命令的标准输入标准错误标准输出都是同步的，所以在 fork 子进程之
+前，需要将 socket 设置为同步阻塞，当 fork 失败时，要设置回来。
 
-共享套接口 WSADuplicateSocket DuplicateHandle
+`socket_.native_non_blocking(false);`
+
+另外，为了记录子进程是否异常退出，需要注册信号 SIGCHLD 并且使用 waitpid 函数去等待，boost 就有 `boost::asio::signal_set::async_wait`
+当然，如果你开发这样一个服务，会发现，频繁的启动子进程，响应信号，管理连接，这些操作才是性能的短板。
+
+一般而言，Windows 平台的 IO 并不能重定向到 socket，实际上，你如果使用 IOCP 也可以达到相应的效率。还有，Windows 的 socket API WSASocket WSADuplicateSocket 
+复制句柄 DuplicateHandle ，这些可以好好利用。
