@@ -47,10 +47,10 @@ struct GitRequest{
 };
 {% endhighlight %}
 
-通常来说，git 有自带的 git-daemon 实现，这个服务程序监听 9418 端口，在接收到客户端的请求后，
-先要判断 command 是否是被允许的，git 协议中有 fetch 和 push 以及 archive 之类的操作，分别对应
-的服务器上的命令是 git-upload-pack git-receive-pack git-upload-archive。通常来说，HTTP 只会
-支持前两种，SSH 会支持三种，而 代码托管平台的 git 通常支持的是 git-upload-pack git-upload-archive。
+git 有自带的 git-daemon 实现，这个服务程序监听 9418 端口，在接收到客户端的请求后，先要判断 command 是
+否是被允许的，git 协议中有 fetch 和 push 以及 archive 之类的操作，分别对应的服务器上的命令是 git-upload-pack
+git-receive-pack git-upload-archive。HTTP 只会支持前两种，SSH 会支持三种，而 代码托管平台的 git 通常支持的
+是 git-upload-pack git-upload-archive。
 
 当不允许的命令被接入时需要发送错误信息给客户端，这个信息在不同的 git-daemon 实现中也不一样，大体
 如下所示。
