@@ -64,6 +64,16 @@ git-daemon 将对请求路径进行转换，以期得到在服务器上的绝对
 客户端发送请求过去后，服务器将启动相应的命令，将命令标准错误和标准输出的内容发送给客户端，将客户端
 传输过来的数据写入到命令的标准输入中来。
 
+在请求体中，命令为 git-upload-pack /project.git 在服务器上运行时，就会类似 
+
+>git-upload-pack ${RepositoriesRoot}/project.git
+
+出于限制连接的目的，一般还会添加 `--timeout=60` 这样的参数。timeout 并不是整个操作过程的超时。
+
+与 HTTP 不同的是，命令中没有参数 `--stateless-rpc` 和 `--advertise-refs`  两个命令都存在时，只输出
+存储库的引用列表与 capabilities ，当只有 --stateless-rpc 时，等待客户端的数据，然后解析发送数据
+给客户端。
+
 ## 进程输入输出的读写
 
 在 C 语言中，有 popen 函数，可以创建一个进程,并将进程的标准输出或标准输入创建成一个文件指针，即 `FILE*`
