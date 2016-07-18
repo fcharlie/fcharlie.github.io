@@ -70,9 +70,9 @@ git-daemon 将对请求路径进行转换，以期得到在服务器上的绝对
 
 出于限制连接的目的，一般还会添加 `--timeout=60` 这样的参数。timeout 并不是整个操作过程的超时。
 
-与 HTTP 不同的是，命令中没有参数 `--stateless-rpc` 和 `--advertise-refs`  两个命令都存在时，只输出
-存储库的引用列表与 capabilities ，当只有 --stateless-rpc 时，等待客户端的数据，然后解析发送数据
-给客户端。
+与 HTTP 不同的是，git 协议的命令中没有参数 `--stateless-rpc` 和 `--advertise-refs`  ，在 HTTP 中，两个参数都存在时，
+只输出存储库的引用列表与 capabilities，与之对于的是 `GET /repository.git/info/refs?service=git-upload(receive)-pack` ，
+当只有 --stateless-rpc 时，等待客户端的数据，然后解析发送数据给客户端,，与之对应的是 `POST /repository.git/git-upload(receive)-pack`。
 
 ## 进程输入输出的读写
 
