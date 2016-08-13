@@ -63,6 +63,14 @@ SshSession 基于 C++ 开发，大量使用了 C++11 的特性，尤其是 lambd
 + onecore\net\ssh\core\timerimpl.cpp
 
 
+## 如何体验
+
+开启 SshProxy 和 SshBroker 服务，打开 MSYS2 或者 git for Windows 或者是 Bash on Windows (Bash on Windows 需指定账户名)
+
+>ssh localhost 
+
+输入当前账户密码即可登录。
+
 ## 关于服务
 
 在 Windows Insider 14361 中，SSH Proxy ，SSH Broker 服务修改为非默认启动。
@@ -109,8 +117,10 @@ Windows PowerShell 团队在 Github 上，fork 创建了 Windows 平台原生的
 
 14383 not found SSH Server Broker and SSH Server Proxy
 
-14385 find it
+14385 Found 
 
 14388 Not Found
 
 14390 Not Found
+
+14393 Red Stone Found
