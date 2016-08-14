@@ -459,11 +459,10 @@ MSYS2 或者 Cygwin 中，使用的是管道的方式读取程序的输出渲染
 
 {% highlight c++ %}
 bool IsWindowsTTY() {
-  ///
-  char *value{nullptr};
-  size_t len;
-  if (_dupenv_s(&value, &len, "TERM") != 0 || value == nullptr)
-    return false;
+  if (GetEnvironmentVariableW(L"TERM", NULL, 0) == 0) {
+    if (GetLastError() == ERROR_ENVVAR_NOT_FOUND)
+      return false;
+  }
   return true;
 }
 {% endhighlight %}
