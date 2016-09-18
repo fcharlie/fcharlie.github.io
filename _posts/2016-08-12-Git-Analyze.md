@@ -134,7 +134,7 @@ endif()
 UNIX® 系统支持信号 SIGALRM ，注册信号后, 然后可以使用 alarm 激活定时器，git-analyze 在非 Windows 平台
 是同 alarm 实现定时器，不过 alarm 精度不高，如果要使用更高精度的可以使用 ualarm 。
 
-WINDOW­ ® 系统的定时器有 CreateWaitableTimer timeSetEvent CreateTimerQueueTimer 等，分别应对不同的场景。
+WINDOW­S ® 系统的定时器有 CreateWaitableTimer timeSetEvent CreateTimerQueueTimer 等，分别应对不同的场景。
 比如 timeSetEvent 实际上是使用 Windows Event 对象实现，内部还是开了线程，git-analyze 实现的 Timer 功能是启动
 一个新的线程，然后 Sleep 后，运行 exit 退出进程，调用 exit 后会调用 ExitProcess 所以进程会退出，然后主进程结束时
 也会调用 ExitProcess 退出。
