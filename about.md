@@ -21,7 +21,7 @@ E-mail: forcemz@outlook.com
 2014.06~ 至今 深圳市奥思网络科技有限公司（开源中国），码云团队核心开发
 
 - 实现码云（GIT@OSC）代码托管平台的 Subversion（SVN）接入，国内第一家。
-- 从事 GIT 基础服务开发，包括不限于分布式架构，使用工具等。
+- 从事 GIT 基础服务开发，包括不限于分布式架构，实用工具等。
 - 开发了 SVNSRV, 即 Subversion svn:// 协议动态代理服务器。
 - 开发了 Git 分布式前端，NGINX 模块，核心路由模块。
 - 开发了 Git 分布式核心服务 git-srv,并实现了 分布式版本的 git-upload-pack git-receive-pack git-upload-pack。
