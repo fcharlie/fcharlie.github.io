@@ -29,7 +29,7 @@ E-mail: forcemz@outlook.com
 - 开发了 Git Native Hook 实现 git 分支检测，大文件大仓库扫描，以及同步触发。
 - 开发了 Git 同步服务，即 git-daemon 内部版本。
 - 开发了 Aquila Git HTTP Server 基于 .Net Core，HTTP 服务使用 Asp.Net Core 的 Kestrel。
-- 开发了 Git HTTP Middleware Server - Brzo，基于 Boost.Asio实际,速度超过一般的 Git HTTP 服务器实现，HTTP 解析不依赖第三方, 实际上瓶颈反而在 git 的 io。
+- 开发了 Git HTTP Middleware Server - Brzo，基于 Boost.Asio 实现,速度超过一般的 Git HTTP 服务器实现，HTTP 解析不依赖第三方, 实际上瓶颈反而在 git 的 io。
 - 开发了 Git Analyze 工具，git-analyze 可以从提交历史中发现超出限制的文件，git-rollback 支持回退到指定的 commit 或者版本。
 
 Git-Analyze 开源地址 [http://git.oschina.net/oscstudio/git-analyze](http://git.oschina.net/oscstudio/git-analyze)
