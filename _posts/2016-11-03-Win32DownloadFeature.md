@@ -132,7 +132,7 @@ bool DownloadFileWarp(const std::wstring &remoteFile, const std::wstring &localF
 C++/CX,C#,VB.Net,JavaScript 等，拥有存储，网络，设备，UI，媒体等等。但是如果要使用现代的标准 C++，
 还是有一些麻烦。
 
-著名 MSDN 专栏作者，Microsoft MVP，Kenny Kerr 近一两年致力于 WinRT 对现代 C++ 的支持,先推出了
+著名 MSDN 专栏作家，Microsoft MVP，Kenny Kerr 近一两年致力于 WinRT 对现代 C++ 的支持,先推出了
 [Modern C++ for the Windows Runtime](https://github.com/kennykerr/modern),最近又以微软官方的
 名义推出了 [cppwinrt](https://github.com/microsoft/cppwinrt). 这些项目都是致力于现代 C++ 使用
 Windows Runtime API。
@@ -209,7 +209,7 @@ bool WinRTDownloadFile(const std::wstring &remoteFile, const std::wstring &local
 
 当然我是非常期待 cppwinrt 的进一步改进。
 
-Kenny Kerr 在 [MSDN]((https://msdn.microsoft.com/magazine/mt149362?author=Kenny%20Kerr) 上发布了
+Kenny Kerr 在 [MSDN](https://msdn.microsoft.com/magazine/mt149362?author=Kenny%20Kerr) 上发布了
 很多优秀的文章，Windows 平台上原生程序开发人员可以去查看此链接。
 
 ## Background Intelligent Transfer Service
