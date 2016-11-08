@@ -54,8 +54,8 @@ Windows 便支持了文件系统的重定向，即 SysWOW64 ，对于运行在 W
 Windows 还可以通过卷挂载，软链接等策略是先文件系统的虚拟化和隔离，为了兼容 XP 以前的应用程序，Windows 创建了 C:\User 的软链接 
 C:\Documents and Settings 。
 
-从 Office 2013 起，Office 的安装采用 VFS 机制安装，目录 C:\Program Files\Microsoft Office\root\VFS 目录便是 VFS 的 C:\，而 DesktopAppConverter
-多少是吸收了 Office 的经验的。
+从 Office 2013 起，Office 的安装采用 VFS 机制安装，目录 C:\Program Files\Microsoft Office\root\VFS 目录便是 VFS 的 C:\，
+而 DesktopAppConverter 多少是吸收了 Office 的经验的。
 
 在 Windows 中，注册表的重要性不言而喻，与 Linux containers 一样，配置文件的隔离一样是非常重要的，Windows 注册表内部存储表现为储巢（Hive）,
 注册表存储时并不是一个巨大的，单一的文件，而是分布在不同目录的配置文件，操作系统只需要单独挂载特定的注册表数据就可以实现注册表的隔离。

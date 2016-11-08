@@ -49,11 +49,10 @@ struct GitRequest{
 
 git 有自带的 git-daemon 实现，这个服务程序监听 9418 端口，在接收到客户端的请求后，先要判断 command 是
 否是被允许的，git 协议中有 fetch 和 push 以及 archive 之类的操作，分别对应的服务器上的命令是 git-upload-pack
-git-receive-pack git-upload-archive。HTTP 只会支持前两种，SSH 会支持三种，而 代码托管平台的 git 通常支持的
-是 git-upload-pack git-upload-archive。
+git-receive-pack git-upload-archive。HTTP 只会支持前两种，SSH 会支持三种，而 代码托管平台的 git 通常支持的是
+git-upload-pack git-upload-archive。
 
-当不允许的命令被接入时需要发送错误信息给客户端，这个信息在不同的 git-daemon 实现中也不一样，大体
-如下所示。
+当不允许的命令被接入时需要发送错误信息给客户端，这个信息在不同的 git-daemon 实现中也不一样，大体如下所示。
 
 `001bERR service not enabled`
 
@@ -61,8 +60,8 @@ git-daemon 将对请求路径进行转换，以期得到在服务器上的绝对
 可以给客户端发送 **Repository Not Found**。而 host 可能时域名也可能时 ip 地址，当然也可以包括端口。
 服务器可以在这里做进一步的限制，出于安全考虑应当考虑到请求是可以被伪造的。
 
-客户端发送请求过去后，服务器将启动相应的命令，将命令标准错误和标准输出的内容发送给客户端，将客户端
-传输过来的数据写入到命令的标准输入中来。
+客户端发送请求过去后，服务器将启动相应的命令，将命令标准错误和标准输出的内容发送给客户端，
+将客户端传输过来的数据写入到命令的标准输入中来。
 
 在请求体中，命令为 git-upload-pack /project.git 在服务器上运行时，就会类似 
 
@@ -77,9 +76,9 @@ git-daemon 将对请求路径进行转换，以期得到在服务器上的绝对
 ## 进程输入输出的读写
 
 在 C 语言中，有 popen 函数，可以创建一个进程,并将进程的标准输出或标准输入创建成一个文件指针，即 `FILE*`
-其他可以使用 C 函数的语言很多也提供了类似的实现，比如 Ruby，基于 Ruby 的 git HTTP 服务器 grack 正是使用
-的 popen，相比与其他语言改造的 popen，C 语言中 popen 存在了一些缺陷，比如无法同时读写，如果要输出标准
-错误，需要在命令参数中额外的将标准错误重定向到标准输出。
+其他可以使用 C 函数的语言很多也提供了类似的实现，比如 Ruby，基于 Ruby 的 git HTTP 服务器 grack 正是使用的 popen，
+相比与其他语言改造的 popen，C 语言中 popen 存在了一些缺陷，比如无法同时读写，如果要输出标准错误，
+需要在命令参数中额外的将标准错误重定向到标准输出。
 
 在 musl libc 的中，popen 的实现如下：
 
@@ -161,8 +160,8 @@ fail:
 在 POSIX 系统中，boost 有一个文件描述符类 `boost::asio::posix::stream_descriptor` 这个类不能是常规文件，以前用 go 做 HTTP 前端
 没注意就 coredump 掉。
 
-在 Windows 系统中，boost 有文件句柄类 `boost::asio::windows::stream_handle` 此处的文件应当支持随机读取，比如命名管道（当然
-在 Windows 系统的，匿名管道实际上也是命名管道的一种特例实现）。
+在 Windows 系统中，boost 有文件句柄类 `boost::asio::windows::stream_handle` 此处的文件应当支持随机读取，
+比如命名管道（当然在 Windows 系统的，匿名管道实际上也是命名管道的一种特例实现）。
 
 以上两种类都支持 `async_read` `async_write` ，所以可以很方便的实现异步的读取。
 
@@ -170,8 +169,8 @@ fail:
 上面的做法，唯一的缺陷是性能并不是非常高，代码逻辑也比较复杂，当然好处是，错误异常可控一些。
 
 在 Linux 网络通信中，类似与 git 协议这样读取子进程输入输出的服务程序的传统做法是，将 子进程的 IO 重定向到 socket，
-值得注意的是 boost 中 socket 是异步非阻塞的，然而，git 命令的标准输入标准错误标准输出都是同步的，所以在 fork 子进程之
-前，需要将 socket 设置为同步阻塞，当 fork 失败时，要设置回来。
+值得注意的是 boost 中 socket 是异步非阻塞的，然而，git 命令的标准输入标准错误标准输出都是同步的，所以在 fork 子进程之前，
+需要将 socket 设置为同步阻塞，当 fork 失败时，要设置回来。
 
 `socket_.native_non_blocking(false);`
 

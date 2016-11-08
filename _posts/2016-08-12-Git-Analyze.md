@@ -26,8 +26,8 @@ git-analyze 此工具的设计上是根据用户的输入，扫描存储库特�
 
 git 有多种实现，比如 Linus 的 git（官方 git），libgit2，jgit 等等，官方 git 是一个由多个子命令组成的程序集合。
 但是，如果要新增一个工具到 git 官方还是比较麻烦，定制的 git 也容易带来兼容性问题，不利于用户体验。
-JGIT 是 Java 实现的 git 类库，如果要实现这些工具，还要用户安装 JRE 或者携带 JRE，并且 Java 也不擅长做跨平台
-命令。libgit2 是 C 实现的一个跨平台 git 协议实现库，并且提供多种语言的 banding，所以用 libgit2 再合适不过。
+JGIT 是 Java 实现的 git 类库，如果要实现这些工具，还要用户安装 JRE 或者携带 JRE，并且 Java 也不擅长做跨平台命令。
+libgit2 是 C 实现的一个跨平台 git 协议实现库，并且提供多种语言的 banding，所以用 libgit2 再合适不过。
 
 git-analyze 支持参数：
 
@@ -43,11 +43,11 @@ git-analyze 仓库参数为:
 
 git-analyze 在用户输入参数后，使用 libgit2 打开存储库。目前只支持工作目录的根目录和 .git 目录。
 
-git 的每一次提交都是文件快照，并不像 Subversion 一样每一个文件都有版本号。如果要知道是否有新的文件被添加或者
-是被修改，则需要与上一个提交进行比较，通常就是当前的 commit 与 parent commit 比较，在 libgit2 中，并不能直接
-比较，需要比较 commit 的根 tree。使用 git_commit_tree 得到 tree 对象，git_diff_tree_to_tree 比较 tree，git_diff_foreach
-去遍历 diff 的内容，这里由于我们只需要查看文件修改，所以，git_diff_foreach binary_cb hunk_cb line_cb callback 设置
-为空即可，git_diff_foreach 的 API 在下面：
+git 的每一次提交都是文件快照，并不像 Subversion 一样每一个文件都有版本号。如果要知道是否有新的文件被添加或者是被修改，
+则需要与上一个提交进行比较，通常就是当前的 commit 与 parent commit 比较，在 libgit2 中，并不能直接比较，
+需要比较 commit 的根 tree。使用 git_commit_tree 得到 tree 对象，git_diff_tree_to_tree 比较 tree，git_diff_foreach
+去遍历 diff 的内容，这里由于我们只需要查看文件修改，所以，git_diff_foreach binary_cb hunk_cb line_cb callback 设置 为空即可，
+git_diff_foreach 的 API 在下面：
 
 [libgit2 API git_diff_foreach](https://libgit2.github.com/libgit2/#HEAD/group/diff/git_diff_foreach)
 
@@ -135,14 +135,13 @@ UNIX® 系统支持信号 SIGALRM ，注册信号后, 然后可以使用 alarm �
 是同 alarm 实现定时器，不过 alarm 精度不高，如果要使用更高精度的可以使用 ualarm 。
 
 WINDOW­S ® 系统的定时器有 CreateWaitableTimer timeSetEvent CreateTimerQueueTimer 等，分别应对不同的场景。
-比如 timeSetEvent 实际上是使用 Windows Event 对象实现，内部还是开了线程，git-analyze 实现的 Timer 功能是启动
-一个新的线程，然后 Sleep 后，运行 exit 退出进程，调用 exit 后会调用 ExitProcess 所以进程会退出，然后主进程结束时
-也会调用 ExitProcess 退出。
+比如 timeSetEvent 实际上是使用 Windows Event 对象实现，内部还是开了线程，git-analyze 实现的 Timer 功能是启动一个新的线程，
+然后 Sleep 后，运行 exit 退出进程，调用 exit 后会调用 ExitProcess 所以进程会退出，然后主进程结束时也会调用 ExitProcess 退出。
 
 ## Rollback
 
-在 Git 中， 有 revert 和 reset 命令，而 git-rollback 实现 git 特定分支的回滚， 只是一个直观简单的替代。需要使用高级功能
-可以使用 git reset 或者 revert。
+在 Git 中， 有 revert 和 reset 命令，而 git-rollback 实现 git 特定分支的回滚， 只是一个直观简单的替代。
+需要使用高级功能可以使用 git reset 或者 revert。
 
 支持参数：
 
@@ -153,17 +152,17 @@ WINDOW­S ® 系统的定时器有 CreateWaitableTimer timeSetEvent CreateTimerQ
 + --force
 
 
-使用 --backid 参数时，git-rollback 先需要回溯检测 commit 是否在分支上，存在的时候会设置 refname (这个支持分支名和引用全名)
-的 commit 为 --backid 的值，然后运行 git gc ，当添加 --force 时会清理掉那些悬空对象。
+使用 --backid 参数时，git-rollback 先需要回溯检测 commit 是否在分支上，存在的时候会设置 refname (这个支持分支名和引用全名) 的
+commit 为 --backid 的值，然后运行 git gc ，当添加 --force 时会清理掉那些悬空对象。
 
 使用 --backrev 时， git-rollback 会回溯 commit，然后当回溯次数与 --backrev 值一致时，将当前 commit 的 oid 设置到引用上，与
 --backid 的策略一致即可。
 
-由于 libgit2 暂时并未提供 GC 功能，我们调用的是原生命令，在 UNIX 类系统中，我们先获得环境变量 PATH,然后遍历这些目录是否
-存在 git ，存在后，使用 fork-execvp-wait 一系列 API 运行 git GC。
+由于 libgit2 暂时并未提供 GC 功能，我们调用的是原生命令，在 UNIX 类系统中，我们先获得环境变量 PATH,然后遍历这些目录是否存在 git ，
+存在后，使用 fork-execvp-wait 一系列 API 运行 git GC。
 
-在 Windows 中，我们从 git-rollback 的当前目录，以及 git-rollback 进程所在目录，以及 PATH 中查找 git，如果没有找到，则从
-注册表中查找 Git for Windows 的安装路径。部分的代码如下：
+在 Windows 中，我们从 git-rollback 的当前目录，以及 git-rollback 进程所在目录，以及 PATH 中查找 git，如果没有找到，
+则从注册表中查找 Git for Windows 的安装路径。部分的代码如下：
 
 {% highlight c++ %}
 class WCharacters {
@@ -380,8 +379,8 @@ libgit2 使用的是 UTF-8 编码,在 Windows 中转变为 UTF16 编码,使用 W
 
 如果按照默认的 main 传递命令行参数,那么可能会发生错误,在 Windows 中, 创建进程是通过 CreateProcess 这样的 API 实现的, 
 NT 内核将命令行参数写入的进程的 PEB 中, CRT 初始化时,根据启动函数类型执行不同的策略 (WinMain wWinMain main wmain) ,
-比如 main , CRT 通过  GetCommandLineA 获得命令行参数,然后将 LPCSTR 转变成 char * Argv[] 的形式. GetCommandLineA 获得
-的命令行参数也是由 PEB 的命令行参数转换编码过来的. main 命令行参数的编码即当前代码页的编码,也就是 CP_ACP ,
+比如 main , CRT 通过  GetCommandLineA 获得命令行参数,然后将 LPCSTR 转变成 char * Argv[] 的形式. 
+GetCommandLineA 获得的命令行参数也是由 PEB 的命令行参数转换编码过来的. main 命令行参数的编码即当前代码页的编码,也就是 CP_ACP ,
 比如 Windows 下常见的 936 GBK。
 
 这样一来,libgit2 传入非 西文字符 就会操作失败, 为了支持 Windows 平台,笔者使用 wmain ,然后将命令行参数依次转变为 UTF-8,
@@ -443,8 +442,7 @@ int main(int argc, char **argv) {
 另外一个问题，由于参数和 libgit2 都是使用的 UTF8 编码，默认情况下，Windows 控制台的代码页在输出 UTF8 编码
 字符的情况下可能会乱码，libgit2 并没有去调整，而控制台的代码页如果手动调整，可能会导致其他程序乱码。
 当然可以调用 SetConsoleOutputCP 去修改代码页，笔者并未测试，笔者采用的是和 git 官方一样的策略，
-检测程序当前的标准输出标准错误是否是字符设备，这个可以使用 _isatty 来检测，当然也可以使用下面的代码
-来实现检测：
+检测程序当前的标准输出标准错误是否是字符设备，这个可以使用 _isatty 来检测，当然也可以使用下面的代码来实现检测：
 
 {% highlight c++ %}
 bool IsUnderConhost(FILE *fp) {
