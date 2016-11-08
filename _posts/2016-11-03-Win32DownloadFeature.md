@@ -224,4 +224,22 @@ IBackgroundCopyJob
 
 ## WinHTTP
 
+WinHTTP 实现下载功能还算比较简单，通常就是发送 HTTP GET 请求，然后创建一个空文件，从 HTTP 响应中
+读取返回包体，写入到文件中，直至读取完毕。
+
+### HTTP2 支持
+
+自 Windows 10 1607 起，WinHTTP 允许开发者通过 WinHttpSetOption 开启 HTTP2 支持。
+
 ## Wininet
+
+### HTTP2 支持
+
+自 Windows 10 1507 起， Wininet 便允许开发者通过设置参数开启 HTTP2 支持
+
+
+# 如何选择
+
+除了以上的解决方案外，在 Windows 系统中实现下载功能还有很多其他的选择，比如试用 libcurl，Poco Net，cpp-netlib，
+cpprestsdk，QNetworkRequest 等等。就 HTTP URL 的下载来说，如果不想使用现成的 HTTP 库实现下载，还可以自己实现
+HTTP 库，可以使用原生的 socket，也可以使用 Boost.Asio，libuv，libev，ACE 来实现 HTTP 客户端。
