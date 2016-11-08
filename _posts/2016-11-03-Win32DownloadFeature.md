@@ -12,9 +12,9 @@ categories: windows
 
 ## URLDownloadToFile
 自 Internet Explorer 3.0 开始，Urlmon.dll 中开始提供 URLDownloadToFile，支持从远程服务器上下载文件到本地。
-URLDownloadToFile 会先将文件下载到 IE 缓存目录，然后再复制到设置的输出目录，如果第二次下载，就省去了下
-载时间。Urlmon 还提供了下载到缓存目录的函数 URLDownloadToCacheFile，正因为 URLDownloadToFile 先下载
-到缓存目录，就会出现缓存问题，可以使用 Wininet 中的 DeleteUrlCacheEntry 删除缓存。
+URLDownloadToFile 会先将文件下载到 IE 缓存目录，然后再复制到设置的输出目录，如果第二次下载，就省去了下载时间。
+Urlmon 还提供了下载到缓存目录的函数 URLDownloadToCacheFile，正因为 URLDownloadToFile 先下载到缓存目录，
+就会出现缓存问题，可以使用 Wininet 中的 DeleteUrlCacheEntry 删除缓存。
 
 使用 URLDownloadToFile 下载文件，下面有个简单的例子：
 
@@ -128,14 +128,12 @@ bool DownloadFileWarp(const std::wstring &remoteFile, const std::wstring &localF
 
 ## HttpClient
 
-自 Windows 8 开始，微软推出了 Windows Runtime,Windows Runtime 基于 COM 实现，可以使用
-C++/CX,C#,VB.Net,JavaScript 等，拥有存储，网络，设备，UI，媒体等等。但是如果要使用现代的标准 C++，
-还是有一些麻烦。
+自 Windows 8 开始，微软推出了 Windows Runtime,Windows Runtime 基于 COM 实现，可以使用 C++/CX,C#,VB.Net,JavaScript 等，
+拥有存储，网络，设备，UI，媒体等等。但是如果要使用现代的标准 C++，还是有一些麻烦。
 
 著名 MSDN 专栏作家，Microsoft MVP，Kenny Kerr 近一两年致力于 WinRT 对现代 C++ 的支持,先推出了
-[Modern C++ for the Windows Runtime](https://github.com/kennykerr/modern),最近又以微软官方的
-名义推出了 [cppwinrt](https://github.com/microsoft/cppwinrt). 这些项目都是致力于现代 C++ 使用
-Windows Runtime API。
+[Modern C++ for the Windows Runtime](https://github.com/kennykerr/modern),最近又以微软官方的名义推出了
+[cppwinrt](https://github.com/microsoft/cppwinrt). 这些项目都是致力于现代 C++ 使用 Windows Runtime API。
 
 在下载文件的时候，我们可以使用 HttpClient 下载文件，下面是一个简单的实例：
 
@@ -204,17 +202,17 @@ bool WinRTDownloadFile(const std::wstring &remoteFile, const std::wstring &local
 }
 {% endhighlight %}
 
-完全使用 cppwinrt 还是有一些问题，比如，StorageFolder 的目录权限问题，然后就是重定向，如果要解决重定向，还要添加一些
-复杂的代码，比如 npm.taobao.org 使用 HTTPS 下载重定向 HTTP 就会触发异常，然后异常捕获还是有点麻烦。
+完全使用 cppwinrt 还是有一些问题，比如，StorageFolder 的目录权限问题，然后就是重定向，如果要解决重定向，
+还要添加一些复杂的代码，比如 npm.taobao.org 使用 HTTPS 下载重定向 HTTP 就会触发异常，然后异常捕获还是有点麻烦。
 
 当然我是非常期待 cppwinrt 的进一步改进。
 
-Kenny Kerr 在 [MSDN](https://msdn.microsoft.com/magazine/mt149362?author=Kenny%20Kerr) 上发布了
-很多优秀的文章，Windows 平台上原生程序开发人员可以去查看此链接。
+Kenny Kerr 在 [MSDN](https://msdn.microsoft.com/magazine/mt149362?author=Kenny%20Kerr) 上发布了很多优秀的文章，
+Windows 平台上原生程序开发人员可以去查看此链接。
 
 ## Background Intelligent Transfer Service
 
-[BITS](https://msdn.microsoft.com/en-us/library/windows/desktop/aa362708(v=vs.85).aspx) - Background Intelligent Transfer Service 
+[BITS](https://msdn.microsoft.com/en-us/library/windows/desktop/aa362708(v=vs.85).aspx) - Background Intelligent Transfer Service
 (后台智能传输服务) 是 Windows 的一个重要功能.
 
 笔者在开发 [Clangbuilder](https://github.com/fstudio/clangbuilder) 时,需要使用 PowerShell 下载软件使用的 cmdlet 是 Start-BitsTransfer,
@@ -224,8 +222,8 @@ IBackgroundCopyJob
 
 ## WinHTTP
 
-WinHTTP 实现下载功能还算比较简单，通常就是发送 HTTP GET 请求，然后创建一个空文件，从 HTTP 响应中
-读取返回包体，写入到文件中，直至读取完毕。
+WinHTTP 实现下载功能还算比较简单，通常就是发送 HTTP GET 请求，然后创建一个空文件，从 HTTP 响应中读取返回包体，
+写入到文件中，直至读取完毕。
 
 ### HTTP2 支持
 
