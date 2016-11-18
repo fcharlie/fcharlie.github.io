@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "GIT GC 导致的血案"
-date:   2016-1211-05 20:00:00
+date:   2016-12-07 20:00:00
 published: false
 categories: git
 ---
