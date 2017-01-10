@@ -493,5 +493,7 @@ int BaseErrorWriteConhost(const char *buf, size_t len) {
 **Update 2016-12-31**
 
 目前 git-analyze 增加了一些有意思的工具，比如 pre-commit 这个作为客户端的钩子，能够帮助用户阻止提交超出大小限制的文件。
+并且可以在误操作添加了特定后缀名的文件后，检测并组织提交。
+
 git-cheat 可以在当前分支的最新 commit 上创建一个无历史纪录的提交，对于一些特别的开源项目有一定的帮助。
 而 git-complete 工具则能够在制定分支上创建整整一年的提交，当然用户可以决定是否需要重新创建分支。
