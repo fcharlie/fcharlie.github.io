@@ -11,7 +11,7 @@ categories: windows
 在 Windows 10 Insider 14352 中，增加了两个服务 SshBrokerGroup SshProxyGroup，
 通过命令
 
->netstat -aon |findstr "22"
+`netstat -aon |findstr "22"`
 
 即可找到 端口 22 绑定的进程也就是 SshProxyGroup 服务进程，而 22 端口是 SSH 服务器监听的端口，
 在 Windows 目录 *C:\Windows\System32* 可以发现 几个与 SSH 相关的 dll 和 exe：
