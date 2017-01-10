@@ -28,12 +28,14 @@ categories: windows
 
 在 Windows 注册表中，对 SSH 服务配置
 
-+ HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Services\SshBroker
-+ HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Services\SshProxy
-+ HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Services\SharedAccess\Parameters\FirewallPolicy\FirewallRules
-+ HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Ssh\Broker
+```txt
+HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Services\SshBroker
+HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Services\SshProxy
+HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Services\SharedAccess\Parameters\FirewallPolicy\FirewallRules
+HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Ssh\Broker
+```
 
-其中在 HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Ssh\Broker\DevToolsUser auth-method 中支持 key 和密码两种验证方式
+其中在 `HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Ssh\Broker\DevToolsUser` auth-method 中支持 key 和密码两种验证方式
 
 UA 标识为 **SSH-2.0-MS_1.100**
 
@@ -43,25 +45,26 @@ SshSession 基于 C++ 开发，大量使用了 C++11 的特性，尤其是 lambd
 
 通过调试至少可以发现 SshSession 包含以下源码：
 
-+ onecore\net\ssh\sshsession\session.cpp
-+ onecore\net\ssh\channel\channeldirecttcpip.cpp
-+ onecore\net\ssh\transport\transportimpl.cpp
-+ onecore\net\ssh\auths\authsmethodpassword.cpp
-+ onecore\net\ssh\authpublickey\authpublickeybase.cpp
-+ onecore\net\ssh\kex\kexdiffiehellman.cpp
-+ onecore\net\ssh\kex\kexgssapi.cpp
-+ onecore\net\ssh\kex\hexecdh.cpp
-+ onecore\net\ssh\kex\kexbase.cpp
-+ onecore\net\ssh\kex\kexdhbase.cpp
-+ onecore\net\ssh\kexhostkey\kexhostkeybase.cpp
-+ onecore\net\ssh\mac\macbcrypt.cpp
-+ onecore\net\ssh\cipher\cipherbcrypt.cpp
-+ onecore\net\ssh\compression\compressionzlib.cpp
-+ onecore\net\ssh\random\randomdefault.cpp
-+ onecore\net\ssh\core\buffer.cpp
-+ onecore\net\ssh\core\dispatcherport.cpp
-+ onecore\net\ssh\core\timerimpl.cpp
-
+```txt
+onecore\net\ssh\sshsession\session.cpp
+onecore\net\ssh\channel\channeldirecttcpip.cpp
+onecore\net\ssh\transport\transportimpl.cpp
+onecore\net\ssh\auths\authsmethodpassword.cpp
+onecore\net\ssh\authpublickey\authpublickeybase.cpp
+onecore\net\ssh\kex\kexdiffiehellman.cpp
+onecore\net\ssh\kex\kexgssapi.cpp
+onecore\net\ssh\kex\hexecdh.cpp
+onecore\net\ssh\kex\kexbase.cpp
+onecore\net\ssh\kex\kexdhbase.cpp
+onecore\net\ssh\kexhostkey\kexhostkeybase.cpp
+onecore\net\ssh\mac\macbcrypt.cpp
+onecore\net\ssh\cipher\cipherbcrypt.cpp
+onecore\net\ssh\compression\compressionzlib.cpp
+onecore\net\ssh\random\randomdefault.cpp
+onecore\net\ssh\core\buffer.cpp
+onecore\net\ssh\core\dispatcherport.cpp
+onecore\net\ssh\core\timerimpl.cpp
+```
 
 ## 如何体验
 
