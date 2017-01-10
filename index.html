@@ -1,23 +1,54 @@
 ---
 layout: default
+make-smaller-titles: true
 ---
 
-<div class="home">
 
-  <h1 class="page-heading">文章</h1>
+<div class="container-fluid index">
+    <div class="row">
 
-  <ul class="post-list">
-    {% for post in site.posts %}
-      <li>
-        <span class="post-meta">{{ post.date | date: "%b %-d, %Y" }}</span>
+        <div class="col-md-12 main content-panel">
 
-        <h2>
-          <a class="post-link" href="{{ post.url | prepend: site.baseurl }}">{{ post.title }}</a>
-        </h2>
-      </li>
-    {% endfor %}
-  </ul>
+            <div class="gravatar">
+                <img src="{{ site.title_image }}" class="img-circle about-image" height="150" width="150" alt="{{ site.title }}" />
+            </div>
 
-  <p class="rss-subscribe">订阅 <a href="{{ "/feed.xml" | prepend: site.baseurl }}">via RSS</a></p>
+            <h1 class="header author-header" itemprop="headline">{{ site.title }}</h1>
+            <p>笔者是一个代码托管平台开发者，主要使用 C++ 开发服务器软件和版本控制工具，如果要了解笔者可以查看：  <a href="./other/2016/12/31/about/">Charlie's Resume</a></p>
+            <div class="author-text">
+                {{ site.title_description }}
+            </div>
 
+            {% include social_links.html %}
+          </div>
+          <div class="col-md-12 main content-panel">
+
+            <div class="articles">
+
+              <h2>Latest Blog Articles</h2>
+
+              <ul>
+                {% for post in site.posts | limit: site.post_limit %}
+                  {% unless post.pubdraft %}
+                      <li>
+                          <a href="{{ post.url | prepend: site.baseurl }}">{{ post.title }}</a>
+                          <small class="hidden-xs">{{ post.date | date: "%B %-d, %Y" }}</small>
+                      </li>
+                  {% endunless %}
+                {% endfor %}
+
+                  <li>
+
+                      <small><i><a href="{{ site.baseurl }}/posts/">more...</a></i></small>
+                  </li>
+              </ul>
+
+            </div>
+
+        </div>
+    </div>
 </div>
+
+<script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
+<script src="{{ site.baseurl }}/js/timeline.js" type="text/javascript"></script>
+

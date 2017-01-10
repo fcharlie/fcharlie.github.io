@@ -6,8 +6,14 @@ baseurl: "" # the subpath of your site, e.g. /blog/
 url: "" # the base hostname & protocol for your site
 twitter_username: sinopre
 github_username:  fcharlie
+title_image: "https://s.gravatar.com/avatar/c1bfa439ee1031748f5af71f0c11dbb6?s=500"
+post_limit: 5
 
 timezone: Asia/Shanghai
+
+footer_left: "<a href=\"https://github.com/jacobtomlinson/carte-noire\">Carte Noir</a> theme by <a href=\"https://twitter.com/sinopre\">Jacob Tomlinson</a>"
+footer_right: "&lt;/&gt; on <a href=\"https://github.com/fcharlie/fcharlie.github.io\">Github</a> &nbsp;<i class=\"fa fa-github-alt\"></i>"
+
 # Build settings
 markdown: kramdown
 kramdown:
@@ -16,7 +22,4 @@ kramdown:
 highlighter: rouge
 
 permalink: pretty
-
-gems:
-- jekyll-paginate
-- github-pages
+exclude: [vendor]
