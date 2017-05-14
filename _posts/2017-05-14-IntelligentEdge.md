@@ -14,3 +14,7 @@ categories: intelligent
 比如前几日看《外科风云》移动初诊平台
 
 在国内有 [华山医院](https://www.microsoft.com/china/intelligent-cloud/case_hospital.html) 使用了 Azure 来支撑其，
+
+## 比特币勒索的黑色星期五
+
+5月12日
