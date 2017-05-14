@@ -247,7 +247,7 @@ int wmain(int argc,wchar_t *argv[])
 从 Windows 8 开始，微软引入了新的安全机制，AppConatiner 所有的 Store App 就是运行在应用容器之中，并且 IETab 也是运行在应用容器之中，应用容器在权限的管理上非常细致，也就是说非常“细粒度”。
 微软也为传统的 Desktop 应用程序提供了一系列的API来创建一个 AppContainer，并且使进程在 AppContainer 中启动。比如使用`CreateAppContainerProfile` 创建一个容器SID，使用 `DeleteAppContainerProfile` 查找一个已知容器名的SID，删除一个容器`DeleteAppContainerProfile` 配置文件。`GetAppContainerFolderPath` 获得容器目录。
 
-通过 AppContainer 启动进程的一般流程是，通过 `CreateAppContainerProfile` 创建一个容器配置，得到 SID 指针，为了避免创建失败，先用 DeleteAppContainerProfile 删除此容器配置。细粒度的配置需要 [WELL_KNOWN_SID_TYPE](https://msdn.microsoft.com/en-us/library/windows/desktop/aa379650(v=vs.85).aspx)    
+通过 AppContainer 启动进程的一般流程是，通过 `CreateAppContainerProfile` 创建一个容器配置，得到 SID 指针，为了避免创建失败，先用 `DeleteAppContainerProfile` 删除此容器配置。细粒度的配置需要 [WELL_KNOWN_SID_TYPE](https://msdn.microsoft.com/en-us/library/windows/desktop/aa379650(v=vs.85).aspx)    
 得到容器配置后，启动进程时需要使用 `STARTUPINFOEX` 结构，使用 `InitializeProcThreadAttributeList` `UpdateProcThreadAttribute` 将 `PSID` 和 `SECURITY_CAPABILITIES::Capabilities` （也就是 `WELL_KNOWN_SID_TYPE` 得到的权限设置）添加到 `STARTUPINFOEX::lpAttributeList`
 使用 `CreateProcess` 中第七个参数 添加 `EXTENDED_STARTUPINFO_PRESENT`，然后再用 `reinterpret_cast` 转换 `STARTUPFINFOEX` 指针变量输入到 `CreateProcess` 倒数第二个（C语言用强制转换）。
 
