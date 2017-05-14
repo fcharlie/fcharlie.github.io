@@ -8,22 +8,15 @@ categories: container
 
 # Windows 权限策略的发展
 
-从 Windows 8开始，我在使用 Windows 系统的同时也就不再关闭 UAC 了，并且不再安装任何国产的安全软件，这些软件仗着运行在管理员权限上肆意的推行
-“全家桶策略”，Windows 多年来一直是最流行的操作系统，大多数人的焦点都会放在上面，也包括黑客，各种企业，早期Windows系统在权限的管理上非常粗放。
-无论是恶意软件还是其他软件都可以获得较高的权限，这样就能够对系统大肆修改，并且直接或间接破化系统，收集数据，妨碍竞争对手。   
-软件的权限理应得到限制，而不是放任自流。
-Windows XP 是历史上最受欢迎的版本之一，然而，一直以来XP的权限问题都被人诟病，微软也决心对这一问题进行改进，从Vista开始，Windows引入了 UAC 机制，
-它要求用户在执行可能会影响计算机运行的操作或执行更改影响其他用户的设置的操作之前，提供权限或管理员‌密码。这是一个可喜的进步，不过在早期用户都会
-要求关闭 UAC,当我开始使用 Windows 的时候，，那个时候用的是 Windows 7,我也是这样做的。Windows 7在 UAC 的改进主要是一些小的细节。    
-从 Windows 8 引入 Metro(Morden) App 开始，Windows 出现了一个新的进程隔离机制，即 AppContainer。Windows Store 应用运行在 AppContainer 的容器当中
-权限被极大的限制，很多危险的操作无法进行，微软通过 Windows Store 进行应用分发，能够控制来源，这样能够极大的降低恶意软件的困扰。   
-而 AppContainer 同样能够支持传统的 Desktop 应用，本文将介绍 通过 AppContainer 启动一个桌面程序，当然，先从降权说起。
+从 Windows 8开始，我在使用 Windows 系统的同时也就不再关闭 UAC 了，并且不再安装任何国产的安全软件，这些软件仗着运行在管理员权限上肆意的推行 “全家桶策略”，Windows 多年来一直是最流行的操作系统，大多数人的焦点都会放在上面，也包括黑客，各种企业，早期Windows系统在权限的管理上非常粗放。无论是恶意软件还是其他软件都可以获得较高的权限，这样就能够对系统大肆修改，并且直接或间接破化系统，收集数据，妨碍竞争对手。软件的权限理应得到限制，而不是放任自流。Windows XP 是历史上最受欢迎的版本之一，然而，一直以来XP的权限问题都被人诟病，微软也决心对这一问题进行改进，从Vista开始，Windows引入了 UAC 机制，它要求用户在执行可能会影响计算机运行的操作或执行更改影响其他用户的设置的操作之前，提供权限或管理员‌密码。这是一个可喜的进步，不过在早期用户都会要求关闭 UAC,当我开始使用 Windows 的时候，，那个时候用的是 Windows 7,我也是这样做的。Windows 7在 UAC 的改进主要是一些小的细节。    
+
+从 Windows 8 引入 Metro(Morden) App 开始，Windows 出现了一个新的进程隔离机制，即 AppContainer。Windows Store 应用运行在AppContainer 的容器当中权限被极大的限制，很多危险的操作无法进行，微软通过 Windows Store 进行应用分发，能够控制来源，这样能够极大的降低恶意软件的困扰。而 AppContainer 同样能够支持传统的 Desktop 应用，本文将介绍 通过 AppContainer 启动一个桌面程序，当然，先从降权说起。
 
 # UAC 降权
 
-基于 Win32 的应用程序，如果要提权，非常简单，第一可以在 manifest 文件中写入 'requireAdministrator' Visual Studio 项目属性中可以设置。
+基于 Win32 的应用程序，如果要提权，非常简单，可以在 manifest 文件中写入 `requireAdministrator` 如下：
 
-{% highlight xml %}
+```xml
 <?xml version="1.0" encoding="utf-8"?>
 <asmv1:assembly manifestVersion="1.0" xmlns="urn:schemas-microsoft-com:asm.v1" xmlns:asmv1="urn:schemas-microsoft-com:asm.v1" xmlns:asmv2="urn:schemas-microsoft-com:asm.v2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <assemblyIdentity version="1.0.3.0" name="Force.Metro.Native.iBurnMgr.app"/>
@@ -35,12 +28,11 @@ Windows XP 是历史上最受欢迎的版本之一，然而，一直以来XP的�
     </security>
   </trustInfo>
 </asmv1:assembly>
-{% endhighlight %}
+```
     
-第二，可以使用 ShellExecute，将第二个参数设置为 “runas” 即可，ShellExecute 本质上将参数写入到 SHELLEXECUTEINFO ，然后调用 ShellExecuteEx 实现。
-在 ReactOS 和 Windows Vista 以前的版本，通过 IShellExecuteHook 接口实现。Vista 以后被否决了。
+也可以使用 ShellExecute，将第二个参数设置为 `runas` ，ShellExecute 本质上将参数写入到 `SHELLEXECUTEINFO` ，然后调用 `ShellExecuteEx` 实现。在 ReactOS 和 Windows Vista 以前的版本，通过 `IShellExecuteHook` 接口实现。Vista 以后被否决了。
 
-当然，还可以有其他不受官方建议的方法。
+当然，还可以使用其他不受官方建议的方法。
 
 但是如果需要降权，微软没有直接的方案供开发者选择。常见的选择有 通过拿到 Explorer 的 token 启动进程，或者是通过计划任务启动进程。
 
@@ -48,7 +40,7 @@ Windows XP 是历史上最受欢迎的版本之一，然而，一直以来XP的�
 
 使用计划任务降权大概需要十几个 COM 接口:
 
-{% highlight cpp %}
+```c++
   ITaskService *iTaskService = nullptr;
   ITaskFolder *iRootFolder = nullptr;
   ITaskDefinition *iTask = nullptr;
@@ -62,27 +54,28 @@ Windows XP 是历史上最受欢迎的版本之一，然而，一直以来XP的�
   IAction *iAction = nullptr;
   IExecAction *iExecAction = nullptr;
   IRegisteredTask *iRegisteredTask = nullptr;
+```
 
-{% endhighlight %}   
 使用这些接口创建一个计划任务，值得注意的是，计划任务的创建需要管理员权限运行，本程序的功能就是从管理员降权到标准用户，所以这个限制没有影响。  
 在这个过程中最有价值的代码是：   
  
-{% highlight cpp %}  
+```c++
  DO(iPrin->put_RunLevel(TASK_RUNLEVEL_LUA))
-{% endhighlight %}     
+```
 
-[MSDN](https://msdn.microsoft.com/en-us/library/windows/desktop/aa383572(v=vs.85).aspx) 的描述中，表示以较低权限运行，与之对应的是 “TASK_RUNLEVEL_HIGHEST”。 
+[MSDN](https://msdn.microsoft.com/en-us/library/windows/desktop/aa383572(v=vs.85).aspx) 的描述中，表示以较低权限运行，与之对应的是 `TASK_RUNLEVEL_HIGHEST`。 
+
 通过计划任务降权的完整代码： [UAC 降权测试](https://github.com/fstudio/Phoenix/blob/master/test/Container/uacdown.cpp) 
 从 Process Explorer 的进程属性就可以看到：
 ![TaskSchdLauncher](https://raw.githubusercontent.com/fstudio/Phoenix/master/doc/Container/Images/taskschdlauncher.png)
-如果用户名是内置的 Administrator，并且开启了 [对内置管理员使用批准模式](https://technet.microsoft.com/zh-cn/library/dd834795.aspx) 至少在Windows 8.1 (Windows Server 2012 R2)会失败的。
+如果用户名是内置的 Administrator，并且开启了 [对内置管理员使用批准模式](https://technet.microsoft.com/zh-cn/library/dd834795.aspx) 至少在Windows 8.1 (Windows Server 2012 R2) 会失败的。
 所以这个时候需要采取第二种策略。
 
 # 使用 Explorer 的 Token 启动进程
 
 简单点就是拿桌面进程的 Token，然后使用桌面的 Token 启动进程。这需要桌面正在运行 （Explorer 作为桌面进程正在运行），也就是常说的桌面得存在，并且权限是标准的。
 
-{% highlight cpp %}
+```c++
 HRESULT WINAPI ProcessLauncherExplorerLevel(LPCWSTR exePath,LPCWSTR cmdArgs,LPCWSTR workDirectory)
 {
   STARTUPINFOW si;
@@ -159,7 +152,7 @@ cleanup:
   CloseHandle(hShellProcess);
   return hr;
 }
-{% endhighlight %}
+```
 
 当然，通过人肉合成一个 Token 启动进程也是能够实现降低程序权限的，这些比较复杂，本文也就不细说了。
 
@@ -175,7 +168,7 @@ Windows Vista 定义了四个完整性级别:
 
 利用这一特性，我们可以使用低级别权限启动一个进程:
 
-{% highlight cpp %}
+```c++
 #include <Windows.h>
 #include <Sddl.h>
 #include <cstdio>
@@ -241,9 +234,9 @@ int wmain(int argc,wchar_t *argv[])
     return 0;
 }
 
-{% endhighlight %}
+```
 
-第一步获得当前进程的  Token ,然后使用这个令牌创建一个新的令牌，由 SID "S-1-16-4096" 得到一个 SID 指针，将 SID 指针添加到 TOKEN_MANDATORY_LABEL 结构中，而后用SetTokenInformation将令牌与 完整性级别结合在一起，最后使用CreateProcessAsUser 创建进程。通过完整性级别启动的进程是没有多少权限的，譬如打开一个记事本，新建一个文件另存为，基本上都无法写入。 使用 Process Explorer 可以查看启动进程的权限属性。 
+第一步获得当前进程的  Token ,然后使用这个令牌创建一个新的令牌，由 SID `S-1-16-4096` 得到一个 SID 指针，将 SID 指针添加到 `TOKEN_MANDATORY_LABEL` 结构中，而后用 `SetTokenInformation` 将令牌与 完整性级别结合在一起，最后使用 `CreateProcessAsUser` 创建进程。通过完整性级别启动的进程是没有多少权限的，譬如打开一个记事本，新建一个文件另存为，基本上都无法写入。 使用 Process Explorer 可以查看启动进程的权限属性。 
 
 ![MIC](https://raw.githubusercontent.com/fstudio/Phoenix/master/doc/Container/Images/LowLevelSava.png)
 
@@ -252,15 +245,15 @@ int wmain(int argc,wchar_t *argv[])
 ## AppConatiner
 
 从 Windows 8 开始，微软引入了新的安全机制，AppConatiner 所有的 Store App 就是运行在应用容器之中，并且 IETab 也是运行在应用容器之中，应用容器在权限的管理上非常细致，也就是说非常“细粒度”。
-微软也为传统的Desktop应用程序提供了一系列的API来创建一个AppContainer，并且使进程在AppContainer中启动。比如使用CreateAppContainerProfile创建一个容器SID，使用DeleteAppContainerProfile查找一个已知容器名的SID，删除一个容器DeleteAppContainerProfile配置文件。GetAppContainerFolderPath 获得容器目录。
+微软也为传统的 Desktop 应用程序提供了一系列的API来创建一个 AppContainer，并且使进程在 AppContainer 中启动。比如使用`CreateAppContainerProfile` 创建一个容器SID，使用 `DeleteAppContainerProfile` 查找一个已知容器名的SID，删除一个容器`DeleteAppContainerProfile` 配置文件。`GetAppContainerFolderPath` 获得容器目录。
 
-通过 AppContainer 启动进程的一般流程是，通过 CreateAppContainerProfile 创建一个容器配置，得到 SID 指针，为了避免创建失败，先用 DeleteAppContainerProfile 删除此容器配置。细粒度的配置需要 [WELL_KNOWN_SID_TYPE](https://msdn.microsoft.com/en-us/library/windows/desktop/aa379650(v=vs.85).aspx)    
-得到容器配置后，启动进程时需要使用 STARTUPINFOEX 结构，使用 InitializeProcThreadAttributeList UpdateProcThreadAttribute 将 PSID 和 SECURITY_CAPABILITIES::Capabilities （也就是 WELL_KNOWN_SID_TYPE 得到的权限设置）添加到 STARTUPINFOEX::lpAttributeList 
-使用 CreateProcess 中第七个参数 添加 EXTENDED_STARTUPINFO_PRESENT，然后再用 reinterpret_cast 转换 STARTUPFINFOEX 指针变量输入到 CreateProcess 倒数第二个（C语言用强制转换）。
+通过 AppContainer 启动进程的一般流程是，通过 `CreateAppContainerProfile` 创建一个容器配置，得到 SID 指针，为了避免创建失败，先用 DeleteAppContainerProfile 删除此容器配置。细粒度的配置需要 [WELL_KNOWN_SID_TYPE](https://msdn.microsoft.com/en-us/library/windows/desktop/aa379650(v=vs.85).aspx)    
+得到容器配置后，启动进程时需要使用 `STARTUPINFOEX` 结构，使用 `InitializeProcThreadAttributeList` `UpdateProcThreadAttribute` 将 `PSID` 和 `SECURITY_CAPABILITIES::Capabilities` （也就是 `WELL_KNOWN_SID_TYPE` 得到的权限设置）添加到 `STARTUPINFOEX::lpAttributeList`
+使用 `CreateProcess` 中第七个参数 添加 `EXTENDED_STARTUPINFO_PRESENT`，然后再用 `reinterpret_cast` 转换 `STARTUPFINFOEX` 指针变量输入到 `CreateProcess` 倒数第二个（C语言用强制转换）。
 
 下面是一个完整的例子。
 
-{% highlight cpp %}
+```c++
 #include <ShlObj.h>
 #include <Userenv.h>
 #include <functional>
@@ -396,7 +389,8 @@ int wmain(int argc,wchar_t *argv[])
     }
     return 0;
 }
-{% endhighlight %}
+```
+
 使用 Process Explorer 查看进程属性可得到下图：     
 ![AppContainer](https://raw.githubusercontent.com/fstudio/Phoenix/master/doc/Container/Images/appcontainer.png)   
 
