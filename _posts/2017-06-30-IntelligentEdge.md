@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "智能边界与反思"
-date:   2017-06-05 20:00:00
+date:   2017-06-30 20:00:00
 published: false
 categories: intelligent
 ---
@@ -14,6 +14,8 @@ categories: intelligent
 比如前几日看《外科风云》移动初诊平台
 
 在国内有 [华山医院](https://www.microsoft.com/china/intelligent-cloud/case_hospital.html) 使用了 Azure 来支撑其，
+
+智能鸿沟，电力载波通信 平流层通信等等。
 
 ## 比特币勒索的黑色星期五
 
