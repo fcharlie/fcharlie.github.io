@@ -21,6 +21,13 @@ categories: windows
 
 ## 标准控制台彩色输出
 
+`_cputws` `__dcrt_write_console_w` `WriteConsoleW`
+
+ReactOS `CsrCaptureMessageBuffer` https://github.com/reactos/reactos/blob/master/reactos/dll/win32/kernel32/client/console/readwrite.c
+
+Windows 7 or Later Conhost
+
+https://blogs.windows.com/buildingapps/2014/10/07/console-improvements-in-the-windows-10-technical-preview/
 
 ## 终端模拟器颜色输出
 
