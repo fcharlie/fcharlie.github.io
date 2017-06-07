@@ -21,6 +21,31 @@ categories: windows
 
 ## 标准控制台彩色输出
 
+Windows 控制台支持 16 色输出。
+
+```csharp
+    [Serializable]
+    public enum ConsoleColor
+    {
+        Black = 0,
+        DarkBlue = 1,
+        DarkGreen = 2,
+        DarkCyan = 3,
+        DarkRed = 4,
+        DarkMagenta = 5,
+        DarkYellow = 6,
+        Gray = 7,
+        DarkGray = 8,
+        Blue = 9,
+        Green = 10,
+        Cyan = 11,
+        Red = 12,
+        Magenta = 13,
+        Yellow = 14,
+        White = 15
+    }
+```
+
 `_cputws` `__dcrt_write_console_w` `WriteConsoleW`
 
 ReactOS `CsrCaptureMessageBuffer` https://github.com/reactos/reactos/blob/master/reactos/dll/win32/kernel32/client/console/readwrite.c
@@ -39,3 +64,14 @@ https://blogs.windows.com/buildingapps/2014/10/07/console-improvements-in-the-wi
 
 
 ## VT 模式颜色输出
+
+
+[24-bit Color in the Windows Console!](https://blogs.msdn.microsoft.com/commandline/2016/09/22/24-bit-color-in-the-windows-console/)
+
+[support 256 color](https://github.com/Microsoft/BashOnWindows/issues/345)
+
+## 其他
+
+[Add emoji support to Windows Console](https://github.com/Microsoft/BashOnWindows/issues/590)
+
+[UTF-8 rendering woes](https://github.com/Microsoft/BashOnWindows/issues/75#issuecomment-304415019)
