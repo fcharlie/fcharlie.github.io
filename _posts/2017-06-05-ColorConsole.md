@@ -54,7 +54,9 @@ Windows 控制台支持 16 色输出。
 
 `output_processor` `puttc_nolock` `_APPLY` `_fputc_nolock`
 
-ReactOS `CsrCaptureMessageBuffer` https://github.com/reactos/reactos/blob/master/reactos/dll/win32/kernel32/client/console/readwrite.c
+ReactOS `CsrCaptureMessageBuffer` 
+
+[WriteConsole](https://github.com/reactos/reactos/blob/master/reactos/dll/win32/kernel32/client/console/readwrite.c)
 
 ```c
 HANDLE
@@ -81,7 +83,7 @@ ReactOS 在使用 WriteFile 写入文件时，当文件是控制台时：
     (((ULONG_PTR)(h) & 0x10000003) == 0x3)
 ```
 
-在 ReactOS 中是这样做的：
+在 ReactOS CMD 中是这样做的：
 ```c++
 BOOL IsConsoleHandle(HANDLE hHandle)
 {
