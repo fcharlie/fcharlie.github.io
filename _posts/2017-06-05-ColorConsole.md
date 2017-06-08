@@ -48,7 +48,67 @@ Windows 控制台支持 16 色输出。
 
 `_cputws` `__dcrt_write_console_w` `WriteConsoleW`
 
+
+`fputc (stdio/fputc.cpp)`
+`__acrt_stdio_flush_and_write_narrow_nolock (_flsbuf.cpp)` `_write (lowio/write.cpp)`  `_write_nolock` `WriteFile`
+
+`output_processor` `puttc_nolock` `_APPLY` `_fputc_nolock`
+
 ReactOS `CsrCaptureMessageBuffer` https://github.com/reactos/reactos/blob/master/reactos/dll/win32/kernel32/client/console/readwrite.c
+
+```c
+HANDLE
+TranslateStdHandle(IN HANDLE hHandle)
+{
+    PRTL_USER_PROCESS_PARAMETERS Ppb = NtCurrentPeb()->ProcessParameters;
+
+    switch ((ULONG)hHandle)
+    {
+        case STD_INPUT_HANDLE:  return Ppb->StandardInput;
+        case STD_OUTPUT_HANDLE: return Ppb->StandardOutput;
+        case STD_ERROR_HANDLE:  return Ppb->StandardError;
+    }
+
+    return hHandle;
+}
+```
+ReactOS 在使用 WriteFile 写入文件时，当文件是控制台时：
+
+[WriteFile to Console](https://github.com/reactos/reactos/blob/40a16a9cf1cdfca399e9154b42d32c30b63480f5/reactos/dll/win32/kernel32/client/file/rw.c#L38)
+
+```c++
+#define IsConsoleHandle(h)  \
+    (((ULONG_PTR)(h) & 0x10000003) == 0x3)
+```
+
+在 ReactOS 中是这样做的：
+```c++
+BOOL IsConsoleHandle(HANDLE hHandle)
+{
+    DWORD dwMode;
+
+    /* Check whether the handle may be that of a console... */
+    if ((GetFileType(hHandle) & ~FILE_TYPE_REMOTE) != FILE_TYPE_CHAR)
+        return FALSE;
+
+    /*
+     * It may be. Perform another test... The idea comes from the
+     * MSDN description of the WriteConsole API:
+     *
+     * "WriteConsole fails if it is used with a standard handle
+     *  that is redirected to a file. If an application processes
+     *  multilingual output that can be redirected, determine whether
+     *  the output handle is a console handle (one method is to call
+     *  the GetConsoleMode function and check whether it succeeds).
+     *  If the handle is a console handle, call WriteConsole. If the
+     *  handle is not a console handle, the output is redirected and
+     *  you should call WriteFile to perform the I/O."
+     */
+    return GetConsoleMode(hHandle, &dwMode);
+}
+```
+
+https://doxygen.reactos.org/index.html
 
 Windows 7 or Later Conhost
 
@@ -67,6 +127,8 @@ https://blogs.windows.com/buildingapps/2014/10/07/console-improvements-in-the-wi
 
 
 [24-bit Color in the Windows Console!](https://blogs.msdn.microsoft.com/commandline/2016/09/22/24-bit-color-in-the-windows-console/)
+
+[Console Virtual Terminal Sequences](https://msdn.microsoft.com/en-us/library/windows/desktop/mt638032.aspx)
 
 [support 256 color](https://github.com/Microsoft/BashOnWindows/issues/345)
 
