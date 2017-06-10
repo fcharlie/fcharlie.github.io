@@ -23,13 +23,12 @@ categories: windows
 
 ## 标准输出
 
-大部分编程语言的入门从 `Helloworld` 开始，也就是 `Helloworld` 输出到标准输出。在 C++ 中使用 `std::cout` ，在 C 使用 `printf` 以及 C# 使用 `Console.Write` 等等。进程启动时，操作系统或者父进程会设置好进程的标准输出<sup>1</sup>。默认情况下，标准输出设备是 `控制台 console` 或者是 `终端 tty` 当然在启动进程前，可以将标准输出**重定向** 到 `管道 (Pipe/Named Pipe, Pipe/FIFO)` `文件` 而在 Unix like 系统中，还可以将输出重定向到 `socket` 等其他 Unix 文件。在 Windows 上，如果要将 IO 重定向到 socket 需要使用 `WSASocket` 创建 socket，并 使用 flag `WSA_FLAG_OVERLAPPED` 。
+大部分编程语言的入门从 `Helloworld` 开始，也就是 `Helloworld` 输出到标准输出。在 C++ 中使用 `std::cout` ，在 C 使用 `printf` 以及 C# 使用 `Console.Write` 等等。进程启动时，操作系统或者父进程会设置好进程的标准输出<sup>1</sup>。默认情况下，标准输出设备是 `控制台 console` 或者是 `终端 tty` 当然在启动进程前，可以将标准输出**重定向**到 `管道 (Pipe/Named Pipe, Pipe/FIFO)` `文件` 而在 Unix like 系统中，还可以将输出重定向到 `socket` 等其他 Unix 文件。在 Windows 上，如果要将 IO 重定向到 socket 需要使用 `WSASocket` 创建 socket，并 使用 flag `WSA_FLAG_OVERLAPPED` 。
 
 输出的设备或者文件存在多样性，对于 CRT 而言，标准输出的实现就要兼顾这些设备，通常来说，操作系统会提供 `WriteFile` `write` 这样的 API 或者系统调用支持输出，这些函数的输出优先考虑的是本机默认编码，比如 Unix 上，一般都是 UTF-8，对于兼容性大户 Windows 来说，虽然内部编码都是 UTF-16 但是输出到文件时，任然优先选择的是本机 `Codepage` 也就是代码页，在简中系统中是 936.
 
-在实现兼容的 Windows 彩色控制台输出方案时，这一机制给我们带来了很多麻烦。
-
 ## 标准控制台彩色输出
+
 
 Windows 控制台支持 16 色输出。
 
@@ -151,4 +150,4 @@ https://blogs.windows.com/buildingapps/2014/10/07/console-improvements-in-the-wi
 [UTF-8 rendering woes](https://github.com/Microsoft/BashOnWindows/issues/75#issuecomment-304415019)
 
 ## 备注
-1. 父进程未显式设置标准输入输出和错误，子进程会继承父进程，在 Windows 中，GUI 程序的标准输入输出和 Unix 下重定向到 `/dev/null` 类似，但启动的 CUI 子进程默认下依然有控制台窗口
+1. 父进程未显式设置标准输入输出和标准错误时，子进程会继承父进程的值，在 Windows 中，GUI 程序的标准输入输出和 Unix 下重定向到 `/dev/null` 类似，但启动的 CUI 子进程默认下依然有控制台窗口
