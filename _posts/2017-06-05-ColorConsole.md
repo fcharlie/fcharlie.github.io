@@ -21,39 +21,17 @@ categories: windows
 
 本文将讲述如何在 Windows 中实现同时支持标准控制台和 MSYS2 Cygwin 终端模拟器以及 VT 模式的 Windows 控制台颜色输出。
 
-## 标准输出
+## 关于标准输出
 
 大部分编程语言的入门从 `Helloworld` 开始，也就是 `Helloworld` 输出到标准输出。在 C++ 中使用 `std::cout` ，在 C 使用 `printf` 以及 C# 使用 `Console.Write` 等等。进程启动时，操作系统或者父进程会设置好进程的标准输出<sup>1</sup>。默认情况下，标准输出设备是 `控制台 console` 或者是 `终端 tty` 当然在启动进程前，可以将标准输出**重定向**到 `管道 (Pipe/Named Pipe, Pipe/FIFO)` `文件` 而在 Unix like 系统中，还可以将输出重定向到 `socket` 等其他 Unix 文件。在 Windows 上，如果要将 IO 重定向到 socket 需要使用 `WSASocket` 创建 socket，并 使用 flag `WSA_FLAG_OVERLAPPED` 。
 
 输出的设备或者文件存在多样性，对于 CRT 而言，标准输出的实现就要兼顾这些设备，通常来说，操作系统会提供 `WriteFile` `write` 这样的 API 或者系统调用支持输出，这些函数的输出优先考虑的是本机默认编码，比如 Unix 上，一般都是 UTF-8，对于兼容性大户 Windows 来说，虽然内部编码都是 UTF-16 但是输出到文件时，任然优先选择的是本机 `Codepage` 也就是代码页，在简中系统中是 936.
 
-## 标准控制台彩色输出
+## Printf 的心路历程
 
+在知乎上，很早就有人提问：[printf()等系统库函数是如何实现的？](https://www.zhihu.com/question/28749911)
 
-Windows 控制台支持 16 色输出。
-
-```csharp
-    [Serializable]
-    public enum ConsoleColor
-    {
-        Black = 0,
-        DarkBlue = 1,
-        DarkGreen = 2,
-        DarkCyan = 3,
-        DarkRed = 4,
-        DarkMagenta = 5,
-        DarkYellow = 6,
-        Gray = 7,
-        DarkGray = 8,
-        Blue = 9,
-        Green = 10,
-        Cyan = 11,
-        Red = 12,
-        Magenta = 13,
-        Yellow = 14,
-        White = 15
-    }
-```
+[Where the printf() Rubber Meets the Road](http://blog.hostilefork.com/where-printf-rubber-meets-road/)
 
 `_cputws` `__dcrt_write_console_w` `WriteConsoleW`
 
@@ -62,6 +40,10 @@ Windows 控制台支持 16 色输出。
 `__acrt_stdio_flush_and_write_narrow_nolock (_flsbuf.cpp)` `_write (lowio/write.cpp)`  `_write_nolock` `WriteFile`
 
 `output_processor` `puttc_nolock` `_APPLY` `_fputc_nolock`
+
+
+## WriteConsole 内部原理
+
 
 ReactOS `CsrCaptureMessageBuffer` 
 
@@ -131,8 +113,38 @@ https://blogs.technet.microsoft.com/askperf/2009/10/05/windows-7-windows-server-
 
 https://blogs.windows.com/buildingapps/2014/10/07/console-improvements-in-the-windows-10-technical-preview/
 
+## 控制台彩色输出
+
+
+Windows 控制台支持 16 色输出。
+
+```csharp
+    [Serializable]
+    public enum ConsoleColor
+    {
+        Black = 0,
+        DarkBlue = 1,
+        DarkGreen = 2,
+        DarkCyan = 3,
+        DarkRed = 4,
+        DarkMagenta = 5,
+        DarkYellow = 6,
+        Gray = 7,
+        DarkGray = 8,
+        Blue = 9,
+        Green = 10,
+        Cyan = 11,
+        Red = 12,
+        Magenta = 13,
+        Yellow = 14,
+        White = 15
+    }
+```
+
+
 ## 终端模拟器颜色输出
 
+在 Windows 上，还有 Cygwin 和 MSYS2 MSYS 这样的模拟 Unix 的环境。wsudo 对齐支持也有必要。
 
 ## VT 模式颜色输出
 
