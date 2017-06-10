@@ -19,7 +19,15 @@ categories: windows
 
 ![wsudo3](https://raw.githubusercontent.com/M2Team/Privexec/master/images/wsudo3.png)
 
-本文将讲述如何在 Windows 中实现同时支持标准控制台和 MSYS2 Cygwin 以及 VT 模式的 Windows 控制台颜色输出。
+本文将讲述如何在 Windows 中实现同时支持标准控制台和 MSYS2 Cygwin 终端模拟器以及 VT 模式的 Windows 控制台颜色输出。
+
+## 标准输出
+
+大部分编程语言的入门从 `Helloworld` 开始，即输出 `Helloworld`，通常来说输出到标准输出。比如 C++ 的 `std::cout` C 的 `printf` 以及 C# 的 `Console.Write` 等等。默认情况下，标准输出绑定的是 `控制台 console` 或者是 `终端 tty` 当然在启动进程前，可以将标准输出**重定向** 到 `管道 (Pipe/Named Pipe, Pipe/FIFO)` `文件` 而在 Unix like 系统中，还可以将输出重定向到 `socket` 等其他 Unix 文件。在 Windows 上，如果要将 IO 重定向到 socket 需要使用 `WSASocket` 创建 socket，并 使用 flag `WSA_FLAG_OVERLAPPED` 。
+
+输出的设备或者文件存在多样性，对于 CRT 而言，标准输出的实现就要兼顾这些设备，通常来说，操作系统会提供 `WriteFile` `write` 这样的 API 或者系统调用支持输出，这些函数的输出优先考虑的是本机默认编码，比如 Unix 上，一般都是 UTF-8，对于兼容性大户 Windows 来说，虽然内部编码都是 UTF-16 但是输出到文件时，任然优先选择的是本机 `Codepage` 也就是代码页，在简中系统中是 936.
+
+在实现兼容的 Windows 彩色控制台输出方案时，这一机制给我们带来了很多麻烦。
 
 ## 标准控制台彩色输出
 
