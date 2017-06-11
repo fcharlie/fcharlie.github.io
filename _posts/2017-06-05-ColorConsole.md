@@ -23,7 +23,7 @@ categories: windows
 
 ## 关于标准输出
 
-大部分编程语言的入门从 `Helloworld` 开始，也就是 `Helloworld` 输出到标准输出。在 C++ 中使用 `std::cout` ，在 C 使用 `printf` 以及 C# 使用 `Console.Write` 等等。进程启动时，操作系统或者父进程会设置好进程的标准输出<sup>1</sup>。默认情况下，标准输出设备是 `控制台 console` 或者是 `终端 tty` 当然在启动进程前，可以将标准输出**重定向**到 `管道 (Pipe/Named Pipe, Pipe/FIFO)` `文件` 而在 Unix like 系统中，还可以将输出重定向到 `socket` 等其他 Unix 文件。在 Windows 上，如果要将 IO 重定向到 socket 需要使用 `WSASocket` 创建 socket，并 使用 flag `WSA_FLAG_OVERLAPPED` 。
+大部分编程语言的入门从 `Helloworld` 开始，也就是将文本 `Helloworld` 输出到标准输出。在 C++ 中使用 `std::cout` ，在 C 中使用 `printf` 以及 C# 使用 `Console.Write` 输出文本。进程启动时，操作系统或者父进程会设置好进程的标准输出<sup>1</sup>。默认情况下，标准输出设备是 `控制台 console` 或者是 `终端 tty` 当然在启动进程前，可以将标准输出**重定向**到 `管道 (Pipe/Named Pipe, Pipe/FIFO)` `文件` 而在 Unix like 系统中，还可以将输出重定向到 `socket` 等其他 Unix 文件。在 Windows 上，如果要将 IO 重定向到 socket 需要使用 `WSASocket` 创建 socket，并 使用 flag `WSA_FLAG_OVERLAPPED` 。
 
 输出的设备或者文件存在多样性，对于 CRT 而言，标准输出的实现就要兼顾这些设备，通常来说，操作系统会提供 `WriteFile` `write` 这样的 API 或者系统调用支持输出，这些函数的输出优先考虑的是本机默认编码，比如 Unix 上，一般都是 UTF-8，对于兼容性大户 Windows 来说，虽然内部编码都是 UTF-16 但是输出到文件时，任然优先选择的是本机 `Codepage` 也就是代码页，在简中系统中是 936.
 
@@ -42,7 +42,9 @@ categories: windows
 
 ## WriteConsole 内部原理
 
-虽然在 Windows/ReactOS 中，写入到标准输出的使用了 `WriteFile` ，WriteFile 是如何写到控制台的？在 `ReactOS` 源码中，WriteFile 将检查 `hFile` 是否是 `STD_INPUT_HANDLE` ,`STD_OUTPUT_HANDLE` ,`STD_ERROR_HANDLE` 从而拿到 PEB 中的控制台句柄，否则使用原本的 `hFile`，然后就判断是否是控制台句柄，如果是控制台，则调用 `WriteConsoleA`，对于其他类型文件会直接调用 `NtWriteFile`。
+虽然在 Windows/ReactOS 中，CRT 写入到标准输出的使用了 `WriteFile` ，WriteFile 是如何写到控制台的？
+
+在 `ReactOS` 源码中，WriteFile 将检查 `hFile` 其值是否为 `STD_INPUT_HANDLE` ,`STD_OUTPUT_HANDLE` ,`STD_ERROR_HANDLE`  如果是就从 PEB 中获得对应的控制台句柄，否则使用句柄 `hFile` 原本的值，然后就判断是否是控制台句柄，如果是控制台，则调用 `WriteConsoleA`，对于其他类型文件会直接调用 `NtWriteFile`。
 
 讲 `STD_*_HANDLE` 转换为 Windows 内核对象：
 
@@ -113,12 +115,16 @@ WriteConsoleA 又是如何写入到图形界面呢？在 Windows Technet 有两�
 
 ![Windows7OrLater](https://msdnshared.blob.core.windows.net/media/TNBlogsFS/BlogFileStorage/blogs_technet/askperf/WindowsLiveWriter/Windows7WindowsServer2008R2ConsoleHost_7F3D/image_7f7ebef5-47db-4d0c-aa78-5dd0e6bb75c8.png)
 
-在这种架构中，WriteConsole LPC 调用直接到了一个 Conhost 宿主进程，这个进程是在 CreateProcess 中自动创建的。
+在这种架构中，WriteConsole LPC 调用将控制台消息发送到了一个 Conhost 宿主进程，这个进程是在 CreateProcess 中自动创建的。
 
 在 ReactOS 中，依然使用的是 `CsrCaptureMessageBuffer`  将数据发送到 CSRSS。[WriteConsole](https://github.com/reactos/reactos/blob/master/reactos/dll/win32/kernel32/client/console/readwrite.c)
 
 ReactOS 文档：[ReactOS](https://doxygen.reactos.org/index.html)
 
+
+**WriteFile 实际调用的是 WriteConsoleA，也就是说，在使用 wprintf 时还是会将文本内容转换成 locale 然后再写入到控制台窗口，这就是为什么，比如在 GBK 中，有很多字符不存在，如果使用 wprintf 就会无法输出或者是 ◻**
+
+在 Windows 中，内码是 Unicode，而控制台也支持使用 `WriteConsoleW` 这样的 API 输出文本，如果我们直接使用 `WriteConsoleW` 就可以避免出现字符无法呈现或者乱码的问题了。如果控制台的图形对各种字体字符支持更好，这个 API 也就能够输出彩色字符或者更多的 Emoji，遗憾的是，目前 Console 的改进任然在计划中，并没有完成。
 
 ## 控制台彩色输出
 
