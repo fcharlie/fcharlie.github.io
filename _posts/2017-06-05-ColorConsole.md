@@ -31,11 +31,11 @@ categories: windows
 
 在一起我曾经思考过 `printf` 是如何实现的，很多开发者在开始也有同样的疑惑，在知乎上，就有人提问：[printf()等系统库函数是如何实现的？](https://www.zhihu.com/question/28749911) ，在这个问题下，也有很多人回复了，有兴趣的用户可以看一下，在 Unix 的 CRT 中，printf 的调用历程在这篇文章中有详细介绍：[Where the printf() Rubber Meets the Road](http://blog.hostilefork.com/where-printf-rubber-meets-road/)
 
-在 Windows 10 中，新增了 `Universal CRT (UCRT)`  [CRT Library Features](https://msdn.microsoft.com/en-us/library/abx4dbyh.aspx)，[Introducing the Universal CRT](https://blogs.msdn.microsoft.com/vcblog/2015/03/03/introducing-the-universal-crt/)，与之前的 Visual C++ CRT 有了很大的不同，全部代码使用 C++11 重构，不用疑惑，正是使用 C++11 实现 **C** Runtime。笔者对 printf 的分析也是分析的 ucrt 源码。
+在 Windows 10 中，新增了 `Universal CRT (UCRT)`  [CRT Library Features](https://msdn.microsoft.com/en-us/library/abx4dbyh.aspx)，[Introducing the Universal CRT](https://blogs.msdn.microsoft.com/vcblog/2015/03/03/introducing-the-universal-crt/)，与之前的 Visual C++ CRT 有了很大的不同，全部代码使用 C++11 重构，不用疑惑，正是使用 C++11 实现 **C** Runtime。笔者对 printf 的分析也是基于 ucrt 源码。
 
 Visual C++ 会将 CRT/C++ STL 源码一同发布（没有构建文件），在 Visual Studio 的安装目录下的 `VC\crt\src` ，而 `UCRT` 源码则在 `%ProgramFiles(x86)%Windows Kits\10\Source\$BuildVersion\ucrt` 
 
-在 UCRT 中 printf 是个内联函数，调用了 `_vfprintf_l`，`_vfprintf_l` 也是内联 的，调用了 `__stdio_common_vfprintf`，在 ucrt 源码 `stdio\output.cpp` 中 `__stdio_common_vfprintf` 调用了模板函数 `common_vfprintf` ，而 `common_vfprintf` 则在内部调用了模板类 `output_processor` ,`output_processor` 使用了模板类 `stream_output_adapter` 
+在 UCRT 中 printf 是个内联函数，调用了 `_vfprintf_l`，`_vfprintf_l` 也是内联 的，它调用了 `__stdio_common_vfprintf`。在 ucrt 源码路径 `stdio\output.cpp` 中 `__stdio_common_vfprintf` 调用了模板函数 `common_vfprintf` ，而 `common_vfprintf` 则在内部调用了模板类 `output_processor` ,`output_processor` 使用了输出适配器模板类 `stream_output_adapter` 
 
 ```c++
 template <typename Character>
@@ -121,21 +121,13 @@ File stream 的写入流程是 `write_strings` -> `write_string_impl` -> `write_
 +  File UTF8 write_text_utf8_nolock
 +  File Binary write_binary_nolock
 
-最后终究要调用 `WriteFile`, 所以读写文件在 Windows 上为什么不使用 `WriteFile` ? 值得一提的是，在 Windows 中，如果使用 fopen 打开文件，尽量使用 `rb` `wb` 之类的标志，显示的制定文件类型是 `binary`, 否则自动添加 `CR` 就不好了。
+最后终究要调用 `WriteFile`, 所以读写文件在 Windows 上为什么不使用 `WriteFile` ? 
 
-```c++
-    // Dispatch the actual writing to one of the helper routines based on the
-    // text mode of the file and whether or not the file refers to the console.
-    //
-    // Note that in the event that the handle belongs to the console, WriteFile
-    // will generate garbage output.  To print to the console correctly, we need
-    // to print ANSI.  Also note that when printing to the console, we need to
-    // convert the characters to the console codepge.
-```
-通过源码，我们知道 UTF-16 或者 UTF-8 一般还是需要转换成 Ansi 才能输出到控制台。
+值得一提的是，在 Windows 中，如果使用 fopen 打开文件，尽量使用 `rb` `wb` 之类的标志，显示的制定文件类型是 `binary`, 否则自动添加 `CR` 就不好了。
 
-UCRT 还提供了 `_cputs` `_cprintf` `_cputws` `_cwprintf`  这样的函数，这些函数处理流程类似但要简单的多，`output_processor` 的输出适配器是 `console_output_adapter`，无论是字符类型是 wchar_t 还是 char 最终都会调用 `_putwch_nolock` 至 `__dcrt_write_console_w`，最后使用 `WriteConsoleW` 写入到控制台。
+通过源码，我们还知道 UTF-16 或者 UTF-8 一般还是需要转换成 Ansi 才能输出到控制台。
 
+UCRT 还提供了 `_cputs` `_cprintf` `_cputws` `_cwprintf`  这样的函数，这些函数处理流程类似但要简单的多，`output_processor` 的输出适配器是 `console_output_adapter`，无论是字符类型是 wchar_t 还是 char 最终都会调用 `_putwch_nolock` 及 `__dcrt_write_console_w`，最后使用 `WriteConsoleW` 写入到控制台。
 
 `_cwprintf` 与 `wprintf` 相比，输出 Unicode 字符要容易的多，不过，在使用标准输出的时候，你不能假定程序一定拥有控制台。
 
@@ -216,14 +208,16 @@ WriteConsoleA 又是如何写入到图形界面呢？在 Windows Technet 有两�
 
 在这种架构中，WriteConsole LPC 调用将控制台消息发送到了一个 Conhost 宿主进程，这个进程是在 CreateProcess 中自动创建的。
 
-在 ReactOS 中，依然使用的是 `CsrCaptureMessageBuffer`  将数据发送到 CSRSS。[WriteConsole](https://github.com/reactos/reactos/blob/master/reactos/dll/win32/kernel32/client/console/readwrite.c)
+在 ReactOS 中，依然使用的是 `CsrCaptureMessageBuffer`  将数据发送到 CSRSS。源码在这里： [WriteConsole](https://github.com/reactos/reactos/blob/master/reactos/dll/win32/kernel32/client/console/readwrite.c)
 
 ReactOS 文档：[ReactOS](https://doxygen.reactos.org/index.html)
 
 
-**WriteFile 实际调用的是 WriteConsoleA，在前面我们还知道 wprintf 时还是会将文本内容转换成 Ansi(Codepage) 然后再写入到控制台窗口，这就是为什么，比如在 GBK 中，有很多字符不存在，如果使用 wprintf 就会无法输出或者是 ◻**
+WriteFile 输出到控制台时，实际调用的是 **WriteConsoleA**，在前面我们还知道使用 wprintf 时，CRT 会将文本内容转换成 Ansi(Codepage) 然后再使用 WriteFile 写入到控制台窗口。
 
-在 Windows 中，内码是 Unicode，而控制台也支持使用 `WriteConsoleW` 这样的 API 输出文本，如果我们直接使用 `WriteConsoleW` 就可以避免出现字符无法呈现或者乱码的问题了。如果控制台的图形对各种字体字符支持更好，这个 API 也就能够输出彩色字符或者更多的 Emoji，遗憾的是，目前 Console 的改进任然在计划中，并没有完成。
+我们知道，绘制字符的时候，ANSI 将会最终转换成 UTF-16LE 编码，然后经 DrawTextExW 或者其他函数绘制出来，如果使用了 wprintf 这样的函数，势必会经过两次转换 **UTF16->Codepage->UTF16**，并且由于 Codepage 的字符集一般是不全面的，这就导致字符编码在转换的时候发生丢失，比如 emoji 之类还是不要妄想通过 wprintf 输出。
+
+在 Windows 中，内码是 Unicode，而控制台也支持使用 `WriteConsoleW` 这样的 API 输出文本，如果我们直接使用 `WriteConsoleW` 就可以避免出现字符无法呈现或者乱码的问题了。如果控制台的图形对各种字体字符支持更好，这个 API 也就能够输出彩色字符或者更多的 Emoji，遗憾的是，目前 Console 的改进任然在计划中，暂时没有完成。
 
 ## 控制台彩色输出
 
@@ -274,6 +268,8 @@ Windows 控制台支持 16 色输出。
 [Add emoji support to Windows Console](https://github.com/Microsoft/BashOnWindows/issues/590)
 
 [UTF-8 rendering woes](https://github.com/Microsoft/BashOnWindows/issues/75#issuecomment-304415019)
+
+[Alacritty - A cross-platform, GPU-accelerated terminal emulator](https://github.com/jwilm/alacritty)
 
 ## 备注
 1. 父进程未显式设置标准输入输出和标准错误时，子进程会继承父进程的值，在 Windows 中，GUI 程序的标准输入输出和 Unix 下重定向到 `/dev/null` 类似，但启动的 CUI 子进程默认下依然有控制台窗口
