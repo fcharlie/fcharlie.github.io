@@ -295,7 +295,7 @@ bool IsWindowsConhost(HANDLE hConsole, bool &isvt) {
   return true;
 }
 ```
-如果使用 GetFileType(hConsole) 得到的文件类型不是 `FILE_TYPE_CHAR` 我们就可以确定不是控制台，并且如果不支持 `GetConsoleMode` 函数，也要返回不是控制台。
+如果使用 GetFileType(hConsole) 得到的文件类型不是 `FILE_TYPE_CHAR` 我们就可以确定不是控制台，并且如果不支持 `GetConsoleMode` 函数，也要视其不是控制台。
 
 ```c++
 namespace console {
@@ -403,9 +403,7 @@ int WriteTerminals(int color, const wchar_t *data, size_t len) {
 ## VT 模式颜色输出
 
 在 Windows 10 中，新增了 **Windows Subsystem for Linux** ，可以通过 Bash 命令启动终端运行 Linux 程序，Windows 控制台还增加了 VT 模式 [Console Virtual Terminal Sequences](https://msdn.microsoft.com/en-us/library/windows/desktop/mt638032.aspx)，并且支持24-Bit 颜色：[24-bit Color in the Windows Console!](https://blogs.msdn.microsoft.com/commandline/2016/09/22/24-bit-color-in-the-windows-console/)，这意味着，可以像 Linux 一样在 printf 中添加转义字符控制颜色输出。
-
 在 Github 中也有 Issues 讨论: [support 256 color](https://github.com/Microsoft/BashOnWindows/issues/345)
-
 笔者在开发时发现 WriteConsoleW 也支持 VT 模式，对于也添加了代码支持 VT 模式：
 
 ```c++
@@ -484,6 +482,7 @@ int WriteInternal(int color, const wchar_t *buf, size_t len) {
   return provider.WriteRealize(color, buf, len);
 }
 ``` 
+使用 `console::Print` 不用担心乱码和颜色问题，在这几个主流的环境中都能正常显示（包括 ConEmu）。Print 使用的完全是 wchar_t。
 
 ## 其他
 
