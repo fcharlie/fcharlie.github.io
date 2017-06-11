@@ -29,16 +29,86 @@ categories: windows
 
 ## Printf 的心路历程
 
-在一起我曾经思考过 `printf` 是如何实现的，很多开发者在开始也有同样的疑惑，在知乎上，就有人提问：[printf()等系统库函数是如何实现的？](https://www.zhihu.com/question/28749911) ，也有答主揭露了 printf 的内幕，[Where the printf() Rubber Meets the Road](http://blog.hostilefork.com/where-printf-rubber-meets-road/)
+在一起我曾经思考过 `printf` 是如何实现的，很多开发者在开始也有同样的疑惑，在知乎上，就有人提问：[printf()等系统库函数是如何实现的？](https://www.zhihu.com/question/28749911) ，在这个问题下，也有很多人回复了，有兴趣的用户可以看一下，在 Unix 的 CRT 中，printf 的调用历程在这篇文章中有详细介绍：[Where the printf() Rubber Meets the Road](http://blog.hostilefork.com/where-printf-rubber-meets-road/)
 
-`_cputws` `__dcrt_write_console_w` `WriteConsoleW`
+在 Windows 10 中，新增了 `Universal CRT (UCRT)`  [CRT Library Features](https://msdn.microsoft.com/en-us/library/abx4dbyh.aspx)，[Introducing the Universal CRT](https://blogs.msdn.microsoft.com/vcblog/2015/03/03/introducing-the-universal-crt/)，与之前的 Visual C++ CRT 有了很大的不同，全部代码使用 C++11 重构，不用疑惑，正是使用 C++11 实现 **C** Runtime。笔者对 printf 的分析也是分析的 ucrt 源码。
+
+Visual C++ 会将 CRT/C++ STL 源码一同发布（没有构建文件），在 Visual Studio 的安装目录下的 `VC\crt\src` ，而 `UCRT` 源码则在 `%ProgramFiles(x86)%Windows Kits\10\Source\$BuildVersion\ucrt` 
+
+在 UCRT 中 printf 是个内联函数，调用了 `_vfprintf_l`，`_vfprintf_l` 也是内联 的，调用了 `__stdio_common_vfprintf`，在 ucrt 源码 `stdio\output.cpp` 中 `__stdio_common_vfprintf` 调用了模板函数 `common_vfprintf` ，而 `common_vfprintf` 则在内部调用了模板类 `output_processor` ,`output_processor` 使用了模板类 `stream_output_adapter` 
+
+```c++
+template <typename Character>
+class stream_output_adapter
+    : public output_adapter_common<Character, stream_output_adapter<Character>>
+{
+public:
+    typedef __acrt_stdio_char_traits<Character> char_traits;
+
+    stream_output_adapter(FILE* const public_stream) throw()
+        : _stream{public_stream}
+    {
+    }
+
+    bool validate() const throw()
+    {
+        _VALIDATE_RETURN(_stream.valid(), EINVAL, false);
+
+        return char_traits::validate_stream_is_ansi_if_required(_stream.public_stream());
+    }
+
+    bool write_character_without_count_update(Character const c) const throw()
+    {
+        if (_stream.is_string_backed() && _stream->_base == nullptr)
+        {
+            return true;
+        }
+
+        return char_traits::puttc_nolock(c, _stream.public_stream()) != char_traits::eof;
+    }
+
+    void write_string(
+        Character const*      const string,
+        int                   const length,
+        int*                  const count_written,
+        __crt_deferred_errno_cache& status
+        ) const throw()
+    {
+        if (_stream.is_string_backed() && _stream->_base == nullptr)
+        {
+            *count_written += length;
+            return;
+        }
+
+        write_string_impl(string, length, count_written, status);
+    }
+
+private:
+
+    __crt_stdio_stream _stream;
+};
+```
+
+File stream 的写入流程是 `write_strings` -> `write_string_impl` -> `write_character` -> `write_character_without_count_update` ,然后是 `char_traits::puttc_nolock`，`char_traits::puttch_nolock` 实际上是通过 `__acrt_stdio_char_traits` `__crt_char_traits` 定义的宏，printf 对应的是 `_fputc_nolock`。
+
+`_fputc_nolock` 调用了 `__acrt_stdio_flush_and_write_narrow_nolock`，在源码 `stdio/_flsbuf.cpp` 中，
+`__acrt_stdio_flush_and_write_narrow_nolock` 调用了 `common_flush_and_write_nolock<char>` 然后是 `write_buffer_nolock` -> `_write` ->`_write_nolock(lowio/write.cpp)` ->`write_double_translated_ansi_nolock,write_double_translated_unicode_nolock o,write_text_ansi_nolock,write_text_utf16le_nolock,write_text_utf8_nolock,write_binary_nolock`-> `WriteFile`
+
+```c++
+    // Dispatch the actual writing to one of the helper routines based on the
+    // text mode of the file and whether or not the file refers to the console.
+    //
+    // Note that in the event that the handle belongs to the console, WriteFile
+    // will generate garbage output.  To print to the console correctly, we need
+    // to print ANSI.  Also note that when printing to the console, we need to
+    // convert the characters to the console codepge.
+```
+通过源码，我们知道 UTF-16 或者 UTF-8 一般还是需要转换成 Ansi 才能输出到控制台。
+
+UCRT 还提供了 `_cputs` `_cprintf` `_cputws` `_cwprintf`  这样的函数，这些函数处理流程类似但要简单的多，`output_processor` 的输出适配器是 `console_output_adapter`，无论是字符类型是 wchar_t 还是 char 最终都会调用 `_putwch_nolock` 至 `__dcrt_write_console_w`，最后使用 `WriteConsoleW` 写入到控制台。
 
 
-`fputc (stdio/fputc.cpp)`
-`__acrt_stdio_flush_and_write_narrow_nolock (_flsbuf.cpp)` `_write (lowio/write.cpp)`  `_write_nolock` `WriteFile`
-
-`output_processor` `puttc_nolock` `_APPLY` `_fputc_nolock`
-
+`_cwprintf` 与 `wprintf` 相比，输出 Unicode 字符要容易的多，不过，在使用标准输出的时候，你不能假定程序一定拥有控制台。
 
 ## WriteConsole 内部原理
 
