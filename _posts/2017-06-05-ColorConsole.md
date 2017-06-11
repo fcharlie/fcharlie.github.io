@@ -221,7 +221,7 @@ WriteConsoleA 又是如何写入到图形界面呢？在 Windows Technet 有两�
 ReactOS 文档：[ReactOS](https://doxygen.reactos.org/index.html)
 
 
-**WriteFile 实际调用的是 WriteConsoleA，也就是说，在使用 wprintf 时还是会将文本内容转换成 locale 然后再写入到控制台窗口，这就是为什么，比如在 GBK 中，有很多字符不存在，如果使用 wprintf 就会无法输出或者是 ◻**
+**WriteFile 实际调用的是 WriteConsoleA，在前面我们还知道 wprintf 时还是会将文本内容转换成 Ansi(Codepage) 然后再写入到控制台窗口，这就是为什么，比如在 GBK 中，有很多字符不存在，如果使用 wprintf 就会无法输出或者是 ◻**
 
 在 Windows 中，内码是 Unicode，而控制台也支持使用 `WriteConsoleW` 这样的 API 输出文本，如果我们直接使用 `WriteConsoleW` 就可以避免出现字符无法呈现或者乱码的问题了。如果控制台的图形对各种字体字符支持更好，这个 API 也就能够输出彩色字符或者更多的 Emoji，遗憾的是，目前 Console 的改进任然在计划中，并没有完成。
 
