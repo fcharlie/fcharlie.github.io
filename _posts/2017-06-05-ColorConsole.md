@@ -89,10 +89,39 @@ private:
 };
 ```
 
-File stream 的写入流程是 `write_strings` -> `write_string_impl` -> `write_character` -> `write_character_without_count_update` ,然后是 `char_traits::puttc_nolock`，`char_traits::puttch_nolock` 实际上是通过 `__acrt_stdio_char_traits` `__crt_char_traits` 定义的宏，printf 对应的是 `_fputc_nolock`。
+File stream 的写入流程是 `write_strings` -> `write_string_impl` -> `write_character` -> `write_character_without_count_update` ,然后是 `char_traits::puttc_nolock`。
 
-`_fputc_nolock` 调用了 `__acrt_stdio_flush_and_write_narrow_nolock`，在源码 `stdio/_flsbuf.cpp` 中，
-`__acrt_stdio_flush_and_write_narrow_nolock` 调用了 `common_flush_and_write_nolock<char>` 然后是 `write_buffer_nolock` -> `_write` ->`_write_nolock(lowio/write.cpp)` ->`write_double_translated_ansi_nolock,write_double_translated_unicode_nolock o,write_text_ansi_nolock,write_text_utf16le_nolock,write_text_utf8_nolock,write_binary_nolock`-> `WriteFile`
+```c++
+#define _CORECRT_GENERATE_FORWARDER(prefix, callconv, name, callee_name)                     \
+    __pragma(warning(push))                                                                  \
+    __pragma(warning(disable: 4100)) /* unreferenced formal parameter */                     \
+    template <typename... Params>                                                            \
+    prefix auto callconv name(Params&&... args) throw() -> decltype(callee_name(args...))    \
+    {                                                                                        \
+        _BEGIN_SECURE_CRT_DEPRECATION_DISABLE                                                \
+        return callee_name(args...);                                                         \
+        _END_SECURE_CRT_DEPRECATION_DISABLE                                                  \
+    }                                                                                        \
+    __pragma(warning(pop))
+```
+
+`char_traits::puttch_nolock` 实际上是通过 `__acrt_stdio_char_traits` `__crt_char_traits` 定义的静态成员函数，，printf 对应的是 `_fputc_nolock`。
+
+`_fputc_nolock` 和 `fputc` 类似，实际上 `fputc` 也会调用它，在 `_fputc_nolock` 中调用了 `__acrt_stdio_flush_and_write_narrow_nolock`，在源码 `stdio/_flsbuf.cpp` 中，
+`__acrt_stdio_flush_and_write_narrow_nolock` 又调用了 `common_flush_and_write_nolock<char>` 
+
+往下一步走会调用 `write_buffer_nolock` -> `_write` ->`_write_nolock(lowio/write.cpp)` 
+
+然后根据不同设备和字符类型，`_write_nolock` 会调用：
+
++  Console ANSI write_double_translated_ansi_nolock
++  Console UTF16 write_double_translated_unicode_nolock
++  File ANSI write_text_ansi_nolock
++  File UTF16 write_text_utf16le_nolock
++  File UTF8 write_text_utf8_nolock
++  File Binary write_binary_nolock
+
+最后终究要调用 `WriteFile`, 所以读写文件在 Windows 上为什么不使用 `WriteFile` ? 值得一提的是，在 Windows 中，如果使用 fopen 打开文件，尽量使用 `rb` `wb` 之类的标志，显示的制定文件类型是 `binary`, 否则自动添加 `CR` 就不好了。
 
 ```c++
     // Dispatch the actual writing to one of the helper routines based on the
