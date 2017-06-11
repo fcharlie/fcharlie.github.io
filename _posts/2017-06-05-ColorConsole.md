@@ -29,9 +29,7 @@ categories: windows
 
 ## Printf 的心路历程
 
-在知乎上，很早就有人提问：[printf()等系统库函数是如何实现的？](https://www.zhihu.com/question/28749911)
-
-[Where the printf() Rubber Meets the Road](http://blog.hostilefork.com/where-printf-rubber-meets-road/)
+在一起我曾经思考过 `printf` 是如何实现的，很多开发者在开始也有同样的疑惑，在知乎上，就有人提问：[printf()等系统库函数是如何实现的？](https://www.zhihu.com/question/28749911) ，也有答主揭露了 printf 的内幕，[Where the printf() Rubber Meets the Road](http://blog.hostilefork.com/where-printf-rubber-meets-road/)
 
 `_cputws` `__dcrt_write_console_w` `WriteConsoleW`
 
@@ -44,12 +42,11 @@ categories: windows
 
 ## WriteConsole 内部原理
 
+虽然在 Windows/ReactOS 中，写入到标准输出的使用了 `WriteFile` ，WriteFile 是如何写到控制台的？在 `ReactOS` 源码中，WriteFile 将检查 `hFile` 是否是 `STD_INPUT_HANDLE` ,`STD_OUTPUT_HANDLE` ,`STD_ERROR_HANDLE` 从而拿到 PEB 中的控制台句柄，否则使用原本的 `hFile`，然后就判断是否是控制台句柄，如果是控制台，则调用 `WriteConsoleA`，对于其他类型文件会直接调用 `NtWriteFile`。
 
-ReactOS `CsrCaptureMessageBuffer` 
+讲 `STD_*_HANDLE` 转换为 Windows 内核对象：
 
-[WriteConsole](https://github.com/reactos/reactos/blob/master/reactos/dll/win32/kernel32/client/console/readwrite.c)
-
-```c
+```c++
 HANDLE
 TranslateStdHandle(IN HANDLE hHandle)
 {
@@ -65,16 +62,16 @@ TranslateStdHandle(IN HANDLE hHandle)
     return hHandle;
 }
 ```
-ReactOS 在使用 WriteFile 写入文件时，当文件是控制台时：
 
-[WriteFile to Console](https://github.com/reactos/reactos/blob/40a16a9cf1cdfca399e9154b42d32c30b63480f5/reactos/dll/win32/kernel32/client/file/rw.c#L38)
+判断是否是控制台文件：
 
 ```c++
 #define IsConsoleHandle(h)  \
     (((ULONG_PTR)(h) & 0x10000003) == 0x3)
 ```
 
-在 ReactOS CMD 中是这样做的：
+或者
+
 ```c++
 BOOL IsConsoleHandle(HANDLE hHandle)
 {
@@ -101,17 +98,27 @@ BOOL IsConsoleHandle(HANDLE hHandle)
 }
 ```
 
-https://doxygen.reactos.org/index.html
+有兴趣的可以参阅 ReactOS WriteFile 源码：
+[WriteFile to Console](https://github.com/reactos/reactos/blob/40a16a9cf1cdfca399e9154b42d32c30b63480f5/reactos/dll/win32/kernel32/client/file/rw.c#L38)
 
-Windows 7 or Later Conhost
+对于控制台句柄，CloseHandle，ReadFile，CreateFile ，以及 WriteFile 都要单独的调用对象的控制台 API。比如说，如果文件名是 `CON`, `CONOUT$`, `CONIN$`, `\\.\CON` 时就会使用 `OpenConsoleW` 打开控制台。然后返回控制台的句柄。
 
-https://blogs.technet.microsoft.com/askperf/2009/10/05/windows-7-windows-server-2008-r2-console-host/
+WriteConsoleA 又是如何写入到图形界面呢？在 Windows Technet 有两幅图分别介绍了 Vista 以前的控制台结构和 Windows 7 的控制台架构 [Windows 7 / Windows Server 2008 R2: Console Host](https://blogs.technet.microsoft.com/askperf/2009/10/05/windows-7-windows-server-2008-r2-console-host/)
+
+在 Windows 7 以前，WriteConsole 通过 LPC 与 CSRSS（Client Server Runtime Process） 通信：
 
 ![Windows](https://msdnshared.blob.core.windows.net/media/TNBlogsFS/BlogFileStorage/blogs_technet/askperf/WindowsLiveWriter/Windows7WindowsServer2008R2ConsoleHost_7F3D/image_c064c0f7-4048-4dba-86bd-4a9722b53a11.png)
 
+由于CSRSS 以 `Local System` 权限运行，这样的逻辑容易导致 [Shatter attack](https://en.wikipedia.org/wiki/Shatter_attack)，于是在 Windows 7 中出现了新的 `Console Host` ：
+
 ![Windows7OrLater](https://msdnshared.blob.core.windows.net/media/TNBlogsFS/BlogFileStorage/blogs_technet/askperf/WindowsLiveWriter/Windows7WindowsServer2008R2ConsoleHost_7F3D/image_7f7ebef5-47db-4d0c-aa78-5dd0e6bb75c8.png)
 
-https://blogs.windows.com/buildingapps/2014/10/07/console-improvements-in-the-windows-10-technical-preview/
+在这种架构中，WriteConsole LPC 调用直接到了一个 Conhost 宿主进程，这个进程是在 CreateProcess 中自动创建的。
+
+在 ReactOS 中，依然使用的是 `CsrCaptureMessageBuffer`  将数据发送到 CSRSS。[WriteConsole](https://github.com/reactos/reactos/blob/master/reactos/dll/win32/kernel32/client/console/readwrite.c)
+
+ReactOS 文档：[ReactOS](https://doxygen.reactos.org/index.html)
+
 
 ## 控制台彩色输出
 
@@ -156,6 +163,8 @@ Windows 控制台支持 16 色输出。
 [support 256 color](https://github.com/Microsoft/BashOnWindows/issues/345)
 
 ## 其他
+
+[Console Improvements in the Windows 10 Technical Preview](https://blogs.windows.com/buildingapps/2014/10/07/console-improvements-in-the-windows-10-technical-preview/)
 
 [Add emoji support to Windows Console](https://github.com/Microsoft/BashOnWindows/issues/590)
 
