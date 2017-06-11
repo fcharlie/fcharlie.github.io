@@ -221,8 +221,9 @@ WriteFile 输出到控制台时，实际调用的是 **WriteConsoleA**，在前�
 
 ## 控制台彩色输出
 
+讲了这么长一段废话，进入正题了，首先，我们要知道 Windows 控制台 API 是支持颜色输出的，不过，这些 API 仅支持 16 色输出。
 
-Windows 控制台支持 16 色输出。
+在 .Net Core [corefx](https://github.com/dotnet/corefx/blob/master/src/System.Console/src/System/ConsoleColor.cs#L10) 有如下一个枚举定义了控制台基本的颜色：
 
 ```csharp
     [Serializable]
@@ -247,29 +248,261 @@ Windows 控制台支持 16 色输出。
     }
 ```
 
+我们也可以使用控制台 API 输出颜色：
+
+```c++
+int WriteConhost(int color, const wchar_t *data, size_t len) {
+  CONSOLE_SCREEN_BUFFER_INFO csbi;
+  auto hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+  GetConsoleScreenBufferInfo(hConsole, &csbi);
+  WORD oldColor = csbi.wAttributes;
+  WORD color_ = static_cast<WORD>(color);
+  WORD newColor;
+  if (color > console::fc::White) {
+    newColor = (oldColor & 0x0F) | color_;
+  } else {
+    newColor = (oldColor & 0xF0) | color_;
+  }
+  SetConsoleTextAttribute(hConsole, newColor);
+  DWORD dwWrite;
+  WriteConsoleW(hConsole, data, (DWORD)len, &dwWrite, nullptr);
+  SetConsoleTextAttribute(hConsole, oldColor);
+  return static_cast<int>(dwWrite);
+}
+```
+
+在这里，我们选择的是 `STD_OUTPUT_HANDLE`，`&0x0F` 或者 `&0xF0` 的目的是不修改原有的背景色或者前景色。
+
 
 ## 终端模拟器颜色输出
 
-在 Windows 上，还有 Cygwin 和 MSYS2 MSYS 这样的模拟 Unix 的环境。wsudo 对齐支持也有必要。
+在 Windows 上，还有 Cygwin 和 MSYS2 MSYS 这样的模拟 Unix 的环境。wsudo 对齐支持也非常有必要。
+
+这些环境启动进程往往是通过管道通信，这个时候，我们可以判断是否是终端还是控制台。
+
+```c++
+bool IsWindowsConhost(HANDLE hConsole, bool &isvt) {
+  if (GetFileType(hConsole) != FILE_TYPE_CHAR) {
+    return false;
+  }
+  DWORD mode;
+  if (!GetConsoleMode(hConsole, &mode)) {
+    return false;
+  }
+  if ((mode & ENABLE_VIRTUAL_TERMINAL_PROCESSING) != 0) {
+    isvt = true;
+  }
+  return true;
+}
+```
+如果使用 GetFileType(hConsole) 得到的文件类型不是 `FILE_TYPE_CHAR` 我们就可以确定不是控制台，然后控制台要支持 `GetConsoleMode` 才行。
+
+```c++
+namespace console {
+std::string wchar2utf8(const wchar_t *buf, size_t len) {
+  std::string str;
+  auto N = WideCharToMultiByte(CP_UTF8, 0, buf, (int)len, nullptr, 0, nullptr,
+                               nullptr);
+  str.resize(N);
+  WideCharToMultiByte(CP_UTF8, 0, buf, (int)len, &str[0], N, nullptr, nullptr);
+  return str;
+}
+
+struct TerminalsColorTable {
+  int index;
+  bool blod;
+};
+
+namespace vt {
+namespace fg {
+enum Color {
+  Black = 30,
+  Red = 31,
+  Green = 32,
+  Yellow = 33,
+  Blue = 34,
+  Magenta = 35,
+  Cyan = 36,
+  Gray = 37,
+  Reset = 39
+};
+}
+namespace bg {
+enum Color {
+  Black = 40,
+  Red = 41,
+  Green = 42,
+  Yellow = 43,
+  Blue = 44,
+  Magenta = 45,
+  Cyan = 46,
+  Gray = 47,
+  Reset = 49
+};
+}
+}
+bool TerminalsConvertColor(int color, TerminalsColorTable &co) {
+
+  std::unordered_map<int, TerminalsColorTable> tables = {
+      {console::fc::Black, {vt::fg::Black, false}},
+      {console::fc::DarkBlue, {vt::fg::Blue, false}},
+      {console::fc::DarkGreen, {vt::fg::Green, false}},
+      {console::fc::DarkCyan, {vt::fg::Cyan, false}},
+      {console::fc::DarkRed, {vt::fg::Red, false}},
+      {console::fc::DarkMagenta, {vt::fg::Magenta, false}},
+      {console::fc::DarkYellow, {vt::fg::Yellow, false}},
+      {console::fc::DarkGray, {vt::fg::Gray, false}},
+      {console::fc::Blue, {vt::fg::Blue, true}},
+      {console::fc::Green, {vt::fg::Green, true}},
+      {console::fc::Cyan, {vt::fg::Cyan, true}},
+      {console::fc::Red, {vt::fg::Red, true}},
+      {console::fc::Magenta, {vt::fg::Magenta, true}},
+      {console::fc::Yellow, {vt::fg::Yellow, true}},
+      {console::fc::White, {vt::fg::Gray, true}},
+      {console::bc::Black, {vt::bg::Black, false}},
+      {console::bc::Blue, {vt::bg::Blue, false}},
+      {console::bc::Green, {vt::bg::Green, false}},
+      {console::bc::Cyan, {vt::bg::Cyan, false}},
+      {console::bc::Red, {vt::bg::Red, false}},
+      {console::bc::Magenta, {vt::bg::Magenta, false}},
+      {console::bc::Yellow, {vt::bg::Yellow, false}},
+      {console::bc::DarkGray, {vt::bg::Gray, false}},
+      {console::bc::LightBlue, {vt::bg::Blue, true}},
+      {console::bc::LightGreen, {vt::bg::Green, true}},
+      {console::bc::LightCyan, {vt::bg::Cyan, true}},
+      {console::bc::LightRed, {vt::fg::Red, true}},
+      {console::bc::LightMagenta, {vt::bg::Magenta, true}},
+      {console::bc::LightYellow, {vt::bg::Yellow, true}},
+      {console::bc::LightWhite, {vt::bg::Gray, true}},
+  };
+  auto iter = tables.find(color);
+  if (iter == tables.end()) {
+    return false;
+  }
+  co = iter->second;
+  return true;
+}
+int WriteTerminals(int color, const wchar_t *data, size_t len) {
+  TerminalsColorTable co;
+  auto str = wchar2utf8(data, len);
+  if (!TerminalsConvertColor(color, co)) {
+    return static_cast<int>(fwrite(str.data(), 1, str.size(), stdout));
+  }
+  if (co.blod) {
+    fprintf(stdout, "\33[1;%dm", co.index);
+  } else {
+    fprintf(stdout, "\33[%dm", co.index);
+  }
+  auto l = fwrite(str.data(), 1, str.size(), stdout);
+  fwrite("\33[0m", 1, sizeof("\33[0m") - 1, stdout);
+  return static_cast<int>(l);
+}
+```
+这些终端环境基本上是 UTF8 的，要支持文字正常显示，我们需要将其转换为 UTF8，这样一来，中文什么都不会乱码了。
+
 
 ## VT 模式颜色输出
 
+在 Windows 10 中，新增了 **Windows Subsystem for Linux** ，可以通过 Bash 命令启动终端执行 Linux 程序，Windows 控制台团队还使得控制台新增了 VT 模式 [24-bit Color in the Windows Console!](https://blogs.msdn.microsoft.com/commandline/2016/09/22/24-bit-color-in-the-windows-console/)，这意味着，可以像 Linux 一样在 printf 中添加转义字符控制颜色输出。
 
-[24-bit Color in the Windows Console!](https://blogs.msdn.microsoft.com/commandline/2016/09/22/24-bit-color-in-the-windows-console/)
+MSDN 中有详细文档介绍： [Console Virtual Terminal Sequences](https://msdn.microsoft.com/en-us/library/windows/desktop/mt638032.aspx)
 
-[Console Virtual Terminal Sequences](https://msdn.microsoft.com/en-us/library/windows/desktop/mt638032.aspx)
+在 Github 中也有 Issues: [support 256 color](https://github.com/Microsoft/BashOnWindows/issues/345)
 
-[support 256 color](https://github.com/Microsoft/BashOnWindows/issues/345)
+笔者在开发时发现 WriteConsoleW 也支持 VT 模式，对于 VT 模式控制台我们也实现了彩色支持：
+
+```c++
+int WriteConsoleInternal(const wchar_t *buffer, size_t len) {
+  DWORD dwWrite = 0;
+  auto hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+  if (WriteConsoleW(hConsole, buffer, (DWORD)len, &dwWrite, nullptr)) {
+    return static_cast<int>(dwWrite);
+  }
+  return 0;
+}
+int WriteVTConsole(int color, const wchar_t *data, size_t len) {
+  TerminalsColorTable co;
+  if (!TerminalsConvertColor(color, co)) {
+    return WriteConsoleInternal(data, len);
+  }
+  std::wstring buf(L"\x1b[");
+  if (co.blod) {
+    buf.append(L"1;").append(std::to_wstring(co.index)).push_back(L'm');
+  } else {
+    buf.append(std::to_wstring(co.index)).push_back(L'm');
+  }
+  WriteConsoleInternal(buf.data(), (DWORD)buf.size());
+  auto N = WriteConsoleInternal(data, (DWORD)len);
+  WriteConsoleInternal(L"\x1b[0m", (sizeof("\x1b[0m") - 1));
+  return static_cast<int>(N);
+}
+template <typename... Args>
+int PrintConsole(const wchar_t *format, Args... args) {
+  std::wstring buffer;
+  size_t size = StringPrint(nullptr, 0, format, args...);
+  buffer.resize(size);
+  size = StringPrint(&buffer[0], buffer.size() + 1, format, args...);
+  return WriteConsoleInternal(buffer.data(), size);
+}
+```
+由于 VT 模式还支持 256 色，这里还增加了 `PrintConsole` 模板函数，支持用户自定义输出多一些色彩。
+
+## 输出函数自动选择
+
+在不考虑 freopen 这样的重新设置标准输出输出的情况下，Privexec.Console 使用如下代码支持自动选择不同的输出函数
+
+```c++
+class ConsoleInternal {
+public:
+  ConsoleInternal() {
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (hConsole == INVALID_HANDLE_VALUE) {
+      impl = WriteFiles;
+      return;
+    }
+    if (GetFileType(hConsole) == FILE_TYPE_DISK) {
+      impl = WriteFiles;
+      return;
+    }
+    bool isvt = false;
+    if (IsWindowsConhost(hConsole, isvt)) {
+      if (isvt) {
+        impl = WriteVTConsole;
+        return;
+      }
+      impl = WriteConhost;
+      return;
+    }
+    impl = WriteTerminals;
+  }
+  int WriteRealize(int color, const wchar_t *data, size_t len) {
+    return this->impl(color, data, len);
+  }
+
+private:
+  int (*impl)(int color, const wchar_t *data, size_t len);
+};
+int WriteInternal(int color, const wchar_t *buf, size_t len) {
+  static ConsoleInternal provider;
+  return provider.WriteRealize(color, buf, len);
+}
+``` 
 
 ## 其他
 
-[Console Improvements in the Windows 10 Technical Preview](https://blogs.windows.com/buildingapps/2014/10/07/console-improvements-in-the-windows-10-technical-preview/)
+很欣慰的是 Windows 控制台团队在 Windows 10 开发之处就在不断改进控制台： 比如 [Console Improvements in the Windows 10 Technical Preview](https://blogs.windows.com/buildingapps/2014/10/07/console-improvements-in-the-windows-10-technical-preview/)
 
-[Add emoji support to Windows Console](https://github.com/Microsoft/BashOnWindows/issues/590)
+还有计划中的 Emoji 支持： [Add emoji support to Windows Console](https://github.com/Microsoft/BashOnWindows/issues/590)
 
-[UTF-8 rendering woes](https://github.com/Microsoft/BashOnWindows/issues/75#issuecomment-304415019)
+以及基于 DirectWrite 改进控制台字体渲染的计划： [UTF-8 rendering woes](https://github.com/Microsoft/BashOnWindows/issues/75#issuecomment-304415019)
 
-[Alacritty - A cross-platform, GPU-accelerated terminal emulator](https://github.com/jwilm/alacritty)
+当然 ConEmu 也有计划使用 DirectWrite 改进其渲染。
+
+不过遗憾的是，Mintty 的开发者并不认为有使用 DirectWrite 改进渲染的必要。 
+
+基于 Rust 的跨平台 GPU 终端 [Alacritty - A cross-platform, GPU-accelerated terminal emulator](https://github.com/jwilm/alacritty) 也计划在 1.0 时对 Windows 提供支持，字体渲染也有 DirectWrite 的身影。
+
+Privexec.Console 官方并不会支持 Windows 10 一下版本，毕竟作者精力有限。
 
 ## 备注
 1. 父进程未显式设置标准输入输出和标准错误时，子进程会继承父进程的值，在 Windows 中，GUI 程序的标准输入输出和 Unix 下重定向到 `/dev/null` 类似，但启动的 CUI 子进程默认下依然有控制台窗口
