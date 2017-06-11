@@ -271,12 +271,12 @@ int WriteConhost(int color, const wchar_t *data, size_t len) {
 }
 ```
 
-在这里，我们选择的是 `STD_OUTPUT_HANDLE`，`&0x0F` 或者 `&0xF0` 的目的是不修改原有的背景色或者前景色。
+在这里，我们选择的是 `STD_OUTPUT_HANDLE`，使用 `&0x0F` 或者 `&0xF0` 的目的是不修改原有的背景色或者前景色。
 
 
 ## 终端模拟器颜色输出
 
-在 Windows 上，还有 Cygwin 和 MSYS2 MSYS 这样的模拟 Unix 的环境。wsudo 对齐支持也非常有必要。
+在 Windows 上，还有 Cygwin 和 MSYS2 MSYS 这样的模拟 Unix 的环境。wsudo 对其支持也非常有必要。
 
 这些环境启动进程往往是通过管道通信，这个时候，我们可以判断是否是终端还是控制台。
 
@@ -295,7 +295,7 @@ bool IsWindowsConhost(HANDLE hConsole, bool &isvt) {
   return true;
 }
 ```
-如果使用 GetFileType(hConsole) 得到的文件类型不是 `FILE_TYPE_CHAR` 我们就可以确定不是控制台，然后控制台要支持 `GetConsoleMode` 才行。
+如果使用 GetFileType(hConsole) 得到的文件类型不是 `FILE_TYPE_CHAR` 我们就可以确定不是控制台，并且如果不支持 `GetConsoleMode` 函数，也要返回不是控制台。
 
 ```c++
 namespace console {
@@ -398,18 +398,15 @@ int WriteTerminals(int color, const wchar_t *data, size_t len) {
   return static_cast<int>(l);
 }
 ```
-这些终端环境基本上是 UTF8 的，要支持文字正常显示，我们需要将其转换为 UTF8，这样一来，中文什么都不会乱码了。
-
+这些终端环境基本上将文本视为 UTF8 编码，为了让文字正常显示，我们需要将其转换为 UTF8。经过测试，中文什么都不会乱码了。
 
 ## VT 模式颜色输出
 
-在 Windows 10 中，新增了 **Windows Subsystem for Linux** ，可以通过 Bash 命令启动终端执行 Linux 程序，Windows 控制台团队还使得控制台新增了 VT 模式 [24-bit Color in the Windows Console!](https://blogs.msdn.microsoft.com/commandline/2016/09/22/24-bit-color-in-the-windows-console/)，这意味着，可以像 Linux 一样在 printf 中添加转义字符控制颜色输出。
+在 Windows 10 中，新增了 **Windows Subsystem for Linux** ，可以通过 Bash 命令启动终端运行 Linux 程序，Windows 控制台还增加了 VT 模式 [Console Virtual Terminal Sequences](https://msdn.microsoft.com/en-us/library/windows/desktop/mt638032.aspx)，并且支持24-Bit 颜色：[24-bit Color in the Windows Console!](https://blogs.msdn.microsoft.com/commandline/2016/09/22/24-bit-color-in-the-windows-console/)，这意味着，可以像 Linux 一样在 printf 中添加转义字符控制颜色输出。
 
-MSDN 中有详细文档介绍： [Console Virtual Terminal Sequences](https://msdn.microsoft.com/en-us/library/windows/desktop/mt638032.aspx)
+在 Github 中也有 Issues 讨论: [support 256 color](https://github.com/Microsoft/BashOnWindows/issues/345)
 
-在 Github 中也有 Issues: [support 256 color](https://github.com/Microsoft/BashOnWindows/issues/345)
-
-笔者在开发时发现 WriteConsoleW 也支持 VT 模式，对于 VT 模式控制台我们也实现了彩色支持：
+笔者在开发时发现 WriteConsoleW 也支持 VT 模式，对于也添加了代码支持 VT 模式：
 
 ```c++
 int WriteConsoleInternal(const wchar_t *buffer, size_t len) {
@@ -445,7 +442,7 @@ int PrintConsole(const wchar_t *format, Args... args) {
   return WriteConsoleInternal(buffer.data(), size);
 }
 ```
-由于 VT 模式还支持 256 色，这里还增加了 `PrintConsole` 模板函数，支持用户自定义输出多一些色彩。
+由于 VT 模式支持 256 色，这里还增加了 `PrintConsole` 模板函数，支持用户自定义输出多一些色彩。
 
 ## 输出函数自动选择
 
