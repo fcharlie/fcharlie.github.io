@@ -23,7 +23,7 @@ categories: windows
 
 ## 关于标准输出
 
-大部分编程语言的入门从 `Helloworld` 开始，也就是将文本 `Helloworld` 输出到标准输出。在 C++ 中使用 `std::cout` ，在 C 中使用 `printf` 以及 C# 使用 `Console.Write` 输出文本。进程启动时，操作系统或者父进程会设置好进程的标准输出<sup>1</sup>。默认情况下，标准输出设备是 `控制台 console` 或者是 `终端 tty` 当然在启动进程前，可以将标准输出**重定向**到 `管道 (Pipe/Named Pipe, Pipe/FIFO)` `文件` 而在 Unix like 系统中，还可以将输出重定向到 `socket` 等其他 Unix 文件。在 Windows 上，如果要将 IO 重定向到 socket 需要使用 `WSASocket` 创建 socket，并 使用 flag `WSA_FLAG_OVERLAPPED` 。
+大部分编程语言的入门从 `Helloworld` 开始，也就是将文本 `Helloworld` 输出到标准输出。在 C++ 中使用 `std::cout` ，在 C 中使用 `printf` 以及在 C# 中使用 `Console.Write`。进程启动时，操作系统或者父进程会设置好进程的标准输出<sup>1</sup>。默认情况下，标准输出设备是 `控制台 console` 或者是 `终端 tty` 当然在启动进程前，可以将标准输出**重定向**到 `管道 (Pipe/Named Pipe, Pipe/FIFO)` `文件` 而在 Unix like 系统中，还可以将输出重定向到 `socket` 等其他 Unix 文件。在 Windows 上，如果要将 IO 重定向到 socket 需要使用 `WSASocket` 创建 socket，并 使用 flag `WSA_FLAG_OVERLAPPED` 。
 
 输出的设备或者文件存在多样性，对于 CRT 而言，标准输出的实现就要兼顾这些设备，通常来说，操作系统会提供 `WriteFile` `write` 这样的 API 或者系统调用支持输出，这些函数的输出优先考虑的是本机默认编码，比如 Unix 上，一般都是 UTF-8，对于兼容性大户 Windows 来说，虽然内部编码都是 UTF-16 但是输出到文件时，任然优先选择的是本机 `Codepage` 也就是代码页，在简中系统中是 936.
 
@@ -46,7 +46,7 @@ categories: windows
 
 在 `ReactOS` 源码中，WriteFile 将检查 `hFile` 其值是否为 `STD_INPUT_HANDLE` ,`STD_OUTPUT_HANDLE` ,`STD_ERROR_HANDLE`  如果是就从 PEB 中获得对应的控制台句柄，否则使用句柄 `hFile` 原本的值，然后就判断是否是控制台句柄，如果是控制台，则调用 `WriteConsoleA`，对于其他类型文件会直接调用 `NtWriteFile`。
 
-讲 `STD_*_HANDLE` 转换为 Windows 内核对象：
+将 `STD_*_HANDLE` 转换为 Windows 内核对象：
 
 ```c++
 HANDLE
