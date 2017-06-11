@@ -498,7 +498,7 @@ int WriteInternal(int color, const wchar_t *buf, size_t len) {
 
 基于 Rust 的跨平台 GPU 终端 [Alacritty - A cross-platform, GPU-accelerated terminal emulator](https://github.com/jwilm/alacritty) 也计划在 1.0 时对 Windows 提供支持，字体渲染也有 DirectWrite 的身影。
 
-Privexec.Console 官方并不会支持 Windows 10 一下版本，毕竟作者精力有限。
+Privexec.Console 官方并不会支持 Windows 10 以前的版本，毕竟作者精力有限。
 
 ## 备注
 1. 父进程未显式设置标准输入输出和标准错误时，子进程会继承父进程的值，在 Windows 中，GUI 程序的标准输入输出和 Unix 下重定向到 `/dev/null` 类似，但启动的 CUI 子进程默认下依然有控制台窗口
