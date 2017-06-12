@@ -217,14 +217,13 @@ ReactOS 文档：[ReactOS](https://doxygen.reactos.org/index.html)
 
 WriteFile 输出到控制台时，实际调用的是 **WriteConsoleA**，在前面我们还知道使用 wprintf 时，CRT 会将文本内容转换成 Ansi(Codepage) 然后再使用 WriteFile 写入到控制台窗口。
 
-我们知道，绘制字符的时候，ANSI 将会最终转换成 UTF-16LE 编码，然后经 DrawTextExW 或者其他函数绘制出来，如果使用了 wprintf 这样的函数，势必会经过两次转换 **UTF16->Codepage->UTF16**，并且由于 Codepage 的字符集一般是不全面的，这就导致字符编码在转换的时候发生丢失，比如 emoji 之类还是不要妄想通过 wprintf 输出。
+我们知道，绘制字符的时候，ANSI 文本最终将会转换成 UTF-16LE 文本，然后经 DrawTextExW 或者其他函数绘制出来，如果使用了 wprintf 这样的函数，势必会经过两次转换 **UTF16->CodePage->UTF16**，在 Unicode 中存在的字符不一定存在于代码页中，这就导致文本在转换编码的时候发生丢失，输出到控制台时，可能是乱码或者干脆截断了。所以在 Windows 控制台中， Unicode 编码，特别是 emoji 还是不要妄想通过 wprintf 输出。
 
-在 Windows 中，内码是 Unicode，而控制台也支持使用 `WriteConsoleW` 这样的 API 输出文本，如果我们直接使用 `WriteConsoleW` 就可以避免出现字符无法呈现或者乱码的问题了。如果控制台的图形对各种字体字符支持更好，这个 API 也就能够输出彩色字符或者更多的 Emoji，遗憾的是，目前 Console 的改进任然在计划中，暂时没有完成。
+在 Windows 中，内码是 Unicode，而控制台也支持使用 `WriteConsoleW` 这样的 API 输出文本，如果我们直接使用 `WriteConsoleW` 就可以避免出现字符无法呈现或者乱码的问题了。如果控制台的图形对各种字体字符支持更好，这个 API 也就能够输出彩色字符或者更多的 Emoji。遗憾的是，目前 Console 字体渲染的改进任然在计划中，暂时不支持 Emoji 和各种特殊字体。
 
 ## 控制台彩色输出
 
-讲了这么长一段废话，进入正题了，首先，我们要知道 Windows 控制台 API 是支持颜色输出的，不过，这些 API 仅支持 16 色输出。
-
+讲了这么长一段，该讲如何实现彩色输出了，首先，我们要知道 Windows 控制台 API 是支持颜色输出的，不过，这些 API 仅支持 16 色输出。
 在 .Net Core [corefx](https://github.com/dotnet/corefx/blob/master/src/System.Console/src/System/ConsoleColor.cs#L10) 有如下一个枚举定义了控制台基本的颜色：
 
 ```csharp
@@ -249,8 +248,7 @@ WriteFile 输出到控制台时，实际调用的是 **WriteConsoleA**，在前�
         White = 15
     }
 ```
-
-我们也可以使用控制台 API 输出颜色：
+在 C++ 中，如果在 `WriteConsoleW` 调用之前使用了 `SetConsoleTextAttribute` 设置输出格式，那么就能输出带有上述颜色的文本内容了。在 Privexec.Console 中，使用控制台 API 输出颜色如下：
 
 ```c++
 int WriteConhost(int color, const wchar_t *data, size_t len) {
@@ -273,15 +271,12 @@ int WriteConhost(int color, const wchar_t *data, size_t len) {
 }
 ```
 
-在这里，我们选择的是 `STD_OUTPUT_HANDLE`，使用 `&0x0F` 或者 `&0xF0` 的目的是不修改原有的背景色或者前景色。
+在这里，我们选择的是 `STD_OUTPUT_HANDLE`，使用 `&0x0F` 或者 `&0xF0` 的目的是不修改原有的背景色或者前景色，第二次调用 `SetConsoleTextAttribute` 的目的是恢复控制台原有的颜色。
 
-
-## 终端模拟器颜色输出
+## 终端模拟器彩色输出
 
 在 Windows 上，还有 Cygwin 和 MSYS2 MSYS 这样的模拟 Unix 的环境。wsudo 对其支持也非常有必要。
-
 这些环境启动进程往往是通过管道通信，这个时候，我们可以判断是否是终端还是控制台。
-
 ```c++
 bool IsWindowsConhost(HANDLE hConsole, bool &isvt) {
   if (GetFileType(hConsole) != FILE_TYPE_CHAR) {
@@ -400,7 +395,7 @@ int WriteTerminals(int color, const wchar_t *data, size_t len) {
   return static_cast<int>(l);
 }
 ```
-这些终端环境基本上将文本视为 UTF8 编码，为了让文字正常显示，我们需要将其转换为 UTF8。经过测试，中文什么都不会乱码了。
+这些终端环境基本上将文本视为 UTF8 编码，为了让文字正常显示，我们需要将其转换为 UTF8。经过测试，中文都能正常显示。
 
 ## VT 模式颜色输出
 
