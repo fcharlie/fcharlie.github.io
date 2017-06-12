@@ -248,7 +248,7 @@ WriteFile 输出到控制台时，实际调用的是 **WriteConsoleA**，在前�
         White = 15
     }
 ```
-在 C++ 中，如果在 `WriteConsoleW` 调用之前使用了 `SetConsoleTextAttribute` 设置输出格式，那么就能输出带有上述颜色的文本内容了。在 Privexec.Console 中，使用控制台 API 输出颜色如下：
+在 C++ 中，如果在 `WriteConsoleW` 调用之前使用了 `SetConsoleTextAttribute` 设置输出格式，那么就能输出带有上述颜色的文本内容了。在 Privexec.Console 中，使用控制台 API 输出颜色代码如下：
 
 ```c++
 int WriteConhost(int color, const wchar_t *data, size_t len) {
@@ -293,6 +293,8 @@ bool IsWindowsConhost(HANDLE hConsole, bool &isvt) {
 }
 ```
 如果使用 GetFileType(hConsole) 得到的文件类型不是 `FILE_TYPE_CHAR` 我们就可以确定不是控制台，并且如果不支持 `GetConsoleMode` 函数，也要视其不是控制台。
+
+核心代码如下：
 
 ```c++
 namespace console {
