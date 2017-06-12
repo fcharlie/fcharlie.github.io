@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Privexec 的内幕（一） Windows 彩色控制台的实现"
+title:  "Privexec 的内幕（一）标准输出原理与彩色输出实现"
 date:   2017-06-05 20:00:00
 published: true
 categories: windows
@@ -8,7 +8,7 @@ categories: windows
 
 # 前言
 
-[Privexec](https://github.com/M2Team/Privexec) 是笔者借鉴远景好友 MouriNaruto 开发的 [NSudo](https://github.com/M2Team/NSudo) 开发的一个改变权限执行进程的工具，支持提权和降权。其中 wsudo 是 Privexec 的命令行版本。
+[Privexec](https://github.com/M2Team/Privexec) 是笔者借鉴远景好友 MouriNaruto 的 [NSudo](https://github.com/M2Team/NSudo) 而开发的一个**提权或者降权**执行进程的工具。其中 wsudo 是 Privexec 的命令行版本。
 
 在 wsudo 中，笔者使用了 Privexec.Console 提供彩色输出，截图如下：
 
@@ -23,15 +23,17 @@ categories: windows
 
 ## 关于标准输出
 
-大部分编程语言的入门从 `Helloworld` 开始，也就是将文本 `Helloworld` 输出到标准输出。在 C++ 中使用 `std::cout` ，在 C 中使用 `printf` 以及在 C# 中使用 `Console.Write`。进程启动时，操作系统或者父进程会设置好进程的标准输出<sup>1</sup>。默认情况下，标准输出设备是 `控制台 console` 或者是 `终端 tty` 当然在启动进程前，可以将标准输出**重定向**到 `管道 (Pipe/Named Pipe, Pipe/FIFO)` `文件` 而在 Unix like 系统中，还可以将输出重定向到 `socket` 等其他 Unix 文件。在 Windows 上，如果要将 IO 重定向到 socket 需要使用 `WSASocket` 创建 socket，并 使用 flag `WSA_FLAG_OVERLAPPED` 。
+大部分编程语言的入门从 `Helloworld` 开始，也就是将文本 `Helloworld` 输出到标准输出。在 C++ 中使用 `std::cout` ，在 C 中使用 `printf` 以及在 C# 中使用 `Console.Write`。进程启动时，操作系统或者父进程会设置好进程的标准输出<sup>1</sup>。默认情况下，标准输出设备是 `控制台 console` 或者是 `终端 tty` 当然在启动进程前，可以将标准输出**重定向**到 `管道 (Pipe/Named Pipe, Pipe/FIFO)`，`文件` 而在 Unix like 系统中，还可以将输出重定向到 `socket` 等其他 Unix 文件。在 Windows 上，如果要将 IO 重定向到 socket 需要使用 `WSASocket` 创建 socket，且不要使用 `WSA_FLAG_OVERLAPPED` 标志。
 
-输出的设备或者文件存在多样性，对于 CRT 而言，标准输出的实现就要兼顾这些设备，通常来说，操作系统会提供 `WriteFile` `write` 这样的 API 或者系统调用支持输出，这些函数的输出优先考虑的是本机默认编码，比如 Unix 上，一般都是 UTF-8，对于兼容性大户 Windows 来说，虽然内部编码都是 UTF-16 但是输出到文件时，任然优先选择的是本机 `Codepage` 也就是代码页，在简中系统中是 936.
+输出的设备或者文件存在多样性，对于 CRT 而言，标准输出的实现就要兼顾这些设备，通常来说，操作系统会提供 `WriteFile` `write` 这样的 API 或者系统调用支持输出，一般来说，printf 这样的函数也是使用这样的 API 或者系统调用实现。这些函数的输出优先考虑的是本机默认编码，比如 Unix 上，一般都是 UTF-8，对于兼容性大户 Windows 来说，虽然内部编码都是 UTF-16 但是输出到文件时，任然优先选择的是本机代码页，比如在简体中文系统中是，代码页也就是 936。
 
 ## Printf 的心路历程
 
-在一起我曾经思考过 `printf` 是如何实现的，很多开发者在开始也有同样的疑惑，在知乎上，就有人提问：[printf()等系统库函数是如何实现的？](https://www.zhihu.com/question/28749911) ，在这个问题下，也有很多人回复了，有兴趣的用户可以看一下，在 Unix 的 CRT 中，printf 的调用历程在这篇文章中有详细介绍：[Where the printf() Rubber Meets the Road](http://blog.hostilefork.com/where-printf-rubber-meets-road/)
+在以前我曾经思考过 `printf` 是如何实现的，很多开发者在开始也有同样的疑惑，在知乎上，就有人提问：[printf()等系统库函数是如何实现的？](https://www.zhihu.com/question/28749911) ，在这个问题下，有很多人回复了，有兴趣的用户可以看一下；
 
-在 Windows 10 中，新增了 `Universal CRT (UCRT)`  [CRT Library Features](https://msdn.microsoft.com/en-us/library/abx4dbyh.aspx)，[Introducing the Universal CRT](https://blogs.msdn.microsoft.com/vcblog/2015/03/03/introducing-the-universal-crt/)，与之前的 Visual C++ CRT 有了很大的不同，全部代码使用 C++11 重构，不用疑惑，正是使用 C++11 实现 **C** Runtime。笔者对 printf 的分析也是基于 ucrt 源码。
+在 Unix 的 CRT 中，printf 的调用历程在这篇文章中有详细介绍：[Where the printf() Rubber Meets the Road](http://blog.hostilefork.com/where-printf-rubber-meets-road/)
+
+在 Windows 10 中，新增了 `Universal CRT (UCRT)`  [CRT Library Features](https://msdn.microsoft.com/en-us/library/abx4dbyh.aspx)，[Introducing the Universal CRT](https://blogs.msdn.microsoft.com/vcblog/2015/03/03/introducing-the-universal-crt/)，与之前的 Visual C++ CRT 有了很大的不同，全部代码使用 C++11 重构，不用疑惑，正是使用 C++11 实现 **C** Runtime。笔者对 printf 的分析也是基于 ucrt 。
 
 Visual C++ 会将 CRT/C++ STL 源码一同发布（没有构建文件），在 Visual Studio 的安装目录下的 `VC\crt\src` ，而 `UCRT` 源码则在 `%ProgramFiles(x86)%Windows Kits\10\Source\$BuildVersion\ucrt` 
 
@@ -121,9 +123,9 @@ File stream 的写入流程是 `write_strings` -> `write_string_impl` -> `write_
 +  File UTF8 write_text_utf8_nolock
 +  File Binary write_binary_nolock
 
-最后终究要调用 `WriteFile`, 所以读写文件在 Windows 上为什么不使用 `WriteFile` ? 
+最后终究要调用 `WriteFile`，对于不需要缓冲区的文件读写为什么不直接使用 `WriteFile` ？
 
-值得一提的是，在 Windows 中，如果使用 fopen 打开文件，尽量使用 `rb` `wb` 之类的标志，显示的制定文件类型是 `binary`, 否则自动添加 `CR` 就不好了。
+值得一提的是，在 Windows 中，如果使用 FILE 读写文件，尽量使用 `rb` `wb` 之类的标志，显示的指定文件类型是 `binary`, 否则自动添加 `CR` 就不好了。
 
 通过源码，我们还知道 UTF-16 或者 UTF-8 一般还是需要转换成 Ansi 才能输出到控制台。
 
