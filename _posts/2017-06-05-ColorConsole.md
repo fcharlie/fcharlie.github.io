@@ -19,7 +19,7 @@ categories: windows
 
 ![wsudo3](https://raw.githubusercontent.com/M2Team/Privexec/master/images/wsudo3.png)
 
-本文将讲述如何在 Windows 中实现同时支持标准控制台和 MSYS2 Cygwin 终端模拟器以及 VT 模式的 Windows 控制台颜色输出。
+本文将讲述标准输出是如何输出到控制台的，以及怎样在 Windows 中实现同时支持标准控制台和 MSYS2 Cygwin 终端模拟器以及 VT 模式的控制台彩色输出。
 
 ## 关于标准输出
 
