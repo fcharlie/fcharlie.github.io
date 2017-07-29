@@ -16,11 +16,13 @@ categories: developer
 
 [Clangbuilder](https://github.com/fstudio/clangbuilder) 是一个基于 Powershell 的 LLVM/Clang 自动化构建工具，通常用户在双击 `install.bat` 脚本后，脚本将自动安装以来，所有的依赖配置在 [config/package.json](https://github.com/fstudio/clangbuilder/blob/master/config/packages.json) 中。
 
+默认下载的工具如下：
+
 |工具|版本|
 |---|---|
 |MinGit|2.13.3|
 |CMake|3.9.0|
-|Python(Embed)|3.6.2|
+|Python (Embed)|3.6.2|
 |Subversion|1.9.4|
 |NSIS|3.0|
 |gnuwin|1.0|
@@ -28,3 +30,12 @@ categories: developer
 |swigwin|3.0.11|
 |vswhere|2.1.3|
 |nuget|4.1.0|
+
+我们支持 msi 和 zip 以及单文件工具，因为这些工具 `PkgInitialize.ps1` 都能正确的处理成便携版，如果是其他安装方式或者格式的安装包，目前并不能支持。
+
+下载依赖后，Clangbuilder 会自动构建一个图形化工具叫 `ClangbuilderUI`，用户可以使用 ClangbuilderUI 来一键构建或者启动环境。
+
+![CangbuilderUI](https://github.com/fstudio/clangbuilder/raw/master/docs/images/cbui.png)
+
+
+由于 Windows 10 新增了很多特性，ClangbuilderUI 目前已经不支持 Windows 10 以下的版本，开发者可以自己去修改 ClangbuilderUI
