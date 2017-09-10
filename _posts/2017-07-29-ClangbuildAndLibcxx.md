@@ -20,18 +20,17 @@ categories: developer
 
 |tools|version|
 |---|---|
-|MinGit|2.13.3|
-|CMake|3.9.0|
-|Python (Embed)|3.6.2|
-|Subversion|1.9.4|
-|NSIS|3.0|
+|MinGit|2.14.1|
+|CMake|3.9.1|
+|Python|2.7.13|
+|NSIS|3.02.1|
 |gnuwin|1.0|
 |ninja|1.7.2|
 |swigwin|3.0.11|
 |vswhere|2.1.3|
-|nuget|4.1.0|
+|nuget|4.3.0|
 
-我们支持 msi 和 zip 以及单文件工具，因为这些工具 `PkgInitialize.ps1` 都能正确的处理成便携版，如果是其他安装方式或者格式的安装包，目前并不能支持。
+我们支持 msi 和 zip 以及单文件工具，因为这些工具 `modules/PM/PM.psm1` 都能正确的处理成便携版，如果是其他安装方式或者格式的安装包，目前并不能支持。
 
 下载依赖后，Clangbuilder 会自动构建一个图形化工具叫 `ClangbuilderUI`，用户可以使用 ClangbuilderUI 来一键构建或者启动环境。
 
@@ -48,7 +47,7 @@ Libc++ 是一个非常优秀的 C++ 标准库的实现，目前是 macOS iOS 上
 
 因此在 Windows 上基于 MSVC 构建兼容的 Clang 版本时如果需要构建 libcxx 时，需要支持编译器为 clang-cl，而 Clangbuilder 目前支持 `NinjaBootstarp` 和 `NinjaIterate` 两种机制构建 libcxx ，在 ClangbuilderUI 中选择相应的 Engine 即可。第一种顾名思义就是使用 Ninja 自举，先使用 MSVC 构建第一个版本的 Clang, 然后再使用 CMake 生成 ninja 构建文件，这是将编译器替换为 clang-cl，然后设置编译 Libcxx， 如果代码没有错误，也就构建成功了。
 
-而 NinjaIterate 需要预先构建的 clang-cl，这种非常适用于笔者这种经常构建 clang 的人士，修改 [config/precompiled.json](https://github.com/fstudio/clangbuilder/blob/master/config/precompiled.json) 设置好预构建的 clang 的路径和架构，Clangbuilder 将自动识别并构建。没有代码错误就能很快构建成功。
+而 NinjaIterate 需要预先构建的 clang-cl，这种非常适用于笔者这种经常构建 clang 的人士，修改 [config/prebuilt.json](https://github.com/fstudio/clangbuilder/blob/master/config/prebuilt.json) 设置好预构建的 clang 的路径和架构，Clangbuilder 将自动识别并构建。没有代码错误就能很快构建成功。
 
 ```json
 {
@@ -67,6 +66,11 @@ Clangbuilder 支持将 LLVM 自动打包成安装文件，由于 libcxx 的项�
 
 然后就可以运行程序了。
 
+也可以使用
+
+>clang-cl -std:c++14  -Iinclude\c++\v1 hello.cc c++.lib
+
+值得注意的是，静态链接似乎是不起作用的。
 
 ## 最后
 
