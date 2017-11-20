@@ -7,7 +7,7 @@ categories: developer
 ---
 ## Kisasum Hash 实用工具
 
-Kismet 是笔者开发的一个 Hash 图形化计算工具，有 Win32 版本 Kismet 和 KismetUWP 在前面的 Blog 中有介绍： 
+Kismet 是笔者开发的一个计算 Hash 的图形化工具，有桌面版本 Kismet 和 UWP 版本 KismetUWP。 在前面的 Blog 中有介绍： 
 [Kismet 杂谈](http://forcemz.net/developer/2017/05/14/Kismet/)
 
 
@@ -15,8 +15,9 @@ KismetUWP 截图如下：
 
 ![u1](https://github.com/fcharlie/KismetUWP/raw/master/docs/images/none.png)
 
-很多时候，人们可能也需要命令行工具来实现一系列与自动化相关的功能，同样的有命令行的 Hash 计算工具就再好不过了。
-实际上，无论是 PowerShell 还是 Unix word 都有一系列的 Hash 命令，比如 PowerShell，有 `Get-FileHash`， 命令格式如下
+有些时候，人们需要命令行工具而不是图形化工具，比如使用一系列命令完成一个工作。
+
+Hash 计算也需要命令行工具。实际上，无论是 PowerShell 还是 Unix Shell 都有一系列的 Hash 命令，比如 PowerShell，有 `Get-FileHash`， 命令格式如下
 
 ```powershell
 Get-FileHash windows10.iso SHA256
@@ -47,9 +48,14 @@ REMARKS
 
 ```
 
-在 Unix 世界，有 shasum sha256sum sha512sum sha384sum，第三方还有 sha3sum。
+在 Unix Shell，也有 shasum sha256sum sha512sum sha384sum，第三方还有 sha3sum。
 
-程序员通常在技术上对待他人非常苛责，不满意他人的代码，喜欢造轮子。笔者正是这样的人，于是在 Kismet 中添加了命令行 hash 计算工具 Kisasum。
+命令格式通常是：
+```
+shaNsum file
+```
+
+程序员通常在技术上对待他人非常苛责，他人的工具与`我`的需求还差一点点，`我`得自己干。与是笔者也就开发了 Kisasum Hash 实用工具，支持输出 JSON 和 XML。
 
 Kisasum 源码在 Kismet 的项目中 [Kisasum](https://github.com/fcharlie/Kismet/tree/master/Kisasum)。
 
