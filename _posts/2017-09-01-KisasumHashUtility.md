@@ -15,9 +15,9 @@ KismetUWP 截图如下：
 
 ![u1](https://github.com/fcharlie/KismetUWP/raw/master/docs/images/none.png)
 
-有些时候，人们需要命令行工具而不是图形化工具，比如使用一系列命令完成一个工作。
+当人们使用一系列命令完成工作时，这个时候优先需要命令行工具。
 
-Hash 计算也需要命令行工具。实际上，无论是 PowerShell 还是 Unix Shell 都有一系列的 Hash 命令，比如 PowerShell，有 `Get-FileHash`， 命令格式如下
+Hash 计算有什么命令行工具？无论是 PowerShell 还是 Unix Shell 都有一系列的 Hash 命令，比如 PowerShell，有 `Get-FileHash`， 命令格式如下
 
 ```powershell
 Get-FileHash windows10.iso SHA256
@@ -55,7 +55,7 @@ REMARKS
 shaNsum file
 ```
 
-程序员通常在技术上对待他人非常苛责，他人的工具与`我`的需求还差一点点，`我`得自己干。与是笔者也就开发了 Kisasum Hash 实用工具，支持输出 JSON 和 XML。
+对于大多数人来说，这些命令都是极好的。但我并不满足，于是开发了 Kisasum Hash 实用工具，此工具支持输出 JSON 和 XML。
 
 Kisasum 源码在 Kismet 的项目中 [Kisasum](https://github.com/fcharlie/Kismet/tree/master/Kisasum)。
 
