@@ -117,7 +117,7 @@ Kisasum 支持的 Hash 算法与 Kismet 一致，Kisasum 支持输出普通文�
 
 Kisasum 格式化并没有使用第三方库，非常简单代码如下：
 
-```json
+```c++
 int KisasumPrintXML(const KisasumResult &result) {
 	std::wstring ws(LR"(<?xml version="1.0">)");
 	ws.append(L"\n<root>\n  <algorithm>")
