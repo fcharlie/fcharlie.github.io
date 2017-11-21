@@ -86,7 +86,7 @@ Formats:
 
 Kisasum 支持的 Hash 算法与 Kismet 一致，Kisasum 支持输出普通文本，JSON，以及 XML。这样做的好处是，笔者可以使用 PowerShell 将 Kisasum 的输出转变为 PowerShell 对象，从而能够在 PowerShell 脚本中方便的使用 Kisasum。
 
-```json
+```powershell
  $hash=.\Kisasum.exe $FilePath1 $FilePath2 --format=json -a sha3-256|ConvertFrom-JSON
  foreach($f in $hash.files){
    Write-Host "$($f.hash)    $($f.name)"
