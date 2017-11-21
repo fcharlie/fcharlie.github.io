@@ -24,7 +24,7 @@ Get-FileHash windows10.iso SHA256
 ```
 
 也可以使用强制参数，具体帮助信息如下
-```
+```usage
 NAME
     Get-FileHash
 
@@ -61,7 +61,7 @@ Kisasum 源码在 Kismet 的项目中 [Kisasum](https://github.com/fcharlie/Kism
 
 Kisasum 的帮助信息如下：
 
-```
+```usage
 OVERVIEW: kisasum 1.0
 USAGE: kisasum [options] <input>
 OPTIONS:
