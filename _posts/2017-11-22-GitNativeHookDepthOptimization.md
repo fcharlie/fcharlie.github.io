@@ -32,6 +32,8 @@ $GIT_DIR/hooks/update refname oldrev newrev
 
 既然每一个引用都会执行一次，那么我们试想一下，一次性推送多个分支，并且分支都是新建分支，那么可以预见，无论是 **Commit-Between Diff** 还是保护分支还是任务队列的消耗时间都是成倍增加的。事实上也是如此，我们在测试服务器上推送大存储库，多分支，多 commit 时就发现了这个问题。
 
+由于 **Commit-Between Diff** 深度的限制，一个精心构造的大文件是能够被推送到服务器而不被拒绝。
+
 ## 完全检测的 Git 原生钩子
 
 既然 Update 钩子并不好，我们就得使用替代方案。**pre-receive** 是第一个被 receive-pack 调用的钩子，没有额外的命令行参数，无论更新多少引用都只会调用一次，引用列表会被 receive-pack 写入到 pre-receive 钩子进程的标准输入。格式原语如下：
