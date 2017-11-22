@@ -189,6 +189,10 @@ inline const char *Sha1FromIndex(FILE *fp, char *buf, std::uint32_t i) {
 
 这次优化比前面的 700 多毫秒减少了 100 多毫秒。
 
+## 检测合适引入大文件
+
+GitNativeHook 为了性能还是损失了一个功能，无法检测何时，引入了哪一个大文件，这个时候大家可以使用我开发的 git-analyze 工具去检测什么时候引入的大文件以及文件名：[Git-Analyze](https://gitee.com/oscstudio/git-analyze)
+
 ## 最后
 
 优化是无止尽的。如果大家有更好的方案可以与我讨论。
