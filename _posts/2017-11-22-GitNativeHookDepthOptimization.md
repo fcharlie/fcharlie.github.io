@@ -1,8 +1,8 @@
 ---
 layout: post
 title:  "Git 原生钩子的深度优化"
-date:   2017-11-25 10:00:00
-published: false
+date:   2017-11-22 10:00:00
+published: true
 categories: git
 ---
 
@@ -136,7 +136,7 @@ inline const char *Sha1FromIndex(FILE *fp, char *buf, std::uint32_t i) {
   return buf;
 }
 ```
-这样真的减少了一半的时间。比如 Linux 内核源码 1.9GB 数据，562 W 数据，从 1442 毫秒减少到 700 多毫秒。
+这样真的减少了一半的时间。比如 Linux 内核源码 1.9GB 数据，562 W 对象，从 1442 毫秒减少到 700 多毫秒。内存占用也减少了 2/3。不要小看 16Byte 字节的节省，几百万个对象节省的空间就很客观了。
 
 ```cpp
 #define GIT_SHA1_RAWSZ 20
@@ -169,3 +169,34 @@ inline const char *Sha1FromIndex(FILE *fp, char *buf, std::uint32_t i) {
 ```
 
 ## 利用内存布局减少系统调用次数
+
+就函数调用而言，要尽可能的减少频繁调用的函数的调用次数，特别是达到百万级别的，在读取偏移时就可以一次性读取，于是我将读取偏移改为一次性读写，利用 vector 预先分配的内存，核心代码如下：
+
+```cpp
+ std::vector<ObjectIndex> objs(counts);
+  auto objsraw = objs.data();
+  auto bufc = reinterpret_cast<char *>(objsraw);
+  /// 4*counts
+  auto binteger =
+      reinterpret_cast<int *>(bufc + sizeof(ObjectIndex) * counts / 2);
+  if (fread(binteger, 4, counts, fp) != counts) {
+    console::Printeln("fread error ");
+    fclose(fp);
+    return false;
+  }
+  for (uint32_t i = 0; i < counts; i++) {
+    /// DON'T  change the order of operations
+    objsraw[i].offset = ntohl(binteger[i]);
+    objsraw[i].index = i;
+  }
+
+  std::sort(objs.begin(), objs.end());
+```
+
+这里一定要注意，index 的填充一定要后于偏移的计算。
+
+这次优化比前面的 700 多毫秒减少了 100 多毫秒。
+
+## 最后
+
+优化是无止尽的。如果大家有更好的方案可以与我讨论。
