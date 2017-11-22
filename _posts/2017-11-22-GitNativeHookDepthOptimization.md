@@ -12,12 +12,12 @@ Git 是最流行的版本控制工具，和大多数版本控制工具一样，G
 
 代码托管平台也会使用钩子，一般是使用 **Server-Side Hooks**。包括 **pre-receive** **update** **post-receive**。
 
-为什么要使用钩子？我们得先思考目前的 git 代码托管平台架构大多数是无状态的，也就是说 Web 是 Web, git 是 git。究其原因，目前服务器上的 git 传输实现基本上还是使用 git 命令做 smart 传输，这种传输本质上是一对命令做输入输出交换，类似 inetd。这种协议的缺陷在于：在子进程中传输的数据是隔离的，不透明的，不可控的。启动 Git 子命令后，权限控制，大文件检测等操作已不是 SSH 或者 HTTP 服务器能控制的了。当然，劫持网络数据进行深度分析是可以的，但那相当于重新实现重新实现一套 git。并且，这种性能上的损失也是平台不可接受的。
+为什么要使用钩子？我们得先思考目前的 git 代码托管平台架构大多数是无状态的，也就是说 Web 是 Web, git 是 git。究其原因，目前服务器上的 git 传输实现基本上还是使用 git 命令做 smart 传输，这种传输本质上是一对命令做输入输出交换，类似 inetd。这种协议的缺陷在于：在子进程中传输的数据是隔离的，不透明的，不可控的。启动 Git 子命令后，权限控制，大文件检测等操作已不是 SSH 或者 HTTP 服务器能控制的了。当然，劫持网络数据进行深度分析是可以的，但那相当于重新实现一套 git。并且，这种性能上的损失也是平台不可接受的。
 代码托管平台绝不能裹足不前，对于不适合的数据推送当然要拒绝他！幸运的是，我们还可以使用 hook 来阻挡不合适的数据推送了。
 
 ## Gitlab 的 Update 钩子
 
-码云最初利用 Gitlab 搭建起来，而钩子的使用策略是 Gitlab 早先的策略，即使用 **Update** 钩子。Sidekiq, 后来码云推出了分支保护功能以及大文件检测，都是利用 **Update** 钩子实现的。这块代码是在 Gitlab-Shell 中，保护分支实际上是在运行 Update 钩子时，请求 Gitlab 判断引用是否被允许修改。而大文件检测则是使用 **Commit-Between** 进行一个回溯 **diff**，深度最大为 *20*。Sidekiq 则是插入 redis 队列实现。
+码云最初利用 Gitlab 搭建起来，而钩子的使用策略是 Gitlab 早先的策略，即使用 **Update** 钩子。Sidekiq, 以及后来推出的分支保护功能以及大文件检测，都是利用 **Update** 钩子实现的。这块代码是在 Gitlab-Shell 中。保护分支实际上是在运行 Update 钩子时，请求 Gitlab 判断引用是否被允许修改。而大文件检测则是使用 **Commit-Between** 进行一个回溯 **diff**，深度最大为 *20*。Sidekiq 则是插入 redis 队列实现的。
 
 我们知道推送代码时需要在远程服务器中运行 `git-receive-pack` 命令，`recieve-pack` 会在整个生命周期运行三种钩子，也就是前面所说的 **Server-Side Hooks**（这里当然有个前提，钩子不存在就不会被调用），**Update** 是第二个被调用的钩子。receive-pack 将使用如下命令执行钩子：
 
@@ -40,9 +40,9 @@ $GIT_DIR/hooks/update refname oldrev newrev
 refname SP oldrev SP newrev LF
 refnameN SP oldrev SP newrev LF
 ```
-这个时候，我们可以将保护分支功能移入到此钩子，使用此钩子实现保护分支与 update 不一致的是同时推送多个引用，一旦有一个分支被拒绝，所有的分支都会被拒绝，而 update 钩子并不是如此。不过带来的好处是显而易见的，在推送镜像存储库，多分支存储库时，可以避免多次发起对 Gitlab 的网络请求。
+这个时候，我们可以将保护分支功能移入到此钩子，使用此钩子实现保护分支与 update 不一致的是同时推送多个引用，一旦有一个分支被拒绝，所有的分支都会被拒绝，而 update 钩子并不是如此。不过带来的好处是显而易见的，在推送镜像存储库，多分支项目时，可以避免多次发起对 Gitlab 的网络请求。
 
-**post-receive** 是最后被调用的钩子，格式与 **pre-receive** 完全一致，更新 redis 并不能使用 pre-receive ，这是由于在调用 pre-receive 后，引用被没有被更新，若 Sidekiq 响应执行就可能导致错误，因此在 post-receive 中更新 redis 是最安全稳妥的，在 post-receive 中执行 redis 命令还可以利用 KeepAlive 减少 redis 请求，从而优化服务器内部的网络。
+**post-receive** 是最后被调用的钩子，格式与 **pre-receive** 完全一致，我们不能使用 pre-receive 更新 Sidekiq ，这是由于只有再在调用 update 钩子后，引用才会被更新，若 Sidekiq 在 pre-receive 钩子执行期间就响应可能会导致错误，因此在 post-receive 中更新 Sidekiq（redis）才是最安全的，在 post-receive 中执行 redis 命令还可以利用 KeepAlive 减少对 redis 的请求次数，从而优化服务器内部的网络。
 
 update 钩子最后的功能只剩大文件检测了。如果将此功能移除，就完全不再需要 update 钩子。
 
