@@ -126,19 +126,6 @@ struct ObjectIndex {
 ```
 这样，我们不再读取 sha1 值，需要 sha1 值的时候，再通过偏移计算 sha1 在 idx 文件中的位置。
 
-```cpp
-inline const char *Sha1FromIndex(FILE *fp, char *buf, std::uint32_t i) {
-  unsigned char sha1__[20];
-  constexpr int offsetbegin = 4 + 4 + 4 + 255 * 4;
-  fseek(fp, offsetbegin + i * 20, SEEK_SET);
-  if (fread(sha1__, 1, 20, fp) != 20) {
-    return "unkown";
-  }
-  utils::sha1_to_hex_r(buf, sha1__);
-  return buf;
-}
-```
-这样真的减少了一半的时间。比如 Linux 内核源码 1.9GB 数据，562 W 对象，从 1442 毫秒减少到 700 多毫秒。内存占用也减少了 2/3。不要小看 16Byte 字节的节省，几百万个对象节省的空间就很客观了。
 
 ```cpp
 #define GIT_SHA1_RAWSZ 20
@@ -169,6 +156,9 @@ inline const char *Sha1FromIndex(FILE *fp, char *buf, std::uint32_t i) {
   return buf;
 }
 ```
+
+这样真的减少了一半的时间。比如 Linux 内核源码 1.9GB 数据，562 W 对象，从 1442 毫秒减少到 700 多毫秒。内存占用也减少了 2/3。不要小看 16Byte 字节的节省，几百万个对象节省的空间就很客观了。
+
 
 ## 利用内存布局减少系统调用次数
 
