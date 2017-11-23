@@ -108,7 +108,7 @@ struct ObjectIndex {
   /// DON't Modify
   bool operator<(const ObjectIndex &o) { return offset > o.offset; }
   uint8_t sha1[20];
-  uint32_t index{0};
+  uint32_t offset{0};
 };
 
 ```
