@@ -189,9 +189,86 @@ inline const char *Sha1FromIndex(FILE *fp, char *buf, std::uint32_t i) {
 
 这次优化比前面的 700 多毫秒减少了 100 多毫秒。
 
-## 大文件检测的限制
+## 更大的大文件检测
 
-当然，这一切的前提是使用 pack 格式第二版，并且 pack 文件大小小于 2GB, 对于推送大于 2GB 的 pack 文件，代码托管平台只需要检测配额就可以了，大文件检测意义反而不大了。
+前面主要是针对 pack 文件小于 2GB的优化, 对于推送大于 2GB 的 pack 文件需要额外的处理，比如 offset 需要改成 `int64_t` 而且 offset 需要读取 8bytes 的条目。git 的文档并不详细，因此还需要从 git 源码中发现一些真实的解决方案。
+
+```cpp
+/// DON't adjust layout
+struct ObjectIndexLarge {
+  /// DON't Modify
+  bool operator<(const ObjectIndexLarge &o) { return offset > o.offset; }
+  uint64_t offset{0};
+  uint32_t index{0};
+};
+
+```
+```cpp
+////
+bool Gitidx::reviewlarge(std::size_t limitsize, std::size_t warnsize) {
+  if (fseek(fp, 4 + 4 + nr * (20 + 4) + 256 * 4, SEEK_SET) != 0) {
+    console::Printeln("fseek error");
+    return false;
+  }
+  std::vector<ObjectIndexLarge> objs(nr);
+  auto objsraw = objs.data();
+  auto bufc = reinterpret_cast<char *>(objsraw);
+  /// 4*counts
+  auto binteger = reinterpret_cast<std::uint32_t *>(
+      bufc + sizeof(ObjectIndexLarge) * nr - 4 * nr);
+  if (fread(binteger, 1, 4 * nr, fp) != 4 * nr) {
+    console::Printeln("fread error ");
+    return false;
+  }
+  std::vector<std::uint64_t> lnrv(lnr); //
+  if (fread(lnrv.data(), 1, 8 * lnr, fp) != 8 * lnr) {
+    console::Printeln("fread 8byte error");
+    return false;
+  }
+  /// https://github.com/git/git/blob/master/builtin/index-pack.c#L1511
+  for (uint32_t i = 0; i < nr; i++) {
+    /// DON'T  change the order of operations
+    auto off = ntohl(binteger[i]);
+    if (!(off & 0x80000000)) {
+      objsraw[i].offset = off;
+      objsraw[i].index = i;
+      continue;
+    }
+    off = off & 0x7fffffff;
+    objsraw[i].offset = default_bswap64(lnrv[off]);
+    objsraw[i].index = i;
+  }
+  std::sort(objs.begin(), objs.end());
+  uint64_t pre = pksize - 20;
+  for (auto &i : objs) {
+    auto size = pre - i.offset;
+    pre = i.offset;
+    if (size >= limitsize) {
+      char buf[50];
+      console::Printeln("File: %s size %4.2f MB, more than %4.2f MB %ld",
+                        Sha1FromIndex(fp, buf, i.index),
+                        (float)size / scale::Megabyte,
+                        (float)limitsize / scale::Megabyte, i.offset);
+      // bfilecount++;
+      return false;
+    }
+    if (size >= warnsize) {
+      if (wfs.size() < MaxNumberOfDetails) {
+        FileInfo fileinfo;
+        char buf[50];
+        fileinfo.path = Sha1FromIndex(fp, buf, i.index);
+        fileinfo.size = size;
+        wfs.push_back(std::move(fileinfo));
+      }
+    }
+  }
+  return false;
+}
+```
+
+## Pack 文件格式限制
+
+以上内容都是基于 Git Packfile 格式第二版。
 
 ## 检测何时引入大文件
 
