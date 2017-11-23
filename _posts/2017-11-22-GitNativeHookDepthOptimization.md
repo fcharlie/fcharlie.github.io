@@ -235,6 +235,10 @@ bool Gitidx::reviewlarge(std::size_t limitsize, std::size_t warnsize) {
       continue;
     }
     off = off & 0x7fffffff;
+    if (off >= lnr) {
+      console::Printeln("Bad Index data");
+      return false;
+    }
     objsraw[i].offset = default_bswap64(lnrv[off]);
     objsraw[i].index = i;
   }
