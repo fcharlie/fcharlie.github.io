@@ -58,13 +58,13 @@ update 钩子最后的功能只剩大文件检测了。如果将此功能移除�
 
 ## 原生钩子使用环境隔离特性
 
-在 Git 2.11.0 时，git 改进了其推送的工作流程，增加了  [**Quarantine Environment**](https://git-scm.com/docs/git-receive-pack#_quarantine_environment) 机制，此时，receive-pack 将会把所有推送的对象放置在隔离的临时目录中，一旦推送被接受才会将对象移动到常规的对项目录，环境隔离的机制在整个 pre-receive 钩子的生命周期中是有效的。启动 update 钩子之前就会失效。
+在 Git 2.11.0 时，git 改进了其推送的工作流程，增加了  [**Quarantine Environment**](https://git-scm.com/docs/git-receive-pack#_quarantine_environment) 机制，此时，receive-pack 将会把所有推送的对象放置在隔离的临时目录中，一旦推送被接受才会将对象移动到常规的主对象目录，环境隔离的机制在整个 pre-receive 钩子的生命周期中是有效的。启动 update 钩子之前就会失效。
 
-因此，我将原生钩子使用环境隔离机制进行改造。结果显而易见，pack 文件不用完全检测，只需要检测隔离目录中的 pack。pack 缓存也不再需要。对于大文件检测的效果更明显，比如超出警告的大文件只会在第一次推送时发出警告，而不必每次警告，提高了用户体验。
+因此，我将原生钩子使用环境隔离机制进行改造。好处显而易见，只需要检测隔离目录中的 pack。pack 缓存也不再需要了。对于大文件检测的效果更明显，比如超出警告的大文件只会在第一次推送时发出警告，提高了用户体验。
 
-当推送被拒绝时，临时目录会被删除，这样能够避免重复的失败推送造成存储库的无效膨胀，存储库的无效膨胀会占用用户的配额，也会给服务器的 git gc 带来过重的压力。
+当推送被拒绝时，临时目录会被删除，这样能够避免重复的失败推送回带来大量悬空对象，造成存储库的无效膨胀，存储库的无效膨胀会占用用户的配额，而清理无效膨胀需要使用 `git gc` 命令 （git gc --prune=now）。频繁的运行 GC 也会给服务器带来过重的压力。
 
-这种特性也决定了 update 钩子无法胜任此工作。
+由于在 update 钩子执行时，环境隔离已经失效，这种特性也就决定了 update 钩子无法胜任这些工作。
 
 而 Gitlab 也支持了此特性 ：[Accept environment variables from the `pre-receive` script](https://gitlab.com/artofhuman/gitlab-ce/commit/022242c30fe463d2b82c18c687088786b306415f)
 
