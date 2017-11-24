@@ -194,20 +194,26 @@ inline const char *Sha1FromIndex(FILE *fp, char *buf, std::uint32_t i) {
 前面主要是针对 pack 文件小于 2GB的优化, 对于推送大于 2GB 的 pack 文件需要额外的处理，比如 offset 需要改成 `int64_t` 而且 offset 需要读取 8bytes 的条目。git 的文档并不详细，因此还需要从 git 源码中发现一些真实的解决方案。
 
 ```cpp
-/// DON't adjust layout
-struct ObjectIndexLarge {
-  /// DON't Modify
-  bool operator<(const ObjectIndexLarge &o) { return offset > o.offset; }
-  uint64_t offset{0};
-  uint32_t index{0};
+#define MEMSIZE_LIMIT (scale::Gigabyte * 4)
+/// Please don't modify type layout.
+template <typename IntegerT> struct object_base {
+  bool operator<(const object_base<IntegerT> &o) { return offset > o.offset; }
+  IntegerT offset{0};
+  std::uint32_t index{0};
 };
-
+typedef object_base<std::uint32_t> ObjectIndex;
+typedef object_base<std::uint64_t> ObjectIndexLarge;
 ```
 ```cpp
 ////
 bool Gitidx::reviewlarge(std::size_t limitsize, std::size_t warnsize) {
   if (fseek(fp, 4 + 4 + nr * (20 + 4) + 256 * 4, SEEK_SET) != 0) {
     console::Printeln("fseek error");
+    return false;
+  }
+  auto mmsize = nr * sizeof(ObjectIndexLarge) + sizeof(std::uint64_t) * lnr;
+  if (mmsize > MEMSIZE_LIMIT) {
+    console::Printe("Idx file Too large. Unsupport it");
     return false;
   }
   std::vector<ObjectIndexLarge> objs(nr);
