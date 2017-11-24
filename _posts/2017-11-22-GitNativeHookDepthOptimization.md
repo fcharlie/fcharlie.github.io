@@ -272,7 +272,7 @@ bool Gitidx::reviewlarge(std::size_t limitsize, std::size_t warnsize) {
       }
     }
   }
-  return false;
+  return true;
 }
 ```
 
