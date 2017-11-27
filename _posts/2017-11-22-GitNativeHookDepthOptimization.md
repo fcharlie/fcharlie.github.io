@@ -278,7 +278,7 @@ bool Gitidx::reviewlarge(std::size_t limitsize, std::size_t warnsize) {
 
 ## Pack 文件格式限制
 
-以上内容都是基于 Git Packfile 格式第二版。
+以上内容都是基于 Git Packfile 格式第二版。当 pack 文件内对象数目巨大时，以上优化需要大量内存，而在前面设置了最大内存限制，这意味着对象的数目是存在限制的，实际上需要的内存与 idx 文件的大小接近。在解析 pack 文件时常规的做法是使用 mmap ，但这不能很好的对偏移进行排序，从而达到快速检测的目的。本文也将更新一个 C++17 样例程序。
 
 ## 检测何时引入大文件
 
