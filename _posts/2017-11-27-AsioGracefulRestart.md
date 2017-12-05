@@ -182,7 +182,7 @@ private:
 
 完整的例子在：[oscstudio/utilcode@example/asio_server](https://gitee.com/oscstudio/utilcode/tree/master/example/asio_server)
 
-这里值得注意的是，在 Unix 的世界中，子进程会集成父进程的文件描述符，为了避免 acceptor 被继承，需要设置监听套接字的文件描述符为 **FD_CLOEXEC**。如果在平滑重启时，子进程启动时继承了监听套接字的文件描述符，就会导致平滑重启失败，新服务进程无法绑定监听套接字。
+这里值得注意的是，在 Unix 的世界中，子进程会继承父进程的文件描述符，为了避免 acceptor 被继承，需要设置监听套接字的文件描述符为 **FD_CLOEXEC**。如果在平滑重启前，启动了一个子进程并继承了监听套接字，就可能会导致平滑重启失败，新服务进程无法绑定监听套接字。
 
 ## 最后
 
