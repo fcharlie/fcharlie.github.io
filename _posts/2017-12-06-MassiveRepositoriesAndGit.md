@@ -14,7 +14,7 @@ categories: git
 
 ## 浅克隆和稀疏检出
 
-很早之前，我的构建 LLVM 的时候，都使用 svn 去检出 LLVM 源码，当时并不知道 git 能够支持浅克隆。后来从事代码托管开发，精通git 后，索性在 Clangbuilder<sup>3</sup> 中，检出 LLVM 全部使用 git ，使用浅克隆。
+很早之前，我的构建 LLVM 的时候，都使用 svn 去检出 LLVM 源码，当时并不知道 git 能够支持浅克隆。后来从事代码托管开发，精通git 后，索性在 Clangbuilder<sup>3</sup> 中使用 git 浅克隆获取 LLVM 源码。
 
 浅克隆意味着只克隆指定个数的 commit，在 git 克隆的时候使用 `--depth=N` 参数就能够支持克隆最近的 N 个 commit，这种机制对于像 CI 这样的服务来说，简直是如虎添翼。
 
@@ -30,19 +30,20 @@ categories: git
 
 而稀疏检出指得是在将文件从存储库中检出到目录时，只检出特定的目录。这个需要设置 `.git/info/sparse-checkout`。稀疏检出是一种客户端行为，只会优化用户的检出体验，并不会减少服务器传输。
 
+
  ## Git LFS 的初衷
 
-对于 Github 而言，大文件耗费了他们大量的存储和带宽。git 实质上是一种文件快照系统。创建提交时会将文件打包成新的 blob 对象。这种机制意味着 git 在管理大文件时是非常占用存储的。比如一个 1GB 的 PSD 文件，修改 10 次，存储库就可能是 10 GB。当然，这取决于 zip 对 PSD 文件的压缩率。同样的，这种存储库在网络上传输，需要耗费更多的网络带宽。
+Git 实质上是一种文件快照系统。创建提交时会将文件打包成新的 blob 对象。这种机制意味着 git 在管理大文件时是非常占用存储的。比如一个 1GB 的 PSD 文件，修改 10 次，存储库就可能是 10 GB。当然，这取决于 zip 对 PSD 文件的压缩率。同样的，这种存储库在网络上传输，需要耗费更多的网络带宽。
 
-Github 2015 年推出了 Git LFS，在前面的博客中，我介绍了如何实现一个 Git LFS 服务器<sup>4</sup>，这里也就不再多讲了。
+对于 Github 而言，大文件耗费了他们大量的存储和带宽。Github 团队于是在 2015 年推出了 Git LFS，在前面的博客中，我介绍了如何实现一个 Git LFS 服务器<sup>4</sup>，这里也就不再多讲了。
 
 ## GVFS 的原理
 
-好了，说道今天的重点了。微软有专门的文件介绍了 **《Git 缩放》**<sup>5</sup> **《GVFS 设计历史》**<sup>6</sup>，相关的内容也就不赘述了。
+好了，说到今天的重点了。微软有专门的文件介绍了 **《Git 缩放》**<sup>5</sup> **《GVFS 设计历史》**<sup>6</sup>，相关的内容也就不赘述了。
 
 GVFS 协议地址为： [The GVFS Protocol (v1)](https://github.com/Microsoft/GVFS/blob/master/Protocol.md)
 
-GVFS 目前只设计和实现了 HTTP 协议，我们将要实现的 HTTP 接口整理如下表：
+GVFS 目前只设计和实现了 HTTP 协议，我将其 HTTP 接口整理如下表：
 
 |Method|URL|Body|Accept|
 |---|---|---|---|
@@ -52,7 +53,8 @@ GVFS 目前只设计和实现了 HTTP 协议，我们将要实现的 HTTP 接口
 |POST|/gvfs/sizes|JOSN Array|application/json|
 |GET|/gvfs/prefetch[?lastPackTimestamp={secondsSinceEpoch}]|NA|application/x-gvfs-timestamped-packfiles-indexes|
 
-GVFS 最初要通过 `/gvfs/config` 接口去判断远程服务器对 GVFS 的支持程序，以及缓存服务器地址。最初 GVFS 在获取远程服务器上 commit 之前依然要通过 git 协议去拿取引用列表。
+
+GVFS 最初要通过 `/gvfs/config` 接口去判断远程服务器对 GVFS 的支持程序，以及缓存服务器地址。获取引用列表依然需要通过 `GET /info/refs?service=git-upload-pack` 去请求远程服务器。
 
 ```csharp
 //https://github.com/Microsoft/GVFS/blob/b07e554db151178fb397e51974d76465a13af017/GVFS/FastFetch/CheckoutFetchHelper.cs#L47
@@ -79,9 +81,19 @@ GVFS 最初要通过 `/gvfs/config` 接口去判断远程服务器对 GVFS 的�
 
 ```
 
-拿到引用列表后才能开始 GVFS clone。查阅 `POST /gvfs/objects` 接口，我们知道，最初调用此接口时，只会获得特定的 commit 以及 tree 对象。引用列表返回的都是 commit id。拿到 tree 对象后，就可以拿到 tree 之中的 blob id。通过 `POST /gvfs/sizes` 可以拿到需要获得的对象的原始大小，通常而言，`/gvfs/sizes` 请求的对象的类型一般都是 blob，在 GVFS 源码的 `QueryForFileSizes` 正是说明了这一切。实际上一个完整功能的 GVFS 服务器实现这三个接口就能正常运转。
+拿到引用列表后才能开始 GVFS clone。分析 `POST /gvfs/objects` 接口规范，我们知道，最初调用此接口时，只会获得特定的 commit 以及 tree 对象。引用列表返回的都是 commit id。拿到 tree 对象后，就可以拿到 tree 之中的 blob id。通过 `POST /gvfs/sizes` 可以拿到需要获得的对象的原始大小，通常而言，`/gvfs/sizes` 请求的对象的类型一般都是 blob，在 GVFS 源码的 `QueryForFileSizes` 正是说明了这一点。实际上一个完整功能的 GVFS 服务器实现这三个接口就可以正常运行。
 
 `POST /gvfs/objects` 请求类型：
+
+```json
+{
+	"objectIds":[
+		"e402091910d6d71c287181baaddfd9e36a511636",
+		"7ba8566052440d81c8d50f50d3650e5dd3c28a49"
+	],
+	"commitDepth":2
+}
+```
 
 ```c++
 struct GvfsObjects{
@@ -90,11 +102,22 @@ struct GvfsObjects{
 };
 ```
 
+`POST /gvfs/sizes`
+
+```json
+[
+		"e402091910d6d71c287181baaddfd9e36a511636",
+		"7ba8566052440d81c8d50f50d3650e5dd3c28a49"
+]
+```
+
 对于 Loose Object，目前的 git 代码托管平台基本上都不支持哑协议了，GVFS 这里支持 loose object 更多的目的是用来支持缓存，而 prefetch 的道理类似，像 Windows 源码这样体积的存储库，一般的代码托管平台优化策略往往无效。每一次计算 commit 中的目录布局都是非常耗时的，因此，GVFS 在设计之处都在尽量的利用缓存服务器。
 
 ## 使用 Libgit2
 
-据我所知，国内最早实现 gvfs 服务器的是庄表伟，具体介绍在简书上： [《GVFS协议与工作原理》](http://www.jianshu.com/p/5a74c5194fa6)。我在实现 gvfs 的过程也参考了他的实现。与他的基于 rack 用 git 命令行实现的服务器不同的是，我是使用 libgit2 实现一个 git-gvfs 命令行，然后被 git-srv 和 bzsrv 调用。采取这种机制一是使用 git 命令行需要多个命令的组合，无论是 git-srv  还是基于 go 的 bzsrv 还要处理各种各样的命令，不利于细节屏蔽。二来是我对 libgit2 已经比较熟，并且也对 git 的存储协议，pack 格式比较了解。git-srv 是码云分布式 git 传输的核心组件，无论是 HTTP 还是 SSH 还是 Git 协议，其传输数据都由其前端转发到 git-srv，最后通过 git-* 命令实现，支持的命令有 git-upload-pack git-upload-archive git-receive-pack git-archive，如果直接使用 git 命令实现 gvfs 功能不吝于重写 git-srv，很容易对线上的服务造成影响。简单的方法就是使用 libgit2 实现一个 git-gvfs cli.
+据我所知，国内最早实现 gvfs 服务器的是华为开发者庄表伟，具体介绍在简书上： [《GVFS协议与工作原理》](http://www.jianshu.com/p/5a74c5194fa6)。我在实现 gvfs 的过程也参考了他的实现。与他的基于 rack 用 git 命令行实现的服务器不同的是，我是使用 libgit2 实现一个 git-gvfs 命令行，然后被 git-srv 和 bzsrv 调用。采取这种机制一是使用 git 命令行需要多个命令的组合，无论是 git-srv  还是基于 go 的 bzsrv 还要处理各种各样的命令，不利于细节屏蔽。二来是我对 libgit2 已经比较熟，并且也对 git 的存储协议，pack 格式比较了解。
+
+git-srv 是码云分布式 git 传输的核心组件，无论是 HTTP 还是 SSH 还是 Git 协议，其传输数据都由其前端转发到 git-srv，最后通过 git-* 命令实现，支持的命令有 git-upload-pack git-upload-archive git-receive-pack git-archive，如果直接使用 git 命令实现 gvfs 功能不吝于重写 git-srv，很容易对线上的服务造成影响。简单的方法就是使用 libgit2 实现一个 git-gvfs cli.
 
 git-gvfs 命令的基本用法是：
 
@@ -235,11 +258,13 @@ public:
 
 ## GVFS 应用分析
 
-GVFS 有哪些应用场景？比如，我曾经帮助同事将某客户的存储库由 svn 迁移到 git，迁移的过程很长，最后使用 svn-fast-export 实现，转换后，存储库的体积达到 80 GB。就目前码云的线上限制而言，这种存储库都无法上传上去，而私有化，这种存储库同样会给使用者带来巨大的麻烦。如果使用 GVFS，这就相当于只下载目录结构，浅表的 commit，然后需要时才下载所需的文件，好处显而易见。随着码云业务的发展，这种拥有历史悠久的存储库的客户只会越来越多，GVFS 或许必不可少了。
+GVFS 有哪些应用场景？
+
+实际上还是很多的。比如，我曾经帮助同事将某客户的存储库由 svn 迁移到 git，迁移的过程很长，最后使用 svn-fast-export 实现，转换后，存储库的体积达到 80 GB。就目前码云的线上限制而言，这种存储库都无法上传上去，而私有化，这种存储库同样会给使用者带来巨大的麻烦。如果使用 GVFS，这就相当于只下载目录结构，浅表的 commit，然后需要时才下载所需的文件，好处显而易见。随着码云业务的发展，这种拥有历史悠久的存储库的客户只会越来越多，GVFS 或许必不可少了。
 
 ## 相关信息
 
-随着微软的 GVFS 推出，实际上 Google 开发者也在修改 Git 支持部分克隆<sup>7</sup>。代码在 Github 上 <sup>8</sup>。部分克隆相对于 GVFS 最大的不足可能是 FUFS。而 GVFS 客户端仅支持 Windows 10 14393 也正是由于这一点，GVFS 正因这一点才被叫做 GVFS (Git Virtual Filesystem)。
+在微软的 GVFS 推出后，Google 开发者也在修改 Git 支持部分克隆<sup>7</sup>，用来改进巨型存储库的访问体验。代码在 Github 上 <sup>8</sup> 目前还处于开发过程中。部分克隆相对于 GVFS 最大的不足可能是 FUFS。而 GVFS 客户端仅支持 Windows 10 14393 也正是由于这一点，GVFS 正因这一点才被叫做 GVFS (Git Virtual Filesystem)。FUFS 能够在目录中呈现未下载的文件，在文件需要读写时，由驱动触发下载，这就是其优势。
 
 ## 最后
 
