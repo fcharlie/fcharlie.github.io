@@ -14,7 +14,7 @@ categories: git
 
 ## 浅克隆和稀疏检出
 
-很早之前，我的构建 LLVM 的时候，都使用 svn 去检出 LLVM 源码，当时并不知道 git 能够支持浅克隆。后来从事代码托管开发，精通git 后，索性在 Clangbuilder<sup>3</sup> 中使用 git 浅克隆获取 LLVM 源码。
+很早之前，我在构建 LLVM 的时候，都使用 svn 去检出 LLVM 源码，当时并不知道 git 能够支持浅克隆。后来从事代码托管开发，精通git 后，索性在 Clangbuilder<sup>3</sup> 中使用 git 浅克隆获取 LLVM 源码。
 
 浅克隆意味着只克隆指定个数的 commit，在 git 克隆的时候使用 `--depth=N` 参数就能够支持克隆最近的 N 个 commit，这种机制对于像 CI 这样的服务来说，简直是如虎添翼。
 
