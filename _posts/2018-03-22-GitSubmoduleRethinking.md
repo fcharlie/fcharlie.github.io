@@ -53,7 +53,7 @@ git checkout FETCH_HEAD
 实际上，Git UploadArchive 同样不支持打包特定提交的压缩包，除非设置了 `uploadArchive.allowUnreachable=true`
 
 
-这样拒绝也是有原因的，如果一个对象被删除了，但没有被 GC 清理掉，Upload-Pack UploadArchive 这时候都可以获得这些数据：[git-upload-archive.txt#L26-L31](https://github.com/git/git/blob/565301e41670825ceedf75220f2918ae76831240/Documentation/git-upload-archive.txt#L26-L31)
+这样拒绝也是有原因的，如果一个对象被删除了，但没有被 GC 清理掉，Upload-Pack UploadArchive 这时候都可以获得这些数据，这就存在一个安全问题：[git-upload-archive.txt#L26-L31](https://github.com/git/git/blob/565301e41670825ceedf75220f2918ae76831240/Documentation/git-upload-archive.txt#L26-L31)
 
 由于 HTTP Archive 通常用 `git-archive` 包装实现，因此支持下载特定的 commit。
 
