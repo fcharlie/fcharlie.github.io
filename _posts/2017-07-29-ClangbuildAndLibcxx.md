@@ -14,7 +14,7 @@ categories: developer
 
 ## Clangbuilder
 
-[Clangbuilder](https://github.com/fstudio/clangbuilder) 是一个基于 Powershell 的 LLVM/Clang 自动化构建工具，通常用户在双击 `InitializeEnv.bat` 脚本后，安装脚本将自动安装构建 LLVM/Clang 所需的工具依赖。核心以来如下：
+[Clangbuilder](https://github.com/fstudio/clangbuilder) 是一个基于 Powershell 的 LLVM/Clang 自动化构建工具，通常用户在双击 `InitializeEnv.bat` 脚本后，安装脚本将自动安装构建 LLVM/Clang 所需的工具依赖。核心依赖如下：
 
 ```json
 {
