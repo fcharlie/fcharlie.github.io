@@ -14,23 +14,45 @@ categories: developer
 
 ## Clangbuilder
 
-[Clangbuilder](https://github.com/fstudio/clangbuilder) 是一个基于 Powershell 的 LLVM/Clang 自动化构建工具，通常用户在双击 `install.bat` 脚本后，脚本将自动安装以来，所有的依赖配置在 [config/package.json](https://github.com/fstudio/clangbuilder/blob/master/config/packages.json) 中。
+[Clangbuilder](https://github.com/fstudio/clangbuilder) 是一个基于 Powershell 的 LLVM/Clang 自动化构建工具，通常用户在双击 `InitializeEnv.bat` 脚本后，安装脚本将自动安装构建 LLVM/Clang 所需的工具依赖。核心以来如下：
 
-默认下载的工具如下：
+```json
+{
+    "core": [
+        "7z",
+        "cmake",
+        "git",
+        "ninja",
+        "nsis",
+        "nuget",
+        "python2",
+        "vswhere"
+    ]
+}
+```
 
-|tools|version|
-|---|---|
-|MinGit|2.14.1|
-|CMake|3.9.1|
-|Python|2.7.13|
-|NSIS|3.02.1|
-|gnuwin|1.0|
-|ninja|1.7.2|
-|swigwin|3.0.11|
-|vswhere|2.1.3|
-|nuget|4.3.0|
+Clangbuilder devinstall 还支持如下工具：
 
-我们支持 msi 和 zip 以及单文件工具，因为这些工具 `modules/PM/PM.psm1` 都能正确的处理成便携版，如果是其他安装方式或者格式的安装包，目前并不能支持。
+```txt
+7z                  18.03               7-Zip is a file archiver with a high compression ratio
+aria2               1.33.1              The ultra fast download utility
+cmake               3.11.0              CMake is an open-source, cross-platform family of tools designed to build, test and package software
+curl                7.59.0              Curl is a command-line tool for transferring data specified with URL syntax.
+git                 2.17.0              Git is a modern distributed version control system focused on speed
+gnuutils            1.0                 GNU utils for Windows
+hg                  4.5.2               Mercurial is a free, distributed source control management tool.
+ninja               1.8.2               Ninja is a small build system with a focus on speed.
+nsis                3.03                NSIS (Nullsoft Scriptable Install System) is a professional open source system to create Windows installers.
+nuget               4.6.1               NuGet is the package manager for .NET. The NuGet client tools provide the ability to produce and consume packages.
+openssh             v7.6.1.0p1-Beta     Portable OpenSSH
+putty               0.70                PuTTY: a free SSH and Telnet client.
+python2             2.7.14              Python 2.7
+swigwin             3.0.12              Simplified Wrapper and Interface Generator
+vswhere             2.4.1               Locate Visual Studio 2017 and newer installations.
+wget                1.19.4              A command-line utility for retrieving files using HTTP, HTTPS and FTP protocols.
+```
+
+我们支持 msi 和 zip 以及单文件工具，当安装 `7z` 后，可以解压 `tar.gz`，`.iso` 等格式的文件
 
 下载依赖后，Clangbuilder 会自动构建一个图形化工具叫 `ClangbuilderUI`，用户可以使用 ClangbuilderUI 来一键构建或者启动环境。
 
