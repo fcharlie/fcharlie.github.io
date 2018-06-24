@@ -145,6 +145,6 @@ git -c protocol.version=2 clone http://domian/repo.git
 
 ## 其他
 
-Wire 协议的细节：[https://mirrors.edge.kernel.org/pub/software/scm/git/docs/technical/protocol-v2.html](https://mirrors.edge.kernel.org/pub/software/scm/git/docs/technical/protocol-v2.html)
+Wire 协议的细节：[git/docs/technical/protocol-v2.html](https://mirrors.edge.kernel.org/pub/software/scm/git/docs/technical/protocol-v2.html)
 
-这里有一个 Wire 协议与 Smart 协议抓包对比：[https://gitee.com/ipvb/codes/y1b4ew3vqfgom5298iznh69](https://gitee.com/ipvb/codes/y1b4ew3vqfgom5298iznh69)
+这里有一个 Wire 协议与 Smart 协议抓包对比：[Git Wire Protocol vs Git Smart Protocol](https://gitee.com/ipvb/codes/y1b4ew3vqfgom5298iznh69)
