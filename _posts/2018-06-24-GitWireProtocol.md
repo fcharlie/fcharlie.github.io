@@ -16,7 +16,12 @@ categories: git
 
 抛开 `git-upload-archive` 不说，Git 传输协议的核心实际上是 `git-fetch-pack`/`git-upload-pack`，`git-send-pack`/`git-receive-pack` 是两组命令之间交换输出输出，这就代表一个传输周期就是对应命令的生存周期。
 
-无论是 fetch 还是 push，传输开始都有一个服务器发现引用的过程，在这个过程中，服务器上的 `git-upload-pack(git-receive-pack)` 将服务器上的所有引用按照特定格式发送给客户端。当引用数目较多的时候，这个过程就比较缓慢了，在没有 GC 时，引用的分布布局为 `$gitdir/refs/heads/$bracnh_name`,`$gitdir/refs/tags/$tag_name`,`$gitdir/refs/(pull/merge/others)/$refname`，引用的 id 在文件中，如果有上万个引用，这就意味着服务器需要进行一些目录遍历，并且进行上万次文件读取，一旦服务器上的并发较大时，引用发现的过程就比较缓慢了，但很多时候，用户可能只是需要某一个引用罢了。
+无论是 fetch 还是 push，传输开始都有一个服务器发现引用的过程，在这个过程中，服务器上的 `git-upload-pack(git-receive-pack)` 将服务器上的所有引用按照特定格式发送给客户端。当引用数目较多的时候，这个过程就比较缓慢了，在没有 GC 时，引用的分布布局为 
+`$gitdir/refs/heads/$bracnh_name`,
+`$gitdir/refs/tags/$tag_name`,
+`$gitdir/refs/(pull/merge/others)/$refname`，
+
+引用的 id 在文件中，如果有上万个引用，这就意味着服务器需要进行一些目录遍历，并且进行上万次文件读取，一旦服务器上的并发较大时，引用发现的过程就比较缓慢了，但很多时候，用户可能只是需要某一个引用罢了。
 
 另外一方面，传输协议时一组命令的输入输出交换，这种机制的可扩展性非常差，比如，git 有浅表克隆，这是比较晚出现的功能，git 需要协商需要的 commit 深度，由于 HTTP 协议是无状态协议，请求流程是 Request-Response ，因此在第一个 HTTP post 请求时，fetch-pack 需要输出 depth 的值，然后等待 upload-pack 计算此上限 commit id，fetch-pack 再次发送请求告知 upload-pack 需要的上限 commitid，在 v1 协议中只能别扭的实现此功能，Http Git 服务器开发者也需要注意此处需要及时的让 git-upload-pack 退出，否则会出现竞争长时间挂起。
 
