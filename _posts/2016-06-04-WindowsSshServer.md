@@ -127,3 +127,7 @@ Windows PowerShell 团队在 Github 上，fork 创建了 Windows 平台原生的
 14390 Not Found
 
 14393 Red Stone Found
+
+## The End (2018-07-14)
+
+Windows 内置的 SSH 服务器主要用于 IOT(?) 目前已经删除，目前 Windows 可以安装经过微软官方移植的 OpenSSH 客户端。
