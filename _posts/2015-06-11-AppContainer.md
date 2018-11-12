@@ -254,6 +254,7 @@ int wmain(int argc,wchar_t *argv[])
 下面是一个完整的例子。
 
 ```c++
+// cl app.cc Advapi32.lib Userenv.lib
 #include <ShlObj.h>
 #include <Userenv.h>
 #include <functional>
@@ -383,8 +384,8 @@ BOOL WINAPI CreateAppContainerProcessEx(LPCWSTR lpApplication,
 int wmain(int argc,wchar_t *argv[])
 {
     wchar_t cmd[4096]=L"cmd.exe";
-    if(!CreateAppContainerProcessEx(null,cmd,null,null)){
-        fprintf("create AppConatiner Process failed !\n");
+    if(!CreateAppContainerProcessEx(nullptr,cmd,nullptr,nullptr)){
+        fprintf(stderr,"create AppConatiner Process failed !\n");
         return 1;
     }
     return 0;
