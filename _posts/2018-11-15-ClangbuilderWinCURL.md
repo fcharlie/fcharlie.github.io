@@ -23,7 +23,7 @@ Features: AsynchDNS IPv6 Largefile SSPI Kerberos SPNEGO NTLM SSL
 
 笔者想要使用 `Visual C++` 构建静态链接支持 `TLS 1.3` 的 `curl`，最后发现都得自己一步一步来，于是就写了构建脚本。
 
-话不多说，一切尽在代码中。Github 源代码地址：[https://github.com/fstudio/clangbuilder/blob/526183ade63a4a9b8bd2f4b99872536c9da9e997/sources/wincurl/wincurl.ps1](https://github.com/fstudio/clangbuilder/blob/526183ade63a4a9b8bd2f4b99872536c9da9e997/sources/wincurl/wincurl.ps1)
+话不多说，一切尽在代码中。Github 源代码地址：[sources/wincurl/wincurl.ps1](https://github.com/fstudio/clangbuilder/blob/526183ade63a4a9b8bd2f4b99872536c9da9e997/sources/wincurl/wincurl.ps1)
 
 ```powershell
 #!/usr/bin/env pwsh
