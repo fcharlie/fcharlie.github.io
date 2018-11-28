@@ -2,7 +2,7 @@
 layout: post
 title:  "基于 Git Namespace 的存储库快照方案"
 date:   2018-11-18 10:00:00
-published: false
+published: true
 categories: git
 ---
 
@@ -62,6 +62,92 @@ git clone git@gitee.com/oscstudio/git.git --mirror --bare /home/git/enbk/os/oscs
 
 ```shell
 git fetch git@gitee.com/oscstudio/git.git '+refs/heads/*:refs/heads/*' '+refs/tags/*:refs/tags/*' '+refs/fetches/*:refs/fetches/*' '+refs/pull/*:refs/pull/*' '+refs/pull/*:refs/pull/*' '+refs/git-as-svn/*:refs/git-as-svn/*' --prune
+```
+
+其中不同前缀的引用实际类型不一样：
+
+|Prefix|Type|
+|---|---|
+|refs/heads/|常规分支|
+|refs/tags|标签|
+|refs/fetches/|PR 功能相关|
+|refs/pull/|PR 功能相关|
+|refs/git-as-svn/|svn 功能相关|
+
+与 `Subversion` 相比，Git 创建分支非常轻量级，而在 Git 中，分支实际上对应的是以 `refs/heads/` 开头的引用。那么引用的创建同样应该是轻量级的。所以我们只需要将 `fetch` 命令中的引用创建基于名称空间的快照即可：
+
+**快照变换**：
+
+```
+refname ---> refs/namespaces/yyyy-MM-dd/refname
+```
+
+创建 Git 引用可以使用 git 命令行也可以使用 `libgit2`。命令行创建引用如下：
+
+```shell
+$ git update-ref refs/namespaces/2018-11-18/refs/heads/master 1a410efbd13591db07496601ebc7a059dd55cfe9
+```
+
+使用 libgit2 API: [git_reference_create](https://libgit2.org/libgit2/#HEAD/group/reference/git_reference_create)  创建引用代码如下：
+
+```c++
+git_reference *ref=nullptr;
+if(git_reference_create(&ref,repo,"refs/namespaces/2018-11-18/refs/heads/master",id,1,"cretae")!=0){
+    auto err=giterr_last();
+    fprintf(stderr,"create error %s\n",err->kmessage);
+    return false;
+}
+```
+
+当引用数目比较少时无论是使用命令行还是使用 API 都是不错的选择，但像 Gitee 的源码存储库 Gitlab 这样的项目引用超过 **1W** 个时，无论是 API 还是命令行都将变得无比缓慢。这很容易理解，创建一次快照需要创建同等数目的引用，libgit2 创建引用需要在磁盘上创建同等数目的松散引用，在创建引用前需要创建 refname.lock 这样的文件避免与其他 git 进程或者 API 发生访问冲突。这样下来创建文件的系统调用也就是难以接受的。而 `git` 命令行在这点上也是无能为力的。最开始我直接使用 `libgit2` API，当创建到第十次快照时，一次快照需要花费几分钟，这肯定时不能接受的。
+
+专门的企业快照机器实际上并不需要运行其他业务，也就不用担心创建 Git 引用的安全问题，这时候做个取舍就可以实现优化，比如直接创建引用，引用存储在磁盘上分为 `loose references` 和 `packed references`。如果还是创建松散引用势必需要创建数量巨多的文件，这样一来优化非常优先，因此我们应该直接编写 `packed-refs`，`packed-refs` 格式即 `$COMMITID SP $REFNAME LF`，非常简单。我们按照要求格式化输出即可。
+
+```packed-refs
+# pack-refs with: peeled fully-peeled sorted
+$COMMITID $REFNAME\n
+```
+
+
+创建 `packed-refs` 之前先使用 `git pack-refs --all --prune` 命令将原有的引用打包到一起，然后扫描旧的 `packed-refs` 写入到新的 `packed-refs` ，成功后替换文件即可。
+
+这里需要注意几点：
+
+1.   packed-refs 引用名需要按照字母排序，否则引用会找不到。
+2.   使用内存映射技术减少拷贝非常必要。
+3.   可以使用 C++17 std::string_view 这样的容器方便解析。存储在容器中也可以使用 `string_view`。
+4.   HEAD 也需要快照，我们的做法时将其放在 `.git/_enbk/$NS` 路径下。
+5.   为了保证引用被删除时感知不到，可以先从远程服务器运行 `ls-remote` 获得引用列表，写入快照时删除不存在的即可。为了支持检测，可以使用 `absl::flat_hash_set` 之类的无序支持异构查找容器。
+
+经测试，快照的时间减少幅度非常大，但引用数量达到 `24W` 时，快照时间为 300 多毫秒（机械硬盘)。
+
+```txt
+./bin/git-snapshot bk git@localhost:oschina/gitlab.git -n 2018-11-30 -V
+username: (none)
+use privatekey: /home/example/.ssh/id_rsa
+url: git@localhost:oschina/gitlab.git
+remote git@localhost:oschina/gitlab.git has 10721 refs
+克隆到纯仓库 '/home/git/repositories/snapshot/os/oschina/gitlab.git'...
+remote: 枚举对象: 497921, 完成.
+remote: 对象计数中: 100% (497921/497921), 完成.
+remote: 压缩对象中: 100% (99609/99609), 完成.
+remote: 总共 497921 （差异 393964），复用 497921 （差异 393964）
+接收对象中: 100% (497921/497921), 211.43 MiB | 51.58 MiB/s, 完成.
+处理 delta 中: 100% (393964/393964), 完成.
+snapshot write 21442 refs
+apply /home/git/repositories/snapshot/os/oschina/gitlab.git HEAD to refs/heads/master
+ls-remote time: 88 ms
+prepare time:   12684 ms
+snapshot time:  17 ms
+total time:     12789 ms
+```
+
+### 存储库从快照恢复
+
+恢复存储库的时候使用名称空间隔离，然后 clone 到特定的目录即可。命令如下： 
+
+```shell
+git -c protocol.ext.allow=always clone 'ext::git --namespace=yyyy-MM-dd %s /path/bk/dir.git' /path/save/dir.git --mirror 
 ```
 
 
