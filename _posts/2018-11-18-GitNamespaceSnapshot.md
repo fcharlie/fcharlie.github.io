@@ -58,7 +58,7 @@ Git 存储库的资产主要是对象和引用，对象实际上是按照哈希�
 |---|---|---|---|---|
 |rsync|~13 GB|13 GB|1 * 13 W|100%|
 |git snapshot|1 GB|1 GB|13 W|~7.8%|
-|git snapshot (double)|2 GB|2 GB|13 W * 2|~15.5%|
+|git snapshot (double) |2 GB|2 GB|13 W * 2|~15.5%|
 
 90 天周期内，每天快照一次，存储库取平均值 1GB：
 
@@ -66,7 +66,7 @@ Git 存储库的资产主要是对象和引用，对象实际上是按照哈希�
 |---|---|---|---|---|
 |rsync|90 GB|90 GB|1 * 90 W|100%|
 |git snapshot|1 GB|1 GB|90 W|~1.1%|
-|git snapshot (double)|2 GB|2 GB|90 W * 2|~2.2%|
+|git snapshot (double) |2 GB|2 GB|90 W * 2|~2.2%|
 
 ### Git Snapshot 原理
 
