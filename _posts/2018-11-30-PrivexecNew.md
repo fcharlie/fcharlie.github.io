@@ -2,7 +2,7 @@
 layout: post
 title:  "Privexec 杂谈"
 date:   2018-11-30 21:00:00
-published: false
+published: true
 categories: windows
 ---
 
@@ -85,9 +85,37 @@ Privexec 的进程启动相关代码在：[https://github.com/M2Team/Privexec/tr
 
 ![picoprocess](https://msdnshared.blob.core.windows.net/media/2016/05/picoProcess-1024x763.png)
 
-## Privexec
+## Privexec (GUI)
+
+Privexec 狭义上是指 `Privexec (GUI)` 这个程序，现在应该之 `Privexec` 整个项目，包括 `wsudo`。在 Windows 平台上，使用 C++ 开发桌面应用虽然有很多选择，比如 `API, MFC, WTL, QT, DirectUI` 等等，但实际上你很难选择一个**现代的 UI 框架**，比如自适应大小，高 `DPI` 支持，Emoji 支持。开发者干了大量的脏活累活，然后做出来的界面效果差强人意。Privexec 最初只是我自己开发好玩的一个工具（目前大概依然是），界面上只要极简就行了，而 Windows 10 <sup>5</sup>改进了基于对话框应用高 DPI 的支持，为了支持我的 `Surface Pro 4` ，于是选择了使用对话框做主界面。 界面如下：
 
 ![Privexec](https://github.com/M2Team/Privexec/raw/master/docs/images/appcontainer.png)
+
+在此次改造之前 Privexec 使用传统的 `Win32 API+ 全局变量` 这样的代码逻辑，在不断添加功能后发现代码越来越杂乱无章，于是就用 C++ 类重构了，大量使用 C++17 代码。代码地址为：[https://github.com/M2Team/Privexec/tree/master/Privexec](https://github.com/M2Team/Privexec/tree/master/Privexec)。
+
+我们都知道，目前 C 的 API 支持回调函数的一定只能使用全局函数或者静态成员函数。在使用 C++ 面向对象开发 UI 程序时，需要在窗口消息回调函数中先获取对象的 `this` 指针，然后再调用对象的事件处理程序。方案由多种，比如 ATL 使用的 `Thunk`<sup>6</sup>，还有通过 `GWLP_USERDATA` 去传递 `this` 指针，这种用户回调携带 `this` 指针的做法简直太常见了。
+
+ATL Thunk 相关的文章有：[https://www.hackcraft.net/cpp/windowsThunk/](https://www.hackcraft.net/cpp/windowsThunk/)
+
+实际上，Privexec 并不需要学习 ATL/WTL 那样，使用 `Thunk` 技术，完全没有到那个程序，所以我使用了 `GWLP_USERDATA` 的做法：
+
+```c++
+INT_PTR WINAPI App::WindowProc(HWND hWnd, UINT message, WPARAM wParam,
+                               LPARAM lParam) {
+  App *app{nullptr};
+  if (message == WM_INITDIALOG) {
+    auto app = reinterpret_cast<App *>(lParam);
+    SetWindowLongPtr(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(app));
+    app->Initialize(hWnd);
+  } else if ((app = GetThisFromHandle(hWnd)) != nullptr) {
+    return app->MessageHandler(message, wParam, lParam);
+  }
+  return FALSE;
+}
+
+```
+
+Privexec 使用了 `pugixml` 用于解析 `AppManifest`，使用 `json.hpp` 解析 Alias 配置文件。
 
 ## WSUDO
 
@@ -99,3 +127,5 @@ Privexec 的进程启动相关代码在：[https://github.com/M2Team/Privexec/tr
 2.   [IDA Support: Freeware Version](https://www.hex-rays.com/products/ida/support/download_freeware.shtml)
 3.   [Vista UAC: The Definitive Guide](https://www.codeproject.com/Articles/19165/Vista-UAC-The-Definitive-Guide)
 4.   [Pico Process Overview](https://blogs.msdn.microsoft.com/wsl/2016/05/23/pico-process-overview/)
+5.   [High-DPI Scaling Improvements for Desktop Applications in the Windows 10 Creators Update (1703)](https://blogs.windows.com/buildingapps/2017/04/04/high-dpi-scaling-improvements-desktop-applications-windows-10-creators-update/#GhtloWCUWO8rEeRG.97)
+6.   [Thunk](https://en.wikipedia.org/wiki/Thunk)
