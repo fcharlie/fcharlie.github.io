@@ -123,6 +123,8 @@ Privexec 使用了 `pugixml` 用于解析 `AppManifest`，使用 `json.hpp` 解�
 
 ## WSUDO
 
+WSUDO 是 Priexec 的命令行版本。
+
 ![WSUDO](https://github.com/M2Team/Privexec/raw/master/docs/images/wsudo.png)
 
 ## Details
