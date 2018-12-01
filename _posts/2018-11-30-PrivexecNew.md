@@ -81,6 +81,10 @@ Shell 在启动清单附带有 UAC 提权的可执行文件时也会发生提权
 
 Privexec 的进程启动相关代码在：[https://github.com/M2Team/Privexec/tree/master/include/process](https://github.com/M2Team/Privexec/tree/master/include/process)，使用 C++17。
 
+实际上，你完全可以启动一个服务，需要启动进程时，与服务通讯，然后让服务使用 `CreateProcessAsUser` 启动新的进程，当然这个时候必须要考虑到工具的可信，避免恶意程序与服务通讯启动高权限进程。
+
+[毛利](https://github.com/MouriNaruto) 的 [NSudo](https://github.com/M2Team/NSudo) 与 Privexec 类似，但实现基本使用 `CreateProcessAsUser` + `Token` 创建进程。
+
 题外话：在 Windows 平台上，启动进程依然有不小的代价，中间环节多，而在 Unix 平台，启动进程有 `fork/exec`，实际上要实现类似 `CreateProcess` 之类的逻辑需要使用 `fork/exec` 联合使用。现实带来了遗憾，Windows 上实现 `fork` 和 Unix 实现更高效的 `CreateProcess` 成了两个大难题。当然，在实现 `Windows Subsystem for Linux`<sup>4</sup>，微软也在改进其创建进程的流程，不过 `Minimal process` 并没有让 `cygwin` 这样的系统收益，至少目前依然这样。
 
 ![picoprocess](https://msdnshared.blob.core.windows.net/media/2016/05/picoProcess-1024x763.png)
