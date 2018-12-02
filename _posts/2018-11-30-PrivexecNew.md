@@ -45,7 +45,7 @@ categories: windows
     </security>
   </trustInfo>
 ```
-Shell 在启动清单附带有 UAC 提权的可执行文件时也会发生提权。以 `Windows 10` 为例，提权最终由 `AicLaunchAdminProcess` 函数实现，此函数在 `Windows.Storage.dll`，然后与 `Appinfo` 服务通信，`Appinfo` 使用 `CreateProcessAsUserW` 启动进程，并将其父进程设置为 `ShellExecute` 调用者。Vista 时期的细节<sup>3</sup>如下：
+Shell 在启动清单附带有 UAC 提权的可执行文件时也会发生提权。以 `Windows 10` 为例，提权最终由 `AicLaunchAdminProcess` 函数实现，此函数目前实现在 `Windows.Storage.dll` 中，UAC 提权需要与 `Appinfo` 服务通信，`Appinfo` 验证提权行为后使用 `CreateProcessAsUserW` 启动进程，并将其父进程设置为 `ShellExecute` 调用者。Vista 时期的细节<sup>3</sup>如下：
 
 1.   AppInfo goes and talks to the Local Security Authority to get the elevated token of the logged in user of Session 1.
 2.   AppInfo loads up a STARTUPINFOEX structure (new to Vista), and calls the brand new Vista API InitializeProcThreadAttributeList() with room for one attribute.
