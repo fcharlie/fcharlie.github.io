@@ -32,6 +32,8 @@ categories: windows
 
 ![CreateProcessAsUserW](https://github.com/M2Team/Privexec/raw/master/docs/images/austack.png)
 
+而内核中创建进程的细节说起来可以讲很多也，大家可以参考 《深入解析 Windows 操作系统 第六版（上册）》P364 *CreateProcess的流程* 。
+
 在 Windows 中，如果要实现 `UAC` 提权，需要调用 `ShellExecute` 以 `runas` 的参数启动新的进程。如果在程序编译的清单文件中添加了如下清单代码：
 
 ```
@@ -232,9 +234,14 @@ WSUDO 是 Priexec 的命令行版本。很早就支持颜色高亮，在前文�
 
 ![WSUDO](https://github.com/M2Team/Privexec/raw/master/docs/images/wsudo.png)
 
-在创建进程时，如果 `CreateProcess` 的参数 [`lpEnvironment`](https://docs.microsoft.com/en-us/windows/desktop/api/processthreadsapi/nf-processthreadsapi-createprocessw) 为 `NULL` 时，子进程将继承父进程的环境变量，这在 `Unix` (`exec` 函数家族) 系统上是一样的。如果我们要设置启动进程的环境变量，我们只需要修改 wsudo 的环境变量即可。这次，我给 WSUDO 添加了 `-e(--env)` flag. 可以使用 `-eK=V`，`-e K=V` `--env=K=V`，`--env K=V` 这样的形势设置环境变量。也可以在要启动的命令（Alias）之前以 `K=V` 的方式设置环境变量，这给设计思路来自于 `Unix Shell`。类似于 `make KEY=VALUE all` 
+在创建进程时，如果 `CreateProcess` 的参数 [`lpEnvironment`](https://docs.microsoft.com/en-us/windows/desktop/api/processthreadsapi/nf-processthreadsapi-createprocessw) 为 `NULL` 时，子进程将继承父进程的环境变量，这与 `Unix` (`exec` 函数家族) 系统是一致的。如果我们要设置子进程的环境变量，我们可以修改 wsudo 的环境变量传递给子进程即可。这次，我给 WSUDO 添加了 `-e(--env)` flag. 可以使用 `-eK=V`，`-e K=V` `--env=K=V`，`--env K=V` 这样的方式设置环境变量。也可以在要启动的命令（Alias）之前以 `K=V` 的方式设置环境变量，这给设计思路来自于 `Unix Shell`。类似于 `make KEY=VALUE all` 
 
-WSUDO 目前还支持 `--new-console` `--wait` 这样的 flag，在 Windows 中，创建 CUI 进程时，默认参数下，如果程序的子系统是 `Windows CUI`，如果父进程也是 `CUI` 程序就会继承父进程的控制台窗口，否则会创建一个新的控制台窗口。这就意味这 WSUDO 在启动 CUI 子进程时，CUI 子进程实际上的窗口也会继承 WSUDO 的当前窗口，而 WSUDO 之前创建进程就结束了，CMD/PowerShell 就不会等待，CUI 子进程和 CMD/PowerShell 可能会导致控制台窗口输入输出紊乱。规避的方法可以时 WSUDO 等待子进程结束，或者启动新控制台。这次重构便增加了 `--new-console` 和 `--wait`。
+WSUDO 目前还支持 `--new-console` `--wait` 这样的 flag，在 Windows 中，创建 CUI 进程时，默认参数下，如果程序的子系统是 `Windows CUI`，如果父进程也是 `CUI` 程序就会继承父进程的控制台窗口，否则会创建一个新的控制台窗口。这就意味这 WSUDO 在启动 CUI 子进程时，CUI 子进程实际上的窗口也会继承 WSUDO 的当前窗口，而之前的 WSUDO 在子进程启动后就结束了，CMD/PowerShell 的等待也就结束了，这时候如果 CUI 子进程还活跃，可能对控制台窗口读写从而会导致控制台窗口输入输出紊乱。这个问题的解决方法有：
+
++   WSUDO 等待子进程结束
++   或者启动新控制台
+
+而这次重构专门增加了 `--new-console` 和 `--wait`，并修改 WSUDO 的启动进程的默认行为，具体情形如下：
 
 |子系统|--new-console|--wait|
 |---|---|---|
