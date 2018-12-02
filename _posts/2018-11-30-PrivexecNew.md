@@ -64,7 +64,7 @@ Shell 在启动清单附带有 UAC 提权的可执行文件时也会发生提权
 +   System
 +   TrustedInstaller
 
-**AppContainer** 通常可以使用 `CreateProcess` 创建，使用 `EXTENDED_STARTUPINFO_PRESENT` 额外的 `dwCreateFlags` 创建权限为 `AppContainer` 的进程即可。AppContainer 配置需由 `CreateAppContainerProfile` 创建，相应的 `Capability SID` 可由 `RtlDeriveCapabilitySidsFromName` 或者 `CreateWellKnownSid` 创建，而 `Privexec(GUI)` 受限与 UI 限制，目前仅支持 9 个 `WellKnownSid`，而 `wsudo` 支持 `--appx` 从文件中设置。
+**AppContainer** 通常可以使用 `CreateProcess` 创建，使用 `EXTENDED_STARTUPINFO_PRESENT` 额外的 `dwCreateFlags` 创建权限为 `AppContainer` 的进程即可。AppContainer 配置需由 `CreateAppContainerProfile` 创建，相应的 `Capability SID` 可由 `DeriveCapabilitySidsFromName` 或者 `CreateWellKnownSid` 创建，而 `Privexec(GUI)` 受限与 UI 限制，目前仅支持 9 个 `WellKnownSid`，而 `wsudo` 支持 `--appx` 从文件中设置，`wsudo` 中使用了 `DeriveCapabilitySidsFromName` 创建  `Capabilities SID`。
 
  **Mandatory Integrity Control** 主要利用 `SetTokenInformation` 将高完整性级别的 `Token` 设置为低完整性级别的 `Token` 然后使用  `CreateProcessAsUser`。
 
@@ -74,16 +74,68 @@ Shell 在启动清单附带有 UAC 提权的可执行文件时也会发生提权
 
 **System** 当前进程必须是管理员权限等级及以上进程，需要开启 `SE_DEBUG_NAME` 权限，然后获得系统权限进程的 Token, 将自身权限模拟 `System` Token，然后拷贝自身 `Token` 修改 `Token` 为 `Primary Token`，即 `hPrimary`，因为只有主 Token 才能被用于创建子进程。《Windows Internal 7th Edition》作者之一 [Pavel Yosifovich](https://github.com/zodiacon) 就写了一个 sysrun 的例子：[sysrun](https://github.com/zodiacon/sysrun)。
 
-**TrustedInstaller** 此权限严格意义上来说，是属于 `Windows Modules Installer` 服务的专有权限，服务描述为：
+**TrustedInstaller** 此权限严格意义上来说，是属于 **Windows Modules Installer** 服务的专有权限，**Windows Modules Installer** 的服务描述为：
 >启用 Windows 更新和可选组件的安装、修改和移除。如果此服务被禁用，则此计算机的 Windows 更新的安装或卸载可能会失败。
 
 因此要获得此权限，需要先模拟到 `System` 权限，然后启动 `TrustedInstaller` 服务，然后获得服务进程的权限句柄，以该句柄拷贝启动新的进程。
 
-Privexec 的进程启动相关代码在：[https://github.com/M2Team/Privexec/tree/master/include/process](https://github.com/M2Team/Privexec/tree/master/include/process)，使用 C++17。
+Privexec 的进程启动相关代码在：[https://github.com/M2Team/Privexec/tree/master/include/process](https://github.com/M2Team/Privexec/tree/master/include/process)，使用 C++17，利用 *Lambda*，*RIIA* 这样的功能可以轻易的写出句柄安全的代码。
 
-实际上，你完全可以启动一个服务，需要启动进程时，与服务通讯，然后让服务使用 `CreateProcessAsUser` 启动新的进程，当然这个时候必须要考虑到工具的可信，避免恶意程序与服务通讯启动高权限进程。
+```c++
+template <class F> class final_act {
+public:
+  explicit final_act(F f) noexcept : f_(std::move(f)), invoke_(true) {}
 
-[毛利](https://github.com/MouriNaruto) 的 [NSudo](https://github.com/M2Team/NSudo) 与 Privexec 类似，但实现基本使用 `CreateProcessAsUser` + `Token` 创建进程。
+  final_act(final_act &&other) noexcept
+      : f_(std::move(other.f_)), invoke_(other.invoke_) {
+    other.invoke_ = false;
+  }
+
+  final_act(const final_act &) = delete;
+  final_act &operator=(const final_act &) = delete;
+
+  ~final_act() noexcept {
+    if (invoke_)
+      f_();
+  }
+
+private:
+  F f_;
+  bool invoke_;
+};
+
+// finally() - convenience function to generate a final_act
+template <class F> inline final_act<F> finally(const F &f) noexcept {
+  return final_act<F>(f);
+}
+
+template <class F> inline final_act<F> finally(F &&f) noexcept {
+  return final_act<F>(std::forward<F>(f));
+}
+
+bool filetodo(std::wstring_view file){
+  auto hFile= CreateFileW(file.data(), 
+  GENERIC_READ, FILE_SHARE_READ,
+  nullptr, OPEN_EXISTING,
+  FILE_ATTRIBUTE_NORMAL,
+  nullptr);
+  if (hFile==INVALID_HANDLE_VALUE) {
+    return false;
+  }
+  auto closer = finally([&] {
+    if (hFile!=INVALID_HANDLE_VALUE) {
+      CloseHandle(hFile);
+    }
+  });
+  /// some codes...
+  return true;
+}
+
+```
+
+回过头来说，你完全开发一个服务来实现以其他用户权限启动进程，然后封装一个命令，命令需要启动进程时与服务进行通信，在服务中使用 `CreateProcessAsUser` 启动新的进程。使用服务实现此功能时，需要避免不可信的提权发生。
+
+[毛利](https://github.com/MouriNaruto) 的 [NSudo](https://github.com/M2Team/NSudo) 与 Privexec 类似，但实现基本上是使用 `CreateProcessAsUser` + `Token` 创建进程。
 
 题外话：在 Windows 平台上，启动进程依然有不小的代价，中间环节多，而在 Unix 平台，启动进程有 `fork/exec`，实际上要实现类似 `CreateProcess` 之类的逻辑需要使用 `fork/exec` 联合使用。现实带来了遗憾，Windows 上实现 `fork` 和 Unix 实现更高效的 `CreateProcess` 成了两个大难题。当然，在实现 `Windows Subsystem for Linux`<sup>4</sup>，微软也在改进其创建进程的流程，不过 `Minimal process` 并没有让 `cygwin` 这样的系统收益，至少目前依然这样。
 
@@ -123,7 +175,7 @@ Privexec 使用了 `pugixml` 用于解析 `AppManifest`，使用 `json.hpp` 解�
 
 ## WSUDO
 
-WSUDO 是 Priexec 的命令行版本。
+WSUDO 是 Priexec 的命令行版本。支持颜色高亮，在前文中曾写过一篇文章 [《Privexec 的内幕（一）标准输出原理与彩色输出实现》](https://forcemz.net/windows/2017/06/06/ColorConsole/) 对此有详细的介绍。
 
 ![WSUDO](https://github.com/M2Team/Privexec/raw/master/docs/images/wsudo.png)
 
@@ -134,4 +186,4 @@ WSUDO 是 Priexec 的命令行版本。
 3.   [Vista UAC: The Definitive Guide](https://www.codeproject.com/Articles/19165/Vista-UAC-The-Definitive-Guide)
 4.   [Pico Process Overview](https://blogs.msdn.microsoft.com/wsl/2016/05/23/pico-process-overview/)
 5.   [High-DPI Scaling Improvements for Desktop Applications in the Windows 10 Creators Update (1703)](https://blogs.windows.com/buildingapps/2017/04/04/high-dpi-scaling-improvements-desktop-applications-windows-10-creators-update/#GhtloWCUWO8rEeRG.97)
-6.   [Thunk](https://en.wikipedia.org/wiki/Thunk)
+6.   [A thunk is a computer programming subroutine that is created, often automatically, to assist a call to another subroutine .](https://en.wikipedia.org/wiki/Thunk)

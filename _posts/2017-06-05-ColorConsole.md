@@ -12,12 +12,10 @@ categories: windows
 
 在 wsudo 中，笔者使用了 Privexec.Console 提供彩色输出，截图如下：
 
-![wsudo](https://raw.githubusercontent.com/M2Team/Privexec/master/images/wsudo.png)
+![wsudo](https://raw.githubusercontent.com/M2Team/Privexec/master/docs/images/wsudo.png)
 
 
-![wsudo2](https://raw.githubusercontent.com/M2Team/Privexec/master/images/wsudo2.png)
-
-![wsudo3](https://raw.githubusercontent.com/M2Team/Privexec/master/images/wsudo3.png)
+![wsudo3](https://raw.githubusercontent.com/M2Team/Privexec/master/images/doscs/wsudo3.png)
 
 本文将讲述标准输出是如何输出到控制台的，以及怎样在 Windows 中实现同时支持标准控制台和 MSYS2 Cygwin 终端模拟器以及 VT 模式的控制台彩色输出。
 
