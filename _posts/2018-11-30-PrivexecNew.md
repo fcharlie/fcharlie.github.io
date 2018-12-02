@@ -8,7 +8,7 @@ categories: windows
 
 # 前言
 
-本站的开篇就是讲的 [《Windows AppContainer 降权，隔离与安全》](https://forcemz.net/container/2015/06/12/AppContainer/)，一晃三年多过去了，这三年之中，我开发了一个 [Privexec](https://github.com/M2Team/Privexec)，一个以其他权限启动进程的工具，支持启动 `AppContainer` 进程，前段实现有用户发起了功能请求<sup>1</sup>，让 `Privexec` 支持设置 `AppContaner` 的 `Capabilities`，而不是像以前一样在启动 `AppContainer` 进程时使用 `CreateWellKnownSid` 创建所有的与 `AppContainer` 相关的 `Capabilities SIDs`。于是乎，我就花了一点时间将 Privexec 重构了一番，有所感悟，便将其写下来。
+本站的开篇就是讲的 [《Windows AppContainer 降权，隔离与安全》](https://forcemz.net/container/2015/06/12/AppContainer/)，一晃三年多过去了，这三年之中，我开发了一个 [Privexec](https://github.com/M2Team/Privexec)，一个以其他权限启动进程的工具，支持启动 `AppContainer` 进程，前段实现有用户发起了功能请求<sup>1</sup>，让 `Privexec` 支持设置 `AppContainer` 的 `Capabilities`，而不是像以前一样在启动 `AppContainer` 进程时使用 `CreateWellKnownSid` 创建所有的与 `AppContainer` 相关的 `Capabilities SIDs`。于是乎，我就花了一点时间将 Privexec 重构了一番，有所感悟，便将其写下来。
 
 ## Process
 
@@ -171,7 +171,60 @@ INT_PTR WINAPI App::WindowProc(HWND hWnd, UINT message, WPARAM wParam,
 
 ```
 
+在 Windows 中，很多 API 实际上是由 `COM` 组件类提供，直接在 C++ 中使用 COM 对象需要小心翼翼避免资源泄漏，到了 8102 年，你应该使用智能指针或者 `ComPtr` 去包裹 COM 对象，或者使用类似下面的代码，使用 RIIA 来避免资源泄漏。
+
+```c++
+template <class T> class comptr {
+public:
+  comptr() { ptr = NULL; }
+  comptr(T *p) {
+    ptr = p;
+    if (ptr != NULL)
+      ptr->AddRef();
+  }
+  comptr(const comptr<T> &sptr) {
+    ptr = sptr.ptr;
+    if (ptr != NULL)
+      ptr->AddRef();
+  }
+  T **operator&() { return &ptr; }
+  T *operator->() { return ptr; }
+  T *operator=(T *p) {
+    if (*this != p) {
+      ptr = p;
+      if (ptr != NULL)
+        ptr->AddRef();
+    }
+    return *this;
+  }
+  operator T *() const { return ptr; }
+  template <class I> HRESULT QueryInterface(REFCLSID rclsid, I **pp) {
+    if (pp != NULL) {
+      return ptr->QueryInterface(rclsid, (void **)pp);
+    } else {
+      return E_FAIL;
+    }
+  }
+  HRESULT CoCreateInstance(REFCLSID clsid, IUnknown *pUnknown,
+                           REFIID interfaceId,
+                           DWORD dwClsContext = CLSCTX_ALL) {
+    HRESULT hr = ::CoCreateInstance(clsid, pUnknown, dwClsContext, interfaceId,
+                                    (void **)&ptr);
+    return hr;
+  }
+  ~comptr() {
+    if (ptr != NULL)
+      ptr->Release();
+  }
+
+private:
+  T *ptr;
+};
+```
+
 Privexec 使用了 `pugixml` 用于解析 `AppManifest`，使用 `json.hpp` 解析 Alias 配置文件。
+
+在 Privexec 中的错误提示 `MessageBox` 实际上是使用 `TaskDialog` 编写，而关于对话框同样也是。查找文件/文件夹对话框使用的是 `IFileDialog`。
 
 ## WSUDO
 
