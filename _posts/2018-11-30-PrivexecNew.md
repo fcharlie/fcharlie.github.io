@@ -171,7 +171,7 @@ INT_PTR WINAPI App::WindowProc(HWND hWnd, UINT message, WPARAM wParam,
 
 ```
 
-在 Windows 中，很多 API 实际上是由 `COM` 组件类提供，直接在 C++ 中使用 COM 对象需要小心翼翼避免资源泄漏，到了 8102 年，你应该使用智能指针或者 `ComPtr` 去包裹 COM 对象，或者使用类似下面的代码，使用 RIIA 来避免资源泄漏。
+在 Windows 中，很多 API 实际上是由 `COM` 组件类提供，直接在 C++ 中使用 COM 对象需要小心翼翼避免资源泄漏，到了 8102 年，你应该使用智能指针或者 `ComPtr` 去包裹 COM 对象，或者使用类似下面的代码，使用 RAII 来避免资源泄漏。
 
 ```c++
 template <class T> class comptr {
@@ -228,9 +228,124 @@ Privexec 使用了 `pugixml` 用于解析 `AppManifest`，使用 `json.hpp` 解�
 
 ## WSUDO
 
-WSUDO 是 Priexec 的命令行版本。支持颜色高亮，在前文中曾写过一篇文章 [《Privexec 的内幕（一）标准输出原理与彩色输出实现》](https://forcemz.net/windows/2017/06/06/ColorConsole/) 对此有详细的介绍。
+WSUDO 是 Priexec 的命令行版本。很早就支持颜色高亮，在前文中曾写过一篇文章 [《Privexec 的内幕（一）标准输出原理与彩色输出实现》](https://forcemz.net/windows/2017/06/06/ColorConsole/) 对此有详细的介绍。此次重构 WSUDO，改进了命令行解析模式，可以通过命令行设置启动进程的**启动目录**，**环境变量**，**AppConatiner** 清单文件，具体的命令行内容如下：
 
 ![WSUDO](https://github.com/M2Team/Privexec/raw/master/docs/images/wsudo.png)
+
+在创建进程时，如果 `CreateProcess` 的参数 [`lpEnvironment`](https://docs.microsoft.com/en-us/windows/desktop/api/processthreadsapi/nf-processthreadsapi-createprocessw) 为 `NULL` 时，子进程将继承父进程的环境变量，这在 `Unix` (`exec` 函数家族) 系统上是一样的。如果我们要设置启动进程的环境变量，我们只需要修改 wsudo 的环境变量即可。这次，我给 WSUDO 添加了 `-e(--env)` flag. 可以使用 `-eK=V`，`-e K=V` `--env=K=V`，`--env K=V` 这样的形势设置环境变量。也可以在要启动的命令（Alias）之前以 `K=V` 的方式设置环境变量，这给设计思路来自于 `Unix Shell`。类似于 `make KEY=VALUE all` 
+
+WSUDO 目前还支持 `--new-console` `--wait` 这样的 flag，在 Windows 中，创建 CUI 进程时，默认参数下，如果程序的子系统是 `Windows CUI`，如果父进程也是 `CUI` 程序就会继承父进程的控制台窗口，否则会创建一个新的控制台窗口。这就意味这 WSUDO 在启动 CUI 子进程时，CUI 子进程实际上的窗口也会继承 WSUDO 的当前窗口，而 WSUDO 之前创建进程就结束了，CMD/PowerShell 就不会等待，CUI 子进程和 CMD/PowerShell 可能会导致控制台窗口输入输出紊乱。规避的方法可以时 WSUDO 等待子进程结束，或者启动新控制台。这次重构便增加了 `--new-console` 和 `--wait`。
+
+|子系统|--new-console|--wait|
+|---|---|---|
+|Windows CUI|默认关闭|默认开启|
+|Windows GUI|N/A|默认关闭|
+
+如果子进程子系统是 `Windows GUI` 且命令行参数包含 `--wait`，WSUDO 依然会等待子进程结束。
+
+在启动子进程的之前，我们可以通过解析 `PE` 文件格式去感知可执行程序子系统是否是 `Windows CUI`，具体代码在：[PESubsystemIsConsole](https://github.com/M2Team/Privexec/blob/f9a2cbbfa57a3bda65e6c70b74e80b8cc67af333/include/pe.hpp#L130)
+
+如果要支持 `AppExecLink(IO_REPARSE_TAG_APPEXECLINK)` 这样特殊的文件（这种文件类似于 Windows Symbolic File，是 UWP App 的程序的特殊链接文件。）需要解析重解析点，大致代码如下：
+
+```c++
+inline bool readlink(const std::wstring &symfile, std::wstring &realfile) {
+  auto hFile = CreateFileW(
+      symfile.c_str(), 0,
+      FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr,
+      OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT,
+      nullptr);
+  if (hFile == INVALID_HANDLE_VALUE) {
+    return false;
+  }
+  ReparseBuffer rbuf;
+  DWORD dwBytes = 0;
+  if (DeviceIoControl(hFile, FSCTL_GET_REPARSE_POINT, nullptr, 0, rbuf.data,
+                      MAXIMUM_REPARSE_DATA_BUFFER_SIZE, &dwBytes,
+                      nullptr) != TRUE) {
+    CloseHandle(hFile);
+    return false;
+  }
+  CloseHandle(hFile);
+  switch (rbuf.data->ReparseTag) {
+  case IO_REPARSE_TAG_SYMLINK: {
+    auto wstr = rbuf.data->SymbolicLinkReparseBuffer.PathBuffer +
+                (rbuf.data->SymbolicLinkReparseBuffer.SubstituteNameOffset /
+                 sizeof(WCHAR));
+    auto wlen = rbuf.data->SymbolicLinkReparseBuffer.SubstituteNameLength /
+                sizeof(WCHAR);
+    if (wlen >= 4 && wstr[0] == L'\\' && wstr[1] == L'?' && wstr[2] == L'?' &&
+        wstr[3] == L'\\') {
+      /* Starts with \??\ */
+      if (wlen >= 6 &&
+          ((wstr[4] >= L'A' && wstr[4] <= L'Z') ||
+           (wstr[4] >= L'a' && wstr[4] <= L'z')) &&
+          wstr[5] == L':' && (wlen == 6 || wstr[6] == L'\\')) {
+        /* \??\<drive>:\ */
+        wstr += 4;
+        wlen -= 4;
+
+      } else if (wlen >= 8 && (wstr[4] == L'U' || wstr[4] == L'u') &&
+                 (wstr[5] == L'N' || wstr[5] == L'n') &&
+                 (wstr[6] == L'C' || wstr[6] == L'c') && wstr[7] == L'\\') {
+        /* \??\UNC\<server>\<share>\ - make sure the final path looks like */
+        /* \\<server>\<share>\ */
+        wstr += 6;
+        wstr[0] = L'\\';
+        wlen -= 6;
+      }
+    }
+    realfile.assign(wstr, wlen);
+  } break;
+  case IO_REPARSE_TAG_MOUNT_POINT: {
+    auto wstr = rbuf.data->MountPointReparseBuffer.PathBuffer +
+                (rbuf.data->MountPointReparseBuffer.SubstituteNameOffset /
+                 sizeof(WCHAR));
+    auto wlen =
+        rbuf.data->MountPointReparseBuffer.SubstituteNameLength / sizeof(WCHAR);
+    /* Only treat junctions that look like \??\<drive>:\ as symlink. */
+    /* Junctions can also be used as mount points, like \??\Volume{<guid>}, */
+    /* but that's confusing for programs since they wouldn't be able to */
+    /* actually understand such a path when returned by uv_readlink(). */
+    /* UNC paths are never valid for junctions so we don't care about them. */
+    if (!(wlen >= 6 && wstr[0] == L'\\' && wstr[1] == L'?' && wstr[2] == L'?' &&
+          wstr[3] == L'\\' &&
+          ((wstr[4] >= L'A' && wstr[4] <= L'Z') ||
+           (wstr[4] >= L'a' && wstr[4] <= L'z')) &&
+          wstr[5] == L':' && (wlen == 6 || wstr[6] == L'\\'))) {
+      SetLastError(ERROR_SYMLINK_NOT_SUPPORTED);
+      return false;
+    }
+
+    /* Remove leading \??\ */
+    wstr += 4;
+    wlen -= 4;
+    realfile.assign(wstr, wlen);
+  } break;
+  case IO_REPARSE_TAG_APPEXECLINK: {
+    if (rbuf.data->AppExecLinkReparseBuffer.StringCount != 0) {
+      LPWSTR szString = (LPWSTR)rbuf.data->AppExecLinkReparseBuffer.StringList;
+      for (ULONG i = 0; i < rbuf.data->AppExecLinkReparseBuffer.StringCount;
+           i++) {
+        if (i == 2) {
+          realfile = szString;
+        }
+        szString += wcslen(szString) + 1;
+      }
+    }
+  } break;
+  default:
+    return false;
+  }
+  return true;
+}
+```
+
+WSUDO 还支持内置命令 `alias`，可以增加和删除别名。增加别名时如果别名存在则会被覆盖：
+
+```batch
+wsudo alias add ehs "notepad %SYSTEMROOT%/System32/drivers/etc/hosts" "Edit Hosts"
+wsudo alias delete ehs
+```
 
 ## Details
 
