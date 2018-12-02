@@ -32,7 +32,7 @@ categories: windows
 
 ![CreateProcessAsUserW](https://github.com/M2Team/Privexec/raw/master/docs/images/austack.png)
 
-而内核中创建进程的细节说起来可以讲很多也，大家可以参考 《深入解析 Windows 操作系统 第六版（上册）》P364 *CreateProcess的流程* 。
+而内核中创建进程的细节讲起来篇幅过长，大家可以参考 《深入解析 Windows 操作系统 第六版（上册）》P364 *CreateProcess的流程* 。
 
 在 Windows 中，如果要实现 `UAC` 提权，需要调用 `ShellExecute` 以 `runas` 的参数启动新的进程。如果在程序编译的清单文件中添加了如下清单代码：
 
