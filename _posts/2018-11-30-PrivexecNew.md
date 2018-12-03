@@ -16,10 +16,12 @@ categories: windows
 
 |Function|Feature|Details|
 |---|---|---|
-|CreateProcessW/A|创建常规进程，权限继承父进程权限|支持 EXTENDED_STARTUPINFO_PRESENT 设置 AppContainer|
-|CreateProcessAsUserW/A|使用主 Token 创建进程，子进程权限与 Token 限定一致|调用者须有 SE_INCREASE_QUOTA_NAME 权限|
-|CreateProcessWithTokenW|使用主 Token 创建进程，子进程权限与 Token 限定一致|调用者须有 SE_IMPERSONATE_NAME 权限|
+|CreateProcessW/A|创建常规进程，权限继承父进程权限||
+|CreateProcessAsUserW/A|使用主 Token 创建进程，子进程权限与 Token 限定一致|必须开启 SE_INCREASE_QUOTA_NAME|
+|CreateProcessWithTokenW|使用主 Token 创建进程，子进程权限与 Token 限定一致|必须开启 SE_IMPERSONATE_NAME|
 |CreateProcessWithLogonW/A|使用指定用户凭据启动进程||
+
+`CreateProcessWithLogonW` 使用用户凭据获得用户令牌，然后启动进程，这等价于使用 `LogonUser` +`CreateProcessAsUser` 启动进程。
 
 `CreateProcessWithTokenW` 是 `Windows Vista` 才引入桌面系统的，没有 ANSI 版本，Github 上最常见的用法是打开桌面进程，获取其 Token，然后拷贝这个 Token 创建与桌面权限一致的进程，这是一种降权机制，仅当当前登录用户是标准用户才能降权成功。
 `CreateProcessWithTokenW` 内部在调用好几个函数之后才会调用 `CreateProcessAsUserW`，在 `Privexec` 中并未使用它。
