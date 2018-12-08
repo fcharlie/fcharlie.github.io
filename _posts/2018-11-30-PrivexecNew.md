@@ -75,7 +75,7 @@ Appinfo 服务描述：
 
  **Mandatory Integrity Control** 主要使用 `SetTokenInformation` 将高完整性级别的 `Token` 设置为低完整性级别的 `Token` 然后使用  `CreateProcessAsUser` 创建进程。
 
- **No Elevated(UAC)** 当当前用户为管理员时需要使用计划任务启动 UAC 未提升进程，而计划任务主机进程也是使用 `CreateProcessAsUser` 启动非提升的进程。当当前用户不为管理员时，使用 `CreateProcess` 创建进程即可。
+ **No Elevated(UAC)** 当当前用户为管理员时需要使用计划任务启动 UAC 未提升进程，而计划任务主机进程也是使用 `CreateProcessAsUser` 启动非提升的进程。当当前用户不为管理员时，使用 `CreateProcess` 创建进程即可。当然如果当前管理员权限进程模拟了 `System` 令牌，可以开启进程 `SE_TCB_NAME` 权限，然后使用 `WTSQueryUserToken` 获得当前标准用户的令牌，拷贝一份此令牌，使用 `CreateProcessAsUser` 即可启动未提权的进程。
 
 **Administrator** 当当前进程不为管理员，则需要 UAC 提权，细节前文由描述。反之则使用 `CreateProcess` 即可。 
 
