@@ -17,8 +17,8 @@ categories: windows
 |Function|Feature|Details|
 |---|---|---|
 |CreateProcessW/A|创建常规进程，权限继承父进程权限||
-|CreateProcessAsUserW/A|使用主 Token 创建进程，子进程权限与 Token 限定一致|必须开启 SE_INCREASE_QUOTA_NAME|
-|CreateProcessWithTokenW|使用主 Token 创建进程，子进程权限与 Token 限定一致|必须开启 SE_IMPERSONATE_NAME|
+|CreateProcessAsUserW/A|使用主 Token 创建进程，子进程权限与 Token 限定一致|必须开启 `SE_INCREASE_QUOTA_NAME`|
+|CreateProcessWithTokenW|使用主 Token 创建进程，子进程权限与 Token 限定一致|必须开启 `SE_IMPERSONATE_NAME`|
 |CreateProcessWithLogonW/A|使用指定用户凭据启动进程||
 
 `CreateProcessWithLogonW` 使用用户凭据获得用户令牌，然后启动进程，这等价于使用 `LogonUser` +`CreateProcessAsUser` 启动进程。
@@ -52,8 +52,8 @@ Shell 在启动清单附带有 UAC 提权的可执行文件时也会发生提权
 1.   AppInfo goes and talks to the Local Security Authority to get the elevated token of the logged in user of Session 1.
 2.   AppInfo loads up a STARTUPINFOEX structure (new to Vista), and calls the brand new Vista API InitializeProcThreadAttributeList() with room for one attribute.
 3.   OpenProcess() is called to get a handle to the process that initiated the RPC call.
-4.   UpdateProcThreadAttribute() is called with PROC_THREAD_ATTRIBUTE_PARENT_PROCESS, and uses the handle retrieved in step 3.
-5.   CreateProcessAsUser() is called with EXTENDED_STARTUPINFO_PRESENT and the results of steps 1 and 4.
+4.   UpdateProcThreadAttribute() is called with `PROC_THREAD_ATTRIBUTE_PARENT_PROCESS`, and uses the handle retrieved in step 3.
+5.   CreateProcessAsUser() is called with `EXTENDED_STARTUPINFO_PRESENT` and the results of steps 1 and 4.
 6.   DeleteProcThreadAttributeList() is called.
 7.   Results are gathered, and handles are cleaned up.
 
@@ -69,7 +69,7 @@ Appinfo 服务描述：
 +   System
 +   TrustedInstaller
 
-**AppContainer** 通常可以使用 `CreateProcess` 创建，使用 `EXTENDED_STARTUPINFO_PRESENT` 额外的 `dwCreateFlags` 创建权限为 `AppContainer` 的进程即可。AppContainer 配置需由 `CreateAppContainerProfile` 创建，相应的 `Capability SID` 可由 `DeriveCapabilitySidsFromName` 或者 `CreateWellKnownSid` 创建，而 `Privexec(GUI)` 受限与 UI 限制，目前仅支持 9 个 `WellKnownSid`，而 `wsudo` 支持 `--appx` 从文件中设置，`wsudo` 中使用了 `DeriveCapabilitySidsFromName` 创建  `Capabilities SID`。
+**AppContainer** 通常可以使用 `CreateProcess` 创建，使用 `EXTENDED_STARTUPINFO_PRESENT` 额外的 `dwCreateFlags` 创建权限为 `AppContainer` 的进程即可。AppContainer 配置需由 `CreateAppContainerProfile` 创建，相应的 `Capability SID` 可由 `DeriveCapabilitySidsFromName` 或者 `CreateWellKnownSid` 创建，~~而 `Privexec(GUI)` 受限与 UI 限制，目前仅支持 9 个 `WellKnownSid`，而~~, `Privexec (GUI)` 支持从 ListView 中选择常见的 `Capabilities` 也支持从清单文件中读取，两种途径获得的 `Capabilities` 会被合并， `wsudo` 支持 `--appx` 从文件中设置 `Capabilities`，`wsudo` 中使用了 `DeriveCapabilitySidsFromName` 创建  `Capabilities SID`。
 
 参数 `EXTENDED_STARTUPINFO_PRESENT` 表示使用 `STARTUPINFOEX` 结构，使用 `InitializeProcThreadAttributeList` 初始化 `STARTUPINFOEX::lpAttributeList`, 使用 `UpdateProcThreadAttribute` 设置 `lpAttributeList` 为 `PROC_THREAD_ATTRIBUTE_SECURITY_CAPABILITIES` 并将 `SECURITY_CAPABILITIES ` 绑定到 `STARTUPINFOEX` 上。
 
