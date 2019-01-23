@@ -89,7 +89,7 @@ Windows 系统是一个国际化做的非常棒的操作系统，对于各国的
 
 另外，对于 ANSI 而言，不同字符集的都重复使用着 0x80 ~ 0xFFFF 编码区间，这进一步加大了文本字符检测的难度。
 
-文本编码的检测有两个比较流行的实现，一个是 IE 的 [IMultiLanguage](https://docs.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/platform-apis/aa741022(v=vs.85))，另一个是 Firefox 的 [UniversalCharsetDetection](https://github.com/mozilla/gecko/tree/central/extensions/universalchardet/src/base)，后者的准确性更高，使用更加广泛，比如 `Notepad++` 就是使用的 `universalchardet`。
+文本编码的检测有两个比较流行的实现，一个是 IE 的 [IMultiLanguage](https://docs.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/platform-apis/aa741022(v=vs.85))，另一个是 Firefox 的 [UniversalCharsetDetection](https://github.com/mozilla/gecko/tree/central/extensions/universalchardet/src/base)，后者的准确性更高，使用更加广泛，比如 `Notepad++` 就是使用了 `universalchardet`。
 
 用户通常不应直接使用 Mozilla 目录中的 `Universalchardet`，`Universalchardet` 与 Firefox 整合较为紧密，剥离稍微有点麻烦，最近的版本只有很少的几个 `LangModels` 实现。如果要使用 `Universalchardet`，可以使用 Freedesktop 维护的：[uchardet](https://www.freedesktop.org/wiki/Software/uchardet/)，这个库基于 `Universalchardet` 发展起来的，能编译成动态库或者静态库供开发者整合到自己的程序之中。
 
