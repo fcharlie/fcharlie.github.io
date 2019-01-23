@@ -38,7 +38,129 @@ int buffer_is_binary(const char *ptr, unsigned long size)
 }
 ```
 
+另外 C 语言的标准库函数 `strlen` 在计算字符串长度时正是使用的判断字符是否为 NUL，在 UTF-8 或者 `MultiByte` 环境中均是如此。 
+
+```c
+size_t strlen(const char *s)
+{
+	const char *a = s;
+	for (; *s; s++);
+	return s-a;
+}
+```
+
 ### 编码的文本
+
+ASCII 编码的范围是 0~127，这就意味着只能用于 `ABCDEFG` 这样的英文字符，其他大量的字符是无法表示的，就算把 128~255 全部用上，中文这种几千上万字符的文字还是完全无法表示。所以后来出来了国际标准化的 US4(UTF-32) US2(UTF-16)，UTF-8，国家标准 GBK。当编码的种类多起来的时候，问题又来了，如何确定文件编码？
+
+例如 `UTF-16`，`UTF-32` 这样的编码，由于是多字节的，因此可能存在多字节序，通过检测多字节序就可以简单的获得文件编码：
+
+|编码|起始字符|
+|---|---|
+|UTF-32 BE|0x0,0x0,0xFE,0xFF|
+|UTF-32 LE|0xFF,0xFE,0x00,0x00|
+|UTF-16 BE|0xFE,0xFF|
+|UTF-16 LE|0xFF,0xFE|
+|UTF-8 with BOM|0xEF,0xBB,0xBF|
+
+UTF-8 是一种字节序无关的可变字节编码（1~4 字节），因此，不带字节序没有任何问题，并且 ASCII 编码 0~127 完全是 UTF-8 的子集，如果不携带字节序，能够很好的兼容以前的 ASCII 文本。这也是 UTF-8 在 Unix 系统上被广泛使用的原因之一。而 Windows 记事本采用 UTF-8 with BOM 也由于这一点广受批评。
+
+Windows 系统是一个国际化做的非常棒的操作系统，对于各国的本地字符集支持也非常好，比如，在中国大陆，文本编辑器的默认编码是 ANSI，是 ASCII 扩展编码，0~127 编码与 ASCII 相同，0x80~0xFFFF 则表示对应代码页的所有编码。我们可以看到，ANSI 编码的范围小于 UTF-8，并且绝大多数 ANSI 字符的码点相同数字的 UTF-8 码点都是有效的 UTF-8 字符，因此如果要区分 `UTF-8 without BOM` 还是 `ANSI`，实际上是相当麻烦。
+
+有效的 UTF-8 字符区间：
+```c
+/*
+ * legal utf-8 byte sequence
+ * http://www.unicode.org/versions/Unicode6.0.0/ch03.pdf - page 94
+ *
+ *  Code Points        1st       2s       3s       4s
+ * U+0000..U+007F     00..7F
+ * U+0080..U+07FF     C2..DF   80..BF
+ * U+0800..U+0FFF     E0       A0..BF   80..BF
+ * U+1000..U+CFFF     E1..EC   80..BF   80..BF
+ * U+D000..U+D7FF     ED       80..9F   80..BF
+ * U+E000..U+FFFF     EE..EF   80..BF   80..BF
+ * U+10000..U+3FFFF   F0       90..BF   80..BF   80..BF
+ * U+40000..U+FFFFF   F1..F3   80..BF   80..BF   80..BF
+ * U+100000..U+10FFFF F4       80..8F   80..BF   80..BF
+ *
+ */
+```
+
+另外，对于 ANSI 而言，不同字符集的都重复使用着 0x80~0xFFFF，这进一步加大了文本字符检测的难度。
+
+文本编码的检测有两个比较流行的实现，一个是 IE 的 [IMultiLanguage](https://docs.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/platform-apis/aa741022(v=vs.85))，另一个是 Firefox 的 [UniversalCharsetDetection](https://github.com/mozilla/gecko/tree/central/extensions/universalchardet/src/base)，后者的准确性更高，也被广泛使用。
+
+目前 Mozilla 目录中的 `Universalchardet` 并不提倡直接使用，可以使用 Freedesktop 维护的：[uchardet](https://www.freedesktop.org/wiki/Software/uchardet/)，这个更容易整合进程序。
+
+但 `uchardet` 的许可证为 `MPL 1.1` ,`GPL  2.0` `LGPL 2.1`，这类许可证在使用时需要注意，如果只要判断文本是否是 UTF-8，可以按照上图的 UTF-8 编码区间对文件进行分析，代码如下：
+
+```c++
+// Thanks
+// https://github.com/lemire/Code-used-on-Daniel-Lemire-s-blog/blob/master/2018/05/08/checkutf8.c
+static const uint8_t utf8d[] = {
+    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   //
+    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   //
+    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,        // 00..1f
+    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   //
+    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   //
+    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,        // 20..3f
+    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   //
+    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   //
+    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,        // 40..5f
+    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   //
+    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   //
+    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,        // 60..7f
+    1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   //
+    1,   1,   1,   1,   1,   9,   9,   9,   9,   9,   9,   //
+    9,   9,   9,   9,   9,   9,   9,   9,   9,   9,        // 80..9f
+    7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   //
+    7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   //
+    7,   7,   7,   7,   7,   7,   7,   7,   7,   7,        // a0..bf
+    8,   8,   2,   2,   2,   2,   2,   2,   2,   2,   2,   //
+    2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   //
+    2,   2,   2,   2,   2,   2,   2,   2,   2,   2,        // c0..df
+    0xa, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, //
+    0x3, 0x3, 0x4, 0x3, 0x3,                               // e0..ef
+    0xb, 0x6, 0x6, 0x6, 0x5, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, //
+    0x8, 0x8, 0x8, 0x8, 0x8                                // f0..ff
+};
+
+static const uint8_t utf8d_transition[] = {
+    0x0, 0x1, 0x2, 0x3, 0x5, 0x8, 0x7, 0x1, 0x1, 0x1, 0x4, //
+    0x6, 0x1, 0x1, 0x1, 0x1,                               // s0..s0
+    1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   //
+    1,   1,   1,   1,   1,   1,   0,   1,   1,   1,   1,   //
+    1,   0,   1,   0,   1,   1,   1,   1,   1,   1,        // s1..s2
+    1,   2,   1,   1,   1,   1,   1,   2,   1,   2,   1,   //
+    1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   //
+    1,   2,   1,   1,   1,   1,   1,   1,   1,   1,        // s3..s4
+    1,   2,   1,   1,   1,   1,   1,   1,   1,   2,   1,   //
+    1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   //
+    1,   3,   1,   3,   1,   1,   1,   1,   1,   1,        // s5..s6
+    1,   3,   1,   1,   1,   1,   1,   3,   1,   3,   1,   //
+    1,   1,   1,   1,   1,   1,   3,   1,   1,   1,   1,   //
+    1,   1,   1,   1,   1,   1,   1,   1,   1,   1,        // s7..s8
+};
+
+static inline uint32_t updatestate(uint32_t *state, uint32_t byte) {
+  uint32_t type = utf8d[byte];
+  *state = utf8d_transition[16 * *state + type];
+  return *state;
+}
+
+bool validate_utf8(const char *c, size_t len) {
+  const unsigned char *cu = (const unsigned char *)c;
+  uint32_t state = 0;
+  for (size_t i = 0; i < len; i++) {
+    uint32_t byteval = (uint32_t)cu[i];
+    if (updatestate(&state, byteval) == UTF8_REJECT) {
+      return false;
+    }
+  }
+  return true;
+}
+```
 
 ## 可执行文件
 
