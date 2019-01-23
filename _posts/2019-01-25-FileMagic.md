@@ -87,13 +87,13 @@ Windows 系统是一个国际化做的非常棒的操作系统，对于各国的
  */
 ```
 
-另外，对于 ANSI 而言，不同字符集的都重复使用着 0x80~0xFFFF，这进一步加大了文本字符检测的难度。
+另外，对于 ANSI 而言，不同字符集的都重复使用着 0x80 ~ 0xFFFF 编码区间，这进一步加大了文本字符检测的难度。
 
-文本编码的检测有两个比较流行的实现，一个是 IE 的 [IMultiLanguage](https://docs.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/platform-apis/aa741022(v=vs.85))，另一个是 Firefox 的 [UniversalCharsetDetection](https://github.com/mozilla/gecko/tree/central/extensions/universalchardet/src/base)，后者的准确性更高，也被广泛使用。
+文本编码的检测有两个比较流行的实现，一个是 IE 的 [IMultiLanguage](https://docs.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/platform-apis/aa741022(v=vs.85))，另一个是 Firefox 的 [UniversalCharsetDetection](https://github.com/mozilla/gecko/tree/central/extensions/universalchardet/src/base)，后者的准确性更高，使用更加广泛，比如 `Notepad++` 就是使用的 `universalchardet`。
 
-目前 Mozilla 目录中的 `Universalchardet` 并不提倡直接使用，可以使用 Freedesktop 维护的：[uchardet](https://www.freedesktop.org/wiki/Software/uchardet/)，这个更容易整合进程序。
+用户通常不应直接使用 Mozilla 目录中的 `Universalchardet`，`Universalchardet` 与 Firefox 整合较为紧密，剥离稍微有点麻烦，最近的版本只有很少的几个 `LangModels` 实现。如果要使用 `Universalchardet`，可以使用 Freedesktop 维护的：[uchardet](https://www.freedesktop.org/wiki/Software/uchardet/)，这个库基于 `Universalchardet` 发展起来的，能编译成动态库或者静态库供开发者整合到自己的程序之中。
 
-但 `uchardet` 的许可证为 `MPL 1.1` ,`GPL  2.0` `LGPL 2.1`，这类许可证在使用时需要注意，如果只要判断文本是否是 UTF-8，可以按照上图的 UTF-8 编码区间对文件进行分析，代码如下：
+但 `uchardet` 的许可证为 `MPL 1.1` ,`GPL  2.0` `LGPL 2.1`，程序在依赖 `uchardet` 时要考虑许可证的问题。如果仅仅只需要判断文本是否是 UTF-8，可以按照上图的 UTF-8 编码区间对文件进行分析，代码如下：
 
 ```c++
 // Thanks
