@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "文件的魔法"
+title:  "文件的魔法 - 文件格式的检测"
 date:   2019-01-25 21:00:00
 published: false
 categories: toolset
