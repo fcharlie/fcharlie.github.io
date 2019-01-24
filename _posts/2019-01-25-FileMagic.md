@@ -34,7 +34,9 @@ categories: toolset
 +  Motorola 6800、Motorola 68000、PowerPC 970、System/370、SPARC（除V9外）等处理器为大端序；
 +  ARM、PowerPC（除PowerPC 970外）、DEC Alpha、SPARC V9、MIPS、PA-RISC及IA64的字节序是可配置的。
 
-网络字节序为 `Big Endian`，目前 Windows x86, x64, ARM, ARM64 均为 `Little Endian`。
+网络字节序为 `Big Endian`，目前 Windows x86, AMD64, ARM, ARM64 均为 `Little Endian`。
+
+Planck 中字节序转换代码在：[https://github.com/fcharlie/Planck/blob/master/include/endian.hpp](https://github.com/fcharlie/Planck/blob/master/include/endian.hpp)。
 
 ## 文本文件还是二进制
 
@@ -181,12 +183,30 @@ bool validate_utf8(const char *c, size_t len) {
 
 ## 可执行文件
 
+在计算机中，可执行文件是非常特殊的存在，维基百科上有简短的介绍：
+
+>可执行文件在计算机科学上，指一种内容可被计算机解释为程序的计算机文件。通常可执行文件内，含有以二进制编码的微处理器指令，也因此可执行文件有时称为二进制档。这些二进制微处理器指令的编码，于各种微处理器有所不同，故此可执行文件多数要分开不同的微处理版本。一个计算机文件是否为可执行文件，主要由操作系统的传统决定。例如根据特定的命名方法（如扩展名为exe）或文件的元数据信息（例如UNIX系统设置“可执行”权限）。
+
+本节的可执行文件主要是讲可执行的二进制，在 Windows 系统中是 `PE` 文件，在 Unix 系统上是 `ELF` 文件，在 macOS 上是 `Mach-O` 文件。
+
 ### PE
+
+在 Windows 上 `PE` 是 `Portable Executable` 也可以是 `Windows Preinstallation Environment` (Windows 预装环境)，但这里是 `Portable Executable`。
 
 ### ELF
 
 ### Mach-O
 
+### 可执行文件的比较
+
+[Comparison of executable file formats](https://en.wikipedia.org/wiki/Comparison_of_executable_file_formats)
+
+|格式名|操作系统|文件扩展名|显式处理器声明|任意节（Sections）|元数据|签名|字符串表|符号表|64位|胖二进制|可以包含图标|
+|---|---|---|---|---|---|---|---|---|---|---|---|
+|PE|Windows, ReactOS<br>HX DOS Extender<br>BeOS (>=R3)|.EXE|✔|✔|✔|✔|✔|✔|❌|❌|✔|
+|PE32+|Windows 64-bit|.EXE|✔|✔|✔|✔|✔|✔|✔|✔|✔|
+|ELF|Unix-like, OpenVMS|none|✔|✔|✔|✔|✔|✔|✔|Extension|Extension|
+|Mach-O|NeXTSTEP<br>macOS, iOS, watchOS<br>tvOS|none|✔|<=256|✔|✔|✔|✔|✔|✔|❌|
 
 ## 文档格式
 
