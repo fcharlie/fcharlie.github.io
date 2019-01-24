@@ -50,6 +50,16 @@ Hastyhex 基于 C 编写，但不支持指定长度，对 Windows 10 控制台�
 Unix 版本：[HastyHex : a faster hex dumper](https://github.com/fcharlie/hastyhex)   
 针对 Windows 10 控制台改进的版本：[https://github.com/fcharlie/Planck/tree/master/utils/hastyhex](https://github.com/fcharlie/Planck/tree/master/utils/hastyhex)
 
+## 文件，硬链接，软连接，快捷方式
+
+在存储设备上，一个文件通常是常规文件，但文件也有可能指向其它文件。
+
+### 硬链接与软链接
+
+### 快捷方式和桌面文件
+
+在 Windows 系统中，桌面快捷方式文件的后缀名为 `.lnk`，用户只需要点击桌面上的快捷方式就可以很方便的打开应用程序，网站或者文件。快捷方式的格式名称叫做 `Shell Link`，是一种二进制格式文件，相应的规范在 [[MS-SHLLINK]: Shell Link (.LNK) Binary File Format](https://msdn.microsoft.com/en-us/library/dd871305.aspx)。在 Planck 中，ShellLink 的定义和实现分别是 [lib/inquisitive/shl.hpp](https://github.com/fcharlie/Planck/blob/master/lib/inquisitive/shl.hpp) 和 [lib/inquisitive/shl.cc](https://github.com/fcharlie/Planck/blob/master/lib/inquisitive/shl.cc)，目前只支持解析 `HasLinkInfo` 以及 `HasRelativePath` 标志的快捷方式。
+
 ## 文本文件还是二进制
 
 在计算机中，文本文件实际上支持二进制文件的一种，这种文件几乎只由可打印字符，控制字符组成，而二进制文件则包含大量的不可见字符。处理程序将按照定义的二进制格式对二进制文件进行解析。
@@ -209,6 +219,10 @@ bool validate_utf8(const char *c, size_t len) {
 
 Nodeps: [https://github.com/fcharlie/nodeps](https://github.com/fcharlie/nodeps)
 
+[https://github.com/hasherezade/bearparser](https://github.com/hasherezade/bearparser)
+
+[https://github.com/lief-project/LIEF](https://github.com/lief-project/LIEF)
+
 ### ELF
 
 cmrpath: [https://github.com/fcharlie/cmchrpath](https://github.com/fcharlie/cmchrpath)
@@ -225,6 +239,18 @@ cmrpath: [https://github.com/fcharlie/cmchrpath](https://github.com/fcharlie/cmc
 |PE32+|Windows 64-bit|.EXE|✔|✔|✔|✔|✔|✔|✔|✔|✔|
 |ELF|Unix-like, OpenVMS|none|✔|✔|✔|✔|✔|✔|✔|Extension|Extension|
 |Mach-O|NeXTSTEP<br>macOS, iOS, watchOS<br>tvOS|none|✔|<=256|✔|✔|✔|✔|✔|✔|❌|
+
+### 可执行文件的移植
+
+[Windows Subsytem for Linux](https://docs.microsoft.com/en-us/windows/wsl/about)
+
+[Wine: Wine Is Not an Emulator](https://www.winehq.org/)
+
+[Bash on Ubuntu on macOS](https://github.com/linux-noah/noah)
+
+[Mach-o loader for linux](https://github.com/shinh/maloader)
+
+[Porting Windows Dynamic Link Libraries to Linux](https://github.com/taviso/loadlibrary)
 
 ## 文档格式
 
