@@ -38,6 +38,18 @@ categories: toolset
 
 Planck 中字节序转换代码在：[https://github.com/fcharlie/Planck/blob/master/include/endian.hpp](https://github.com/fcharlie/Planck/blob/master/include/endian.hpp)。
 
+### 文件十六进制查看工具
+
+查看文件信息可以使用支持 16 进制的工具查看，GUI 的工具有 `Sublime Text`，`010Editor` 等，CLI 的工具有 `hexdump`，`xxd`，还有最近带颜色高亮的
+
++   Hastyhex: [https://github.com/skeeto/hastyhex](https://github.com/skeeto/hastyhex)
++   Hexyl: [https://github.com/sharkdp/hexyl](https://github.com/sharkdp/hexyl)
+
+Hastyhex 基于 C 编写，但不支持指定长度，对 Windows 10 控制台支持不太好，于是我 fork Hastyhex，对其改进，使其支持特定长度和从指定位置开始读取。在 Windows 上改进了控制台颜色输出。
+
+Unix 版本：[HastyHex : a faster hex dumper](https://github.com/fcharlie/hastyhex)   
+针对 Windows 10 控制台改进的版本：[https://github.com/fcharlie/Planck/tree/master/utils/hastyhex](https://github.com/fcharlie/Planck/tree/master/utils/hastyhex)
+
 ## 文本文件还是二进制
 
 在计算机中，文本文件实际上支持二进制文件的一种，这种文件几乎只由可打印字符，控制字符组成，而二进制文件则包含大量的不可见字符。处理程序将按照定义的二进制格式对二进制文件进行解析。
