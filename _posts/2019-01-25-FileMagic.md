@@ -381,9 +381,11 @@ Mach-O 一个鲜明的特性就是它是一个支持 FatBinary的格式（PE32+ 
 
 在 Planck 中，Mach-O 格式的定义目录为：[lib/inquisitive/macho.hpp](https://github.com/fcharlie/Planck/blob/master/lib/inquisitive/macho.hpp)
 
-### 自解压文件
+### 自解压程序和安装包
 
+[Self-extracting archive](https://en.wikipedia.org/wiki/Self-extracting_archive) 是一种特殊的可执行文件，运行自解压文件时，自解压文件将压缩包解压到用户指定目录，自解压文件不需要其他的压缩软件即可运行，并且还能执行一些列的动作，在 Windows 系统中通常被用来实现软件安装。常见的 7z WinRAR 均支持创建自解压文件。
 
+有些安装程序并不是常规的自解压文件，它们将 MSI Package 存储在 PE 文件的资源目录，比如 `InstallShield` 制作的安装程序就是这样做的。
 
 
 ### 可执行文件的移植
