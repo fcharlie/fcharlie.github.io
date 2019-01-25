@@ -56,6 +56,19 @@ Unix 版本：[HastyHex : a faster hex dumper](https://github.com/fcharlie/hasty
 
 ### 硬链接与软链接
 
+[HardLink](https://en.wikipedia.org/wiki/Hard_link) 通常意味着一个原始文件可能存在有多个文件名，比如 Linux 一个 inode 对应多个路径。
+
+>In computing, a hard link is a directory entry that associates a name with a file on a file system. All directory-based file systems must have at least one hard link giving the original name for each file. The term “hard link” is usually only used in file systems that allow more than one hard link for the same file.
+
+Windows NTFS，Unix EXT4，ZFS，Btrfs 等文件系统均支持硬链接，ReFS 暂时不支持硬链接。
+
+在 Windows 中，硬链接被广泛使用，尤其是 [Side-by-side assembly](https://en.wikipedia.org/wiki/Side-by-side_assembly) 机制大量使用了硬链接 ，查看 `C:\Windows\System32` 的文件，基本都会有相应的硬链接存在于 `C:\Windows\WinSxS`。
+
+在 Windows 中，可以使用 `GetFileInformationByHandle`,`FindFirstFileNameW`,`FindNextFileNameW` 组合查询文件所有的硬链接。
+在 POSIX 系统中，查询硬链接需要解析对应的 inode，如果 inode 值相同，则互为硬链接。
+
+[Symbolic link](https://en.wikipedia.org/wiki/Symbolic_link)
+
 
 ### 快捷方式和桌面文件
 
