@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "文件的魔法 - 文件格式的检测"
-date:   2019-01-25 21:00:00
+date:   2019-01-25 20:00:00
 published: false
 categories: toolset
 ---
@@ -56,9 +56,29 @@ Unix 版本：[HastyHex : a faster hex dumper](https://github.com/fcharlie/hasty
 
 ### 硬链接与软链接
 
+
 ### 快捷方式和桌面文件
 
 在 Windows 系统中，桌面快捷方式文件的后缀名为 `.lnk`，用户只需要点击桌面上的快捷方式就可以很方便的打开应用程序，网站或者文件。快捷方式的格式名称叫做 `Shell Link`，是一种二进制格式文件，相应的规范在 [[MS-SHLLINK]: Shell Link (.LNK) Binary File Format](https://msdn.microsoft.com/en-us/library/dd871305.aspx)。在 Planck 中，ShellLink 的定义和实现分别是 [lib/inquisitive/shl.hpp](https://github.com/fcharlie/Planck/blob/master/lib/inquisitive/shl.hpp) 和 [lib/inquisitive/shl.cc](https://github.com/fcharlie/Planck/blob/master/lib/inquisitive/shl.cc)，目前只支持解析 `HasLinkInfo` 以及 `HasRelativePath` 标志的快捷方式。
+
+在 X-Window 系统上，也存在一种类似桌面快捷方式的文件，后缀名为 `.desktop` ，当文件属性为可执行时，文件管理器会解析 `Icon`，`Name` 然后读取设置的图标，名称显示。下面是我 Ubuntu 系统上的 `wireshark.desktop` 文件内容。
+
+```shell
+#!/usr/bin/env xdg-open
+[Desktop Entry]
+Name=Wireshark
+Comment=Wireshark build
+GenericName=Demo Application
+Exec=/opt/wireshark/bin/wireshark
+Icon=wireshark
+Type=Application
+StartupNotify=true
+Categories=GNOME;GTK;Development;Documentation;
+MimeType=text/plain;
+
+```
+
+可以看出，这是一个标准的 [`Shebang`](https://en.wikipedia.org/wiki/Shebang_(Unix)) 可执行文件，在 Ubuntu 中，`xdg-open` 自身为 `Shell` 脚本（在MacOS X下的Darwin中，解释器指定的文件必须是可执行的二进制文件，并且本身不能是脚本。），虽然这是一个 `Shebang` 可执行文件，但遗憾的是，在 Ubuntu 中，你无法直接从命令行中使用 `xdg-open` 启动相应的程序，这是一个存在了超过 9 年的 BUG: [xdg-open *.desktop opens text editor](https://bugs.launchpad.net/ubuntu/+source/glib2.0/+bug/378783)
 
 ## 文本文件还是二进制
 
@@ -210,6 +230,7 @@ bool validate_utf8(const char *c, size_t len) {
 >可执行文件在计算机科学上，指一种内容可被计算机解释为程序的计算机文件。通常可执行文件内，含有以二进制编码的微处理器指令，也因此可执行文件有时称为二进制档。这些二进制微处理器指令的编码，于各种微处理器有所不同，故此可执行文件多数要分开不同的微处理版本。一个计算机文件是否为可执行文件，主要由操作系统的传统决定。例如根据特定的命名方法（如扩展名为exe）或文件的元数据信息（例如UNIX系统设置“可执行”权限）。
 
 本节的可执行文件主要是讲可执行的二进制，在 Windows 系统中是 `PE` 文件，在 Unix 系统上是 `ELF` 文件，在 macOS 上是 `Mach-O` 文件。
+
 
 ### PE
 
