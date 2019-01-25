@@ -257,7 +257,9 @@ bool validate_utf8(const char *c, size_t len) {
 
 ### 可执行文件的比较
 
-[Comparison of executable file formats](https://en.wikipedia.org/wiki/Comparison_of_executable_file_formats)
+不同的可执行文件的特性有一些不同，维基百科上有个比较：[Comparison of executable file formats](https://en.wikipedia.org/wiki/Comparison_of_executable_file_formats)。
+
+我这里将 PE(PE32+)，ELF，Mach-O 的格式比较贴出来：
 
 |格式名|操作系统|文件扩展名|显式处理器声明|任意节（Sections）|元数据|签名|字符串表|符号表|64位|胖二进制|可以包含图标|
 |---|---|---|---|---|---|---|---|---|---|---|---|
@@ -296,13 +298,9 @@ PE 是 Windows NT 系统的可执行文件格式，同样还被 ReactOS 使用�
 #endif
 ```
 
-解析 PE 文件的库非常多，有被 [`Avast Threat Labs`](https://github.com/avast-tl/pelib) 使用的 `pelib`（没错，就是那个杀毒软件 Avast），还有 [https://github.com/hasherezade/bearparser](https://github.com/hasherezade/bearparser)，[https://github.com/lief-project/LIEF](https://github.com/lief-project/LIEF) 等非常优秀的开源库。在 .NET 平台还有 [PeNet](https://github.com/secana/PeNet)。
+解析 PE 文件的库非常多，有被 [`Avast Threat Labs`](https://github.com/avast-tl/pelib) 使用的 `pelib`（没错，就是那个杀毒软件 Avast），还有 [https://github.com/hasherezade/bearparser](https://github.com/hasherezade/bearparser)，[https://github.com/lief-project/LIEF](https://github.com/lief-project/LIEF) 等非常优秀的开源库。在 .NET 平台还有 [PeNet](https://github.com/secana/PeNet)。其中 `LIFF` 还支持 ELF，Mach-O，ART，OAT 等格式。在 LLVM 的源码中 PE 文件解析代码在 [llvm/lib/Object/COFFObjectFile.cpp](https://github.com/llvm/llvm-project/blob/master/llvm/lib/Object/COFFObjectFile.cpp) 文件中。
 
-其中 `LIFF` 还支持 ELF，Mach-O，ART，OAT 等格式。
-
-在 LLVM 的 PE 文件的解析在 [llvm/lib/Object/COFFObjectFile.cpp](https://github.com/llvm/llvm-project/blob/master/llvm/lib/Object/COFFObjectFile.cpp)。
-
-Windows Internal 7th 作者之一的 Pavel Yosifovich 也开发了一个 [Portable Executable Explorer](https://github.com/zodiacon/PEExplorer)
+分析 PE 的工具非常多，Windows Internal 7th 作者之一的 Pavel Yosifovich 也开发了一个 [Portable Executable Explorer](https://github.com/zodiacon/PEExplorer)。
 
 Planck 分析了 [PE](https://github.com/fcharlie/Planck/blob/master/lib/inquisitive/pe.cc) 文件的机器类型，子系统，依赖，特征等。后来利用 Planck 的成果将 [PEAnalyzer](https://github.com/fcharlie/PEAnalyzer) 重构了一番，截图如下：
 
