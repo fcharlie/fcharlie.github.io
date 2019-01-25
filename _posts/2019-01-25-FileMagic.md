@@ -306,15 +306,26 @@ Planck 分析了 [PE](https://github.com/fcharlie/Planck/blob/master/lib/inquisi
 
 ![PEAnalyze](https://github.com/fcharlie/PEAnalyzer/raw/master/docs/images/view.png)
 
-我有时候需要从 `MSYS2 Mingw64` 中提取 `wget.exe`，经常需要手动查看文件依赖，非常麻烦，后来实现 Planck PE 解析模块后，就编写了 [Nodeps](https://github.com/fcharlie/nodeps) 用于将 PE 文件将同目录下的所有依赖拷贝到目标目录。
+我有时候需要从 `MSYS2 Mingw64` 中提取 `wget.exe`，经常需要手动查看文件依赖，非常麻烦，实现 Planck PE 解析模块后，于是编写了 [Nodeps](https://github.com/fcharlie/nodeps) 用于将 PE 文件将同目录下的所有依赖拷贝到目标目录。
 
 
 ### ELF
 
-cmrpath: [https://github.com/fcharlie/cmchrpath](https://github.com/fcharlie/cmchrpath)
+[Executable and Linkable Format (ELF, formerly named Extensible Linking Format)](https://en.wikipedia.org/wiki/Executable_and_Linkable_Format) 是一种运用非常广泛的可执行文件格式，目前 Unix-like 操作系统的可执行文件格式绝大多数都是 ELF 。ELF 的魔数是 `{0x7f,'E','L','F'}`。ELF 解析库有前面的 [LIFF](https://github.com/lief-project/LIEF) 还有被 `Avast Threat Labs` 使用的 [elfio](https://github.com/avast-tl/elfio) 官方版本地址是：[https://github.com/serge1/ELFIO](https://github.com/serge1/ELFIO)
+
+与 PE 显著不同的是，ELF 文件可以有 `SONAME` `RPATH` `RUPATH` 这样的节。除了可执行文件主动加载依赖动态库，有操作系统或者可执行文件加载器被动加载依赖时，PE 文件依赖 dll 可以从 PATH 以及 PE 文件所在目录加载，而 ELF 只能加载 LD_LIBRARY_PATH 以及 RPATH RUPATH 指定目录下的动态链接库。PE 的机制容易带来注入问题，而 Windows 操作系统目前也增加了 KnownDlls 机制减少此类问题的发生。而 ELF 的机制在分发二进制时容易带来一些麻烦，但目前很多操作系统已经支持 `RUPATH=$ORIGIN/../lib` 这样的方式设置 `RUPATH`。
+
+ELF 程序在安装的时候还可以主动修改 RPATH/RUPATH，cmake 就支持 `CMAKE_INSTALL_RPATH` 用于设置 `RPATH/RUPATH` （不同的操作系统连接器的行为不一致）。
+
+我将 cmake 中替换 RPATH 的功能抽出来，创建了项目： [cmchrpath](https://github.com/fcharlie/cmchrpath)，在 cmchrpath 中还有 `elfinfo` 用于查看 ELF 的一些基本信息。
 
 ### Mach-O
 
+我没有任何 mac 设备，因此没有进一步分析 Mach-O 格式，实际上很多前辈们写了非常不错的文章，比如：[PARSING MACH-O FILES](https://lowlevelbits.org/parsing-mach-o-files/)。
+
+Mach-O 一个鲜明的特性就是它是一个支持 FatBinary的格式（PE32+ 实际上也支持，但使用较少），这意味着不同的处理器架构指令能够存储在同一文件当中，在 Mac 将处理器从 PowerPC 架构迁移到 Intel 的过程中运用非常广泛。
+
+在 Planck 中，Mach-O 格式的定义目录为：[lib/inquisitive/macho.hpp](https://github.com/fcharlie/Planck/blob/master/lib/inquisitive/macho.hpp)
 
 ### 自解压文件
 
