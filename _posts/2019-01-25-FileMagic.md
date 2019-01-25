@@ -56,7 +56,7 @@ Unix 版本：[HastyHex : a faster hex dumper](https://github.com/fcharlie/hasty
 
 ### 硬链接与软链接
 
-[HardLink](https://en.wikipedia.org/wiki/Hard_link) 通常意味着一个原始文件可能存在有多个文件名，比如 Linux 一个 inode 对应多个路径。
+[Hard Link](https://en.wikipedia.org/wiki/Hard_link) 通常意味着一个原始文件可能存在有多个文件名，比如 Linux 一个 inode 对应多个路径。
 
 >In computing, a hard link is a directory entry that associates a name with a file on a file system. All directory-based file systems must have at least one hard link giving the original name for each file. The term “hard link” is usually only used in file systems that allow more than one hard link for the same file.
 
@@ -64,10 +64,22 @@ Windows NTFS，Unix EXT4，ZFS，Btrfs 等文件系统均支持硬链接，ReFS 
 
 在 Windows 中，硬链接被广泛使用，尤其是 [Side-by-side assembly](https://en.wikipedia.org/wiki/Side-by-side_assembly) 机制大量使用了硬链接 ，查看 `C:\Windows\System32` 的文件，基本都会有相应的硬链接存在于 `C:\Windows\WinSxS`。
 
-在 Windows 中，可以使用 `GetFileInformationByHandle`,`FindFirstFileNameW`,`FindNextFileNameW` 组合查询文件所有的硬链接。
-在 POSIX 系统中，查询硬链接需要解析对应的 inode，如果 inode 值相同，则互为硬链接。
+Git 在克隆本地存储库时，`objects` 目录的对象文件（主要是 pack）创建的是硬链接。这样避免了复制，git 的**对象**文件名与其内容的 SHA1 一致，当文件内容改变时，文件名也会改变，因此，使用硬链接不用当心互相修改破坏。
 
-[Symbolic link](https://en.wikipedia.org/wiki/Symbolic_link)
+在 Windows 中，可以使用 `GetFileInformationByHandle`, `FindFirstFileNameW`, `FindNextFileNameW` 组合查询文件所有的硬链接。
+在 POSIX 系统中，查询硬链接需要解析对应的 inode，如果 inode 值相同，则互为硬链接。`struct stat` 结构中有 `st_nlink` 表示此文件有多少个硬链接。
+
+[Symbolic link](https://en.wikipedia.org/wiki/Symbolic_link) 符号链接（软链接）是一类特殊的文件， 其包含有一条以绝对路径或者相对路径的形式指向其它文件或者目录的引用。
+
+软链接在 Unix 系统中被广泛使用，在终端中输入命令：`ls -l /usr/bin` 可以看到大量的软链接。
+
+早期符号链接的实现，采用直接分配磁盘空间来存储符号链接的信息，这种机制与普通文件一致。这种符号链接文件里包含有一个指向目标文件的文本形式的引用，以及一个指示自己为符号链接的标志。
+
+这样的存储方式被证明有些缓慢，并且早一些小型系统上会浪费磁盘空间。一种名为快速符号链接的新型存储方式能够将文本形式的链接存储在用于存放文件信息的磁盘上的标准数据结构之中（inode）。为了表示区别，原先的符号链接存储方式也被称作慢速符号链接。NTFS 文件系统的符号链接是基于 NTFS ReparsePoint 功能实现。
+
+在 POSIX 系统中，`readlink` 可以解析符号链接获得真实的目标路径，在 Windows 中，则可以使用 `GetFinalPathNameByHandleW` 获得文件真实的路径。
+
+NTFS 系统还支持一些其他的重解析点，包括 `MountPoint`, 与 UWP 快捷命令目标相关的 `AppExecLink`, 与 Windows 10 Unix domain socket 相关的 `AF Unix`, 与 OneDrive 相关的 `OneDrive`, 与 Git VFS（GVFS） 相关的 `ProjFS`, 以及与 WIM 挂载相关的 `WimImage` 等等。
 
 
 ### 快捷方式和桌面文件
