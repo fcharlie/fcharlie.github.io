@@ -298,6 +298,58 @@ PE 是 Windows NT 系统的可执行文件格式，同样还被 ReactOS 使用�
 #endif
 ```
 
+EXE，DLL 文件的魔数是 `{'M','Z',0x90,0x0}` 这实际上是 `IMAGE_DOS_HEADER` 的 `e_magic`，实际上还有不同系统的签名并不一致：
+
+```c++
+#ifndef _MAC
+
+#include "pshpack4.h"                   // 4 byte packing is the default
+
+#define IMAGE_DOS_SIGNATURE                 0x5A4D      // MZ
+#define IMAGE_OS2_SIGNATURE                 0x454E      // NE
+#define IMAGE_OS2_SIGNATURE_LE              0x454C      // LE
+#define IMAGE_VXD_SIGNATURE                 0x454C      // LE
+#define IMAGE_NT_SIGNATURE                  0x00004550  // PE00
+
+#include "pshpack2.h"                   // 16 bit headers are 2 byte packed
+
+#else
+
+#include "pshpack1.h"
+
+#define IMAGE_DOS_SIGNATURE                 0x4D5A      // MZ
+#define IMAGE_OS2_SIGNATURE                 0x4E45      // NE
+#define IMAGE_OS2_SIGNATURE_LE              0x4C45      // LE
+#define IMAGE_NT_SIGNATURE                  0x50450000  // PE00
+#endif
+```
+PE 格式的 `IMAGE_NT_HEADERS` 才是真正的 NT 头，DOS 头或者 OS2 头，主要用于兼容，毕竟 Windows 操作系统是从 16 位过来的。
+
+`IMAGE_FILE_HEADER` 结构存储了机器架构，可执行文件特征和可选头大小等，解析到 `IMAGE_OPTIONAL_HEADER` 才算正式解析 PE。IMAGE_OPTIONAL_HEADER32 与 IMAGE_OPTIONAL_HEADER64 中的成员顺序有一些差别，这样的好处是在以 32位 IMAGE_OPTIONAL_HEADER 读取 64 位 PE 时依然能够解析到基本字段（反之也是一样）。解析 PE 很重要的一个函数是 [`ImageRvaToVa`](https://docs.microsoft.com/en-us/windows/desktop/api/dbghelp/nf-dbghelp-imagervatova) 在映射为文件的文件的映像头中查找相对虚拟地址（RVA），并返回文件中相应字节的虚拟地址。
+
+解析 PE 文件导入导出，资源等需要解析可选头的 `DataDirectory` 数组，数组的序号对应的时不同的资源：
+
+```c++
+#define IMAGE_DIRECTORY_ENTRY_EXPORT          0   // Export Directory
+#define IMAGE_DIRECTORY_ENTRY_IMPORT          1   // Import Directory
+#define IMAGE_DIRECTORY_ENTRY_RESOURCE        2   // Resource Directory
+#define IMAGE_DIRECTORY_ENTRY_EXCEPTION       3   // Exception Directory
+#define IMAGE_DIRECTORY_ENTRY_SECURITY        4   // Security Directory
+#define IMAGE_DIRECTORY_ENTRY_BASERELOC       5   // Base Relocation Table
+#define IMAGE_DIRECTORY_ENTRY_DEBUG           6   // Debug Directory
+//      IMAGE_DIRECTORY_ENTRY_COPYRIGHT       7   // (X86 usage)
+#define IMAGE_DIRECTORY_ENTRY_ARCHITECTURE    7   // Architecture Specific Data
+#define IMAGE_DIRECTORY_ENTRY_GLOBALPTR       8   // RVA of GP
+#define IMAGE_DIRECTORY_ENTRY_TLS             9   // TLS Directory
+#define IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG    10   // Load Configuration Directory
+#define IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT   11   // Bound Import Directory in headers
+#define IMAGE_DIRECTORY_ENTRY_IAT            12   // Import Address Table
+#define IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT   13   // Delay Load Import Descriptors
+#define IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR 14   // COM Runtime descriptor
+```
+
+`IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR` 对应的 14 实际上在 .Net 中被使用，用于指向 `IMAGE_COR20_HEADER` 信息。
+
 解析 PE 文件的库非常多，有被 [`Avast Threat Labs`](https://github.com/avast-tl/pelib) 使用的 `pelib`（没错，就是那个杀毒软件 Avast），还有 [https://github.com/hasherezade/bearparser](https://github.com/hasherezade/bearparser)，[https://github.com/lief-project/LIEF](https://github.com/lief-project/LIEF) 等非常优秀的开源库。在 .NET 平台还有 [PeNet](https://github.com/secana/PeNet)。其中 `LIFF` 还支持 ELF，Mach-O，ART，OAT 等格式。在 LLVM 的源码中 PE 文件解析代码在 [llvm/lib/Object/COFFObjectFile.cpp](https://github.com/llvm/llvm-project/blob/master/llvm/lib/Object/COFFObjectFile.cpp) 文件中。
 
 分析 PE 的工具非常多，Windows Internal 7th 作者之一的 Pavel Yosifovich 也开发了一个 [Portable Executable Explorer](https://github.com/zodiacon/PEExplorer)。
@@ -313,9 +365,9 @@ Planck 分析了 [PE](https://github.com/fcharlie/Planck/blob/master/lib/inquisi
 
 [Executable and Linkable Format (ELF, formerly named Extensible Linking Format)](https://en.wikipedia.org/wiki/Executable_and_Linkable_Format) 是一种运用非常广泛的可执行文件格式，目前 Unix-like 操作系统的可执行文件格式绝大多数都是 ELF 。ELF 的魔数是 `{0x7f,'E','L','F'}`。ELF 解析库有前面的 [LIFF](https://github.com/lief-project/LIEF) 还有被 `Avast Threat Labs` 使用的 [elfio](https://github.com/avast-tl/elfio) 官方版本地址是：[https://github.com/serge1/ELFIO](https://github.com/serge1/ELFIO)
 
-与 PE 显著不同的是，ELF 文件可以有 `SONAME` `RPATH` `RUPATH` 这样的节。除了可执行文件主动加载依赖动态库，有操作系统或者可执行文件加载器被动加载依赖时，PE 文件依赖 dll 可以从 PATH 以及 PE 文件所在目录加载，而 ELF 只能加载 LD_LIBRARY_PATH 以及 RPATH RUPATH 指定目录下的动态链接库。PE 的机制容易带来注入问题，而 Windows 操作系统目前也增加了 KnownDlls 机制减少此类问题的发生。而 ELF 的机制在分发二进制时容易带来一些麻烦，但目前很多操作系统已经支持 `RUPATH=$ORIGIN/../lib` 这样的方式设置 `RUPATH`。
+与 PE 显著不同的是，ELF 文件可以有 `SONAME` `RPATH` `RUPATH` 这样的节。除了可执行文件主动加载依赖动态库，有操作系统或者可执行文件加载器被动加载依赖时，PE 文件依赖 dll 可以从 PATH 以及 PE 文件所在目录加载，而 ELF 只能加载 LD_LIBRARY_PATH 以及 RPATH RUPATH 指定目录下的动态链接库。PE 的机制容易带来注入问题，而 Windows 操作系统目前也增加了 KnownDlls 机制减少此类问题的发生。而 ELF 的机制在分发二进制时容易带来一些麻烦，但目前很多操作系统已经支持 `RUPATH=$ORIGIN/../lib` 这样的方式设置 `RUPATH`。另外 ELF 计算真实地址时不像 P需要使用 `ImageRvaToVa` 换算，在 ELF 文件的处理过程中，只需要将偏移地址与文件映射的起始地址相加即可得到数据地址。
 
-ELF 程序在安装的时候还可以主动修改 RPATH/RUPATH，cmake 就支持 `CMAKE_INSTALL_RPATH` 用于设置 `RPATH/RUPATH` （不同的操作系统连接器的行为不一致）。
+ELF 程序在安装的时候可以主动修改 RPATH/RUPATH，cmake 也支持 `CMAKE_INSTALL_RPATH` 用于设置 `RPATH/RUPATH`。RPATH 和 RUPATH 的区别有篇博客有介绍：[RPATH and RUNPATH](https://blog.qt.io/blog/2011/10/28/rpath-and-runpath/)，不同操作系统链接器的处理也稍微有一些差别，大多数时候只要设置一个即可。
 
 我将 cmake 中替换 RPATH 的功能抽出来，创建了项目： [cmchrpath](https://github.com/fcharlie/cmchrpath)，在 cmchrpath 中还有 `elfinfo` 用于查看 ELF 的一些基本信息。
 
