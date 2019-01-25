@@ -2,7 +2,7 @@
 layout: post
 title:  "文件的魔法 - 文件格式的检测"
 date:   2019-01-25 20:00:00
-published: false
+published: true
 categories: toolset
 ---
 
@@ -298,7 +298,7 @@ PE 是 Windows NT 系统的可执行文件格式，同样还被 ReactOS 使用�
 #endif
 ```
 
-EXE，DLL 文件的魔数是 `{'M','Z',0x90,0x0}` 这实际上是 `IMAGE_DOS_HEADER` 的 `e_magic`，实际上还有不同系统的签名并不一致：
+EXE，DLL 文件的魔数是 `{'M','Z',0x90,0x0}` 这实际上是 `IMAGE_DOS_HEADER` 的 `e_magic`，不同系统的签名并不一样：
 
 ```c++
 #ifndef _MAC
@@ -348,7 +348,7 @@ PE 格式的 `IMAGE_NT_HEADERS` 才是真正的 NT 头，DOS 头或者 OS2 头�
 #define IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR 14   // COM Runtime descriptor
 ```
 
-`IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR` 对应的 14 实际上在 .Net 中被使用，用于指向 `IMAGE_COR20_HEADER` 信息。
+解析 PE 文件依赖需要解析 `IMAGE_DIRECTORY_ENTRY_IMPORT` 目录，而 `IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR` 对应的 14 在 .Net 中被使用，用于指向 `IMAGE_COR20_HEADER` 信息。
 
 解析 PE 文件的库非常多，有被 [`Avast Threat Labs`](https://github.com/avast-tl/pelib) 使用的 `pelib`（没错，就是那个杀毒软件 Avast），还有 [https://github.com/hasherezade/bearparser](https://github.com/hasherezade/bearparser)，[https://github.com/lief-project/LIEF](https://github.com/lief-project/LIEF) 等非常优秀的开源库。在 .NET 平台还有 [PeNet](https://github.com/secana/PeNet)。其中 `LIFF` 还支持 ELF，Mach-O，ART，OAT 等格式。在 LLVM 的源码中 PE 文件解析代码在 [llvm/lib/Object/COFFObjectFile.cpp](https://github.com/llvm/llvm-project/blob/master/llvm/lib/Object/COFFObjectFile.cpp) 文件中。
 
