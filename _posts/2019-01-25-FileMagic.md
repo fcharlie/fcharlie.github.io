@@ -381,13 +381,13 @@ Mach-O 一个鲜明的特性就是它是一个支持 FatBinary的格式（PE32+ 
 
 在 Planck 中，Mach-O 格式的定义目录为：[lib/inquisitive/macho.hpp](https://github.com/fcharlie/Planck/blob/master/lib/inquisitive/macho.hpp)
 
-### 自解压程序
+### 自解压文件和安装程序
 
-[Self-extracting archive](https://en.wikipedia.org/wiki/Self-extracting_archive) 是一种特殊的可执行文件，运行自解压文件时，自解压文件将压缩包解压到用户指定目录，自解压文件不需要其他的压缩软件即可运行，并且还能执行一些列的动作，在 Windows 系统中通常被用来实现软件安装。常见的 7z WinRAR 均支持创建自解压文件。
+[Self-extracting archive](https://en.wikipedia.org/wiki/Self-extracting_archive) 是一种特殊的可执行文件，运行自解压文件时，自解压文件将压缩包解压到用户指定目录，自解压文件不需要其他的压缩软件即可运行，并且还能执行一些列的动作，在 Windows 系统中通常被用来实现软件安装。很多安装程序就是一个自解压文件，你如 NSIS 安装包可以直接使用 7z 解压。常见的 7z WinRAR 均支持创建自解压文件。
 
-有些安装程序并不是常规的自解压文件，它们将 MSI Package 存储在 PE 文件的资源目录，比如 `InstallShield` 制作的安装程序就是这样做的。
+有些安装程序并不是常规的自解压文件，比如 `InstallShield` 制作的安装程序，它们将 MSI Package 存储在 PE 文件的资源目录，运行时直接提取，然后调用 msiexec 进行安装。
 
-无论是常规的自解压文件包括安装程序，一个非常大的缺点是，文件的大小不能超过 CPU 寻址长，比如 32位系统不能超过 4 GB, 这是因为操作系统在运行可执行文件时，将可执行文件映射到内存空间，进程的虚拟地址位 CPU 寻址长度。
+自解压文件和安装程序，都存在一个非常大的缺点，即文件的大小不能超过 CPU 寻址长度，比如 32位系统不能超过 4 GB。这是因为操作系统在运行可执行文件时，需要将可执行文件 `mmap` 到内存，文件大小不能超过进程的虚拟地址最大长度。
 
 在 Unix 系统上，很少有使用 ELF 制作安装包的，通常使用 Shell Script 来制作 STGZ 安装包，比如 cmake 在 Unix 系统中运行 cpack 默认打包时会将模块 [CPack.STGZ_Header.sh.in](https://github.com/Kitware/CMake/blob/master/Modules/CPack.STGZ_Header.sh.in) 与压缩包合并制作成一个  `.sh` 的安装程序。
 
