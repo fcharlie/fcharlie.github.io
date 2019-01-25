@@ -79,8 +79,7 @@ Git 在克隆本地存储库时，`objects` 目录的对象文件（主要是 pa
 
 在 POSIX 系统中，`readlink` 可以解析符号链接获得真实的目标路径，在 Windows 中，则可以使用 `GetFinalPathNameByHandleW` 获得文件真实的路径。
 
-NTFS 系统还支持一些其他的重解析点，包括 `MountPoint`, 与 UWP 快捷命令目标相关的 `AppExecLink`, 与 Windows 10 Unix domain socket 相关的 `AF Unix`, 与 OneDrive 相关的 `OneDrive`, 与 Git VFS（GVFS） 相关的 `ProjFS`, 以及与 WIM 挂载相关的 `WimImage` 等等。
-
+NTFS 系统还支持一些其他的重解析点，包括 `MountPoint`, 与 UWP 快捷命令目标相关的 `AppExecLink`, 与 Windows 10 Unix domain socket 相关的 `AF Unix`, 与 OneDrive 相关的 `OneDrive`, 与 Git VFS（GVFS） 相关的 `ProjFS`, 以及与 WIM 挂载相关的 `WimImage` 等等。Planck 中实现了函数 [`ResolveTarget`](https://github.com/fcharlie/Planck/blob/a400828e62804b9c38c4e164e9f3efe559245e50/lib/inquisitive/resolve.cc#L82) 用于分析重解析点。
 
 ### 快捷方式和桌面文件
 
@@ -250,30 +249,11 @@ bool validate_utf8(const char *c, size_t len) {
 
 ## 可执行文件
 
-在计算机中，可执行文件是非常特殊的存在，维基百科上有简短的介绍：
+在计算机中，可执行文件是非常特殊的存在，现代计算机的运行离不开应用程序，而应用程序在磁盘上的形式就是可执行文件，维基百科上有简短的介绍：
 
 >可执行文件在计算机科学上，指一种内容可被计算机解释为程序的计算机文件。通常可执行文件内，含有以二进制编码的微处理器指令，也因此可执行文件有时称为二进制档。这些二进制微处理器指令的编码，于各种微处理器有所不同，故此可执行文件多数要分开不同的微处理版本。一个计算机文件是否为可执行文件，主要由操作系统的传统决定。例如根据特定的命名方法（如扩展名为exe）或文件的元数据信息（例如UNIX系统设置“可执行”权限）。
 
-本节的可执行文件主要是讲可执行的二进制，在 Windows 系统中是 `PE` 文件，在 Unix 系统上是 `ELF` 文件，在 macOS 上是 `Mach-O` 文件。
-
-
-### PE
-
-在 Windows 上 `PE` 是 `Portable Executable` 也可以是 `Windows Preinstallation Environment` (Windows 预装环境)，但这里是 `Portable Executable`。
-
-![PEAnalyze](https://github.com/fcharlie/PEAnalyzer/raw/master/docs/images/view.png)
-
-Nodeps: [https://github.com/fcharlie/nodeps](https://github.com/fcharlie/nodeps)
-
-[https://github.com/hasherezade/bearparser](https://github.com/hasherezade/bearparser)
-
-[https://github.com/lief-project/LIEF](https://github.com/lief-project/LIEF)
-
-### ELF
-
-cmrpath: [https://github.com/fcharlie/cmchrpath](https://github.com/fcharlie/cmchrpath)
-
-### Mach-O
+可执行文件的格式非常多，但目前应用比较广泛的只有 PE(PE32+)，ELF，Mach-O。主要的操作系统分别是 Windows，Linux，macOS。
 
 ### 可执行文件的比较
 
@@ -285,6 +265,63 @@ cmrpath: [https://github.com/fcharlie/cmchrpath](https://github.com/fcharlie/cmc
 |PE32+|Windows 64-bit|.EXE|✔|✔|✔|✔|✔|✔|✔|✔|✔|
 |ELF|Unix-like, OpenVMS|none|✔|✔|✔|✔|✔|✔|✔|Extension|Extension|
 |Mach-O|NeXTSTEP<br>macOS, iOS, watchOS<br>tvOS|none|✔|<=256|✔|✔|✔|✔|✔|✔|❌|
+
+### PE
+
+PE 是 Windows NT 系统的可执行文件格式，同样还被 ReactOS 使用，PE32+ 是 PE 格式的一种改进，用于支持 64位处理器。要查看 PE 文件格式可以查看：[PE Format](https://docs.microsoft.com/en-us/windows/desktop/Debug/pe-format)。在 Windows SDK 中，`winnt.h` 已经定义了大量的 PE 结构，但并不完整，如果要获得更加完整的结构，需要使用 Windows WDK 的 `ntimage.h`，但一些新的硬件定义需要去 [PE Format](https://docs.microsoft.com/en-us/windows/desktop/Debug/pe-format) 查找。
+
+```c++
+/// #define PROCESSOR_ARCHITECTURE_ARM32_ON_WIN64   13
+#ifndef IMAGE_FILE_MACHINE_ARM64
+//// IMAGE_FILE_MACHINE_ARM64 is Windows
+#define IMAGE_FILE_MACHINE_ARM64 0xAA64 // ARM64 Little-Endian
+#endif
+
+#ifndef IMAGE_FILE_MACHINE_RISCV32
+#define IMAGE_FILE_MACHINE_RISCV32 0x5032
+#endif
+#ifndef IMAGE_FILE_MACHINE_RISCV64
+#define IMAGE_FILE_MACHINE_RISCV64 0x5064
+#endif
+#ifndef IMAGE_FILE_MACHINE_RISCV128
+#define IMAGE_FILE_MACHINE_RISCV128 0x5128
+#endif
+
+#ifndef IMAGE_FILE_MACHINE_CHPE_X86
+#define IMAGE_FILE_MACHINE_CHPE_X86 0x3A64 /// defined in ntimage.h
+#endif
+
+#ifndef IMAGE_SUBSYSTEM_XBOX_CODE_CATALOG
+#define IMAGE_SUBSYSTEM_XBOX_CODE_CATALOG 17 // XBOX Code Catalog
+#endif
+```
+
+解析 PE 文件的库非常多，有被 [`Avast Threat Labs`](https://github.com/avast-tl/pelib) 使用的 `pelib`（没错，就是那个杀毒软件 Avast），还有 [https://github.com/hasherezade/bearparser](https://github.com/hasherezade/bearparser)，[https://github.com/lief-project/LIEF](https://github.com/lief-project/LIEF) 等非常优秀的开源库。在 .NET 平台还有 [PeNet](https://github.com/secana/PeNet)。
+
+其中 `LIFF` 还支持 ELF，Mach-O，ART，OAT 等格式。
+
+在 LLVM 的 PE 文件的解析在 [llvm/lib/Object/COFFObjectFile.cpp](https://github.com/llvm/llvm-project/blob/master/llvm/lib/Object/COFFObjectFile.cpp)。
+
+Windows Internal 7th 作者之一的 Pavel Yosifovich 也开发了一个 [Portable Executable Explorer](https://github.com/zodiacon/PEExplorer)
+
+Planck 分析了 [PE](https://github.com/fcharlie/Planck/blob/master/lib/inquisitive/pe.cc) 文件的机器类型，子系统，依赖，特征等。后来利用 Planck 的成果将 [PEAnalyzer](https://github.com/fcharlie/PEAnalyzer) 重构了一番，截图如下：
+
+![PEAnalyze](https://github.com/fcharlie/PEAnalyzer/raw/master/docs/images/view.png)
+
+我有时候需要从 `MSYS2 Mingw64` 中提取 `wget.exe`，经常需要手动查看文件依赖，非常麻烦，后来实现 Planck PE 解析模块后，就编写了 [Nodeps](https://github.com/fcharlie/nodeps) 用于将 PE 文件将同目录下的所有依赖拷贝到目标目录。
+
+
+### ELF
+
+cmrpath: [https://github.com/fcharlie/cmchrpath](https://github.com/fcharlie/cmchrpath)
+
+### Mach-O
+
+
+### 自解压文件
+
+
+
 
 ### 可执行文件的移植
 
