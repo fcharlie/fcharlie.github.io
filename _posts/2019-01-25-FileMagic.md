@@ -352,6 +352,8 @@ PE 格式的 `IMAGE_NT_HEADERS` 才是真正的 NT 头，DOS 头或者 OS2 头�
 
 解析 PE 文件的库非常多，有被 [`Avast Threat Labs`](https://github.com/avast-tl/pelib) 使用的 `pelib`（没错，就是那个杀毒软件 Avast），还有 [https://github.com/hasherezade/bearparser](https://github.com/hasherezade/bearparser)，[https://github.com/lief-project/LIEF](https://github.com/lief-project/LIEF) 等非常优秀的开源库。在 .NET 平台还有 [PeNet](https://github.com/secana/PeNet)。其中 `LIFF` 还支持 ELF，Mach-O，ART，OAT 等格式。在 LLVM 的源码中 PE 文件解析代码在 [llvm/lib/Object/COFFObjectFile.cpp](https://github.com/llvm/llvm-project/blob/master/llvm/lib/Object/COFFObjectFile.cpp) 文件中。
 
+关于 PE 文件格式分析的文章非常多，这里有一篇比较详细的：[x86 Disassembly/Windows Executable Files](https://en.wikibooks.org/wiki/X86_Disassembly/Windows_Executable_Files)
+
 分析 PE 的工具非常多，Windows Internal 7th 作者之一的 Pavel Yosifovich 也开发了一个 [Portable Executable Explorer](https://github.com/zodiacon/PEExplorer)。
 
 Planck 分析了 [PE](https://github.com/fcharlie/Planck/blob/master/lib/inquisitive/pe.cc) 文件的机器类型，子系统，依赖，特征等。后来利用 Planck 的成果将 [PEAnalyzer](https://github.com/fcharlie/PEAnalyzer) 重构了一番，截图如下：
