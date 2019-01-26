@@ -383,9 +383,9 @@ Mach-O 一个鲜明的特性就是它是一个支持 FatBinary的格式（PE32+ 
 
 ### 可执行文件的跨平台
 
-上述集中可执行文件格式都支持若干个平台，但这并不意味着这些可执行文件可以跨平台，可执行文件跨平台的主要阻碍有两点，一个是操作系统不同，而是处理器架构不同。
+上述集中可执行文件格式都支持若干个平台，但这并不意味着这些可执行文件可以跨平台，可执行文件跨平台的主要阻碍有两点，一个是操作系统不同，二是处理器架构不同。
 
-操作系统不同，默认支持的可执行文件格式不同，比如 Windows 支持的是 PE/PE32+，Linux 支持的 ELF，macOS 支持的 Mach-O，除了支持的可执行文件不同之外，操作系统的内核，系统调用等等均不相同。这就给可执行文件跨平台带来了重重阻隔。虽然可执行文件跨平台支持非常麻烦，但确实有一些项目做到了在其他操作系统上支持另一操作系统的可执行文件。
+操作系统不同，采用的可执行文件格式不同，比如 Windows采用了 PE/PE32+，Linux 采用了 ELF，macOS 采用了 Mach-O，除了可执行文件不同之外，操作系统的内核，系统调用等等均不相同。这就给可执行文件跨平台带来了重重阻隔。虽然可执行文件跨平台支持非常麻烦，但确实有一些项目做到了在其他操作系统上支持另一操作系统的可执行文件。
 
 对于一些开发者而言，Windows 10 最振奋人心的功能莫过于：[Windows Subsytem for Linux](https://docs.microsoft.com/en-us/windows/wsl/about)，wsl 支持在 Windows 系统上运行未经修改的 ELF 文件（目前支持的有 Windows 64/ARM64 系统）。WSL 要做到支持运行 ELF ，首先是 ELF 加载器，将 ELF 文件加载到内存，并创建 Linux 进程，这种 Linux 进程实际上依赖的是 [Pico process](https://blogs.msdn.microsoft.com/wsl/2016/05/23/pico-process-overview/) 特性。然后运行时将 Linux 系统调用转变为 NT 内核的系统调用：[WSL System Calls](https://blogs.msdn.microsoft.com/wsl/2016/06/08/wsl-system-calls/)，Windows 主要的文件系统目前是 NTFS，还要在文件系统上支持 Linux 文件系统的特性（比如大小写敏感，可执行权限等）：[WSL File System Support](https://blogs.msdn.microsoft.com/wsl/2016/06/15/wsl-file-system-support/)。
 
