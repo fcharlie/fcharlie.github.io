@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "文件的解析"
-date:   2019-01-25 20:00:00
+date:   2019-01-25 10:00:00
 published: true
 categories: toolset
 ---
@@ -381,6 +381,26 @@ Mach-O 一个鲜明的特性就是它是一个支持 FatBinary的格式（PE32+ 
 
 在 Planck 中，Mach-O 格式的定义目录为：[lib/inquisitive/macho.hpp](https://github.com/fcharlie/Planck/blob/master/lib/inquisitive/macho.hpp)
 
+### 可执行文件的跨平台
+
+上述集中可执行文件格式都支持若干个平台，但这并不意味着这些可执行文件可以跨平台，可执行文件跨平台的主要阻碍有两点，一个是操作系统不同，而是处理器架构不同。
+
+操作系统不同，默认支持的可执行文件格式不同，比如 Windows 支持的是 PE/PE32+，Linux 支持的 ELF，macOS 支持的 Mach-O，除了支持的可执行文件不同之外，操作系统的内核，系统调用等等均不相同。这就给可执行文件跨平台带来了重重阻隔。虽然可执行文件跨平台支持非常麻烦，但确实有一些项目做到了在其他操作系统上支持另一操作系统的可执行文件。
+
+对于一些开发者而言，Windows 10 最振奋人心的功能莫过于：[Windows Subsytem for Linux](https://docs.microsoft.com/en-us/windows/wsl/about)，wsl 支持在 Windows 系统上运行未经修改的 ELF 文件（目前支持的有 Windows 64/ARM64 系统）。WSL 要做到支持运行 ELF ，首先是 ELF 加载器，将 ELF 文件加载到内存，并创建 Linux 进程，这种 Linux 进程实际上依赖的是 [Pico process](https://blogs.msdn.microsoft.com/wsl/2016/05/23/pico-process-overview/) 特性。然后运行时将 Linux 系统调用转变为 NT 内核的系统调用：[WSL System Calls](https://blogs.msdn.microsoft.com/wsl/2016/06/08/wsl-system-calls/)，Windows 主要的文件系统目前是 NTFS，还要在文件系统上支持 Linux 文件系统的特性（比如大小写敏感，可执行权限等）：[WSL File System Support](https://blogs.msdn.microsoft.com/wsl/2016/06/15/wsl-file-system-support/)。
+
+Github 上还有个 [Foreign LINUX](https://github.com/wishstudio/flinux) 与 WSL 思路类似，也是在 Windows 系统上运行未修改的 ELF 文件，但成熟度非常低。WSL 推出后也就没有维护了。
+
+在 Linux，macOS，FreeBSD 等操作系统上也有个项目用于支持在这些平台运行 PE/PE32+ 可执行文件：[Wine: Wine Is Not an Emulator](https://www.winehq.org/)。此项目的历史比 WSL 更久，原理大同小异。国内的 Linux 发行版深度的招牌特性就是和 Wine 官方合作，包含商业版的 Wine，更好的运行 QQ 等软件。
+
+Github 上也有开发者实现了在 macOS 系统上运行 Linux ELF 文件： [Bash on Ubuntu on macOS](https://github.com/linux-noah/noah)
+
+在 Linux 上加载运行 Mach-O 的项目是：[Mach-o loader for linux](https://github.com/shinh/maloader)
+
+Github 上有个项目叫 `loadlibrary`: [Porting Windows Dynamic Link Libraries to Linux](https://github.com/taviso/loadlibrary)，用于在 Linux 系统上直接调用 PE DLL 动态库。
+
+如果操作系统相同，而 CPU 处理器架构不同，比如在 Windows ARM64 系统上运行 x86 PE，这需要实现模拟器进行 CPU 指令转换，并且将 x86 的 NT 调用转变位 ARM64 NT 的系统调用，如果处理器架构相同，比如在 Windows AMD64 系统上运行 x86 PE，则省去了CPU 指令转换这一环节，x86-64 完全兼容 x86。
+
 ### 自解压文件和安装程序
 
 [Self-extracting archive](https://en.wikipedia.org/wiki/Self-extracting_archive) 是一种特殊的可执行文件，运行自解压文件时，自解压文件将压缩包解压到用户指定目录，自解压文件不需要其他的压缩软件即可运行，并且还能执行一些列的动作，在 Windows 系统中通常被用来实现软件安装。很多安装程序就是一个自解压文件，你如 NSIS 安装包可以直接使用 7z 解压。常见的 7z WinRAR 均支持创建自解压文件。
@@ -392,17 +412,23 @@ Mach-O 一个鲜明的特性就是它是一个支持 FatBinary的格式（PE32+ 
 在 Unix 系统上，很少有使用 ELF 制作安装包的，通常使用 Shell Script 来制作 STGZ 安装包，比如 cmake 在 Unix 系统中运行 cpack 默认打包时会将模块 [CPack.STGZ_Header.sh.in](https://github.com/Kitware/CMake/blob/master/Modules/CPack.STGZ_Header.sh.in) 与压缩包合并制作成一个  `.sh` 的安装程序。
 
 
-### 可执行文件的移植
+从自解压文件或者安装包中提取绿色软件通常的做法是使用 7z。而 MSI 的文件可以使用 msiexec 提取，也可以使用图形化的 MSI 提取工具 [Krycekium Installer](https://github.com/fcharlie/Krycekium) 提取，msiexec 的命令使用如下：
 
-[Windows Subsytem for Linux](https://docs.microsoft.com/en-us/windows/wsl/about)
-
-[Wine: Wine Is Not an Emulator](https://www.winehq.org/)
-
-[Bash on Ubuntu on macOS](https://github.com/linux-noah/noah)
-
-[Mach-o loader for linux](https://github.com/shinh/maloader)
-
-[Porting Windows Dynamic Link Libraries to Linux](https://github.com/taviso/loadlibrary)
+```powershell
+#https://github.com/fstudio/clangbuilder/blob/master/modules/Devi/Devi.psm1
+Function Expand-Msi {
+    param(
+        [String]$Path,
+        [String]$DestinationPath ### Full dir of destination path
+    )
+    $process = Start-Process -FilePath "msiexec" -ArgumentList "/a `"$Path`" /qn TARGETDIR=`"$DestinationPath`""  -PassThru -Wait
+    if ($process.ExitCode -ne 0) {
+        Write-Host -ForegroundColor Red "Expand-Msi: $Path failed. $($process.ExitCode)"
+    }
+    return $process.ExitCode
+}
+```
+基于 InnoSetup 制作的安装包可以使用 [Inno Setup Unpacker](https://sourceforge.net/projects/innounp/) 或者是 [innoextract](https://github.com/dscharrer/innoextract/) 提取。
 
 ## 文档格式
 
