@@ -455,7 +455,7 @@ PDF 文档被用来传播居多，大多数时候人们使用其他工具或者�
 将文件通过压缩算法减小存储或传输的体积这是压缩软件主要的初衷。压缩软件既要支持将不同的文件归档到同一文件还要将文件压缩，
 常见的压缩文件格式有 `.zip`，`.7z`，`.rar`，`.tar.gz`，除了 `tar.*` 格式之外，其他压缩格式大多是自有的归档机制，通常压缩和归档合并在一起，而对于 `tar.*` 而言，先使用 tar 将文件归档，然后再使用特定的压缩算法将其压缩。不同的文件格式支持的压缩算法不同，通常如下：
 
-|File Formats|Compression methods|
+|Format|Compression methods|
 |---|---|
 |zip|Deflate|
 |7z|LZMA, LZMA2, Bzip2, PPMd, Deflate, Zstd, Brotli|
