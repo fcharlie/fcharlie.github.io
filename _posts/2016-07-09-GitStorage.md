@@ -19,7 +19,7 @@ categories: git
 + `.git` 目录存在于工作目录的根目录中。
 + `<project>.git` 这种是一个裸仓库，没有工作目录，服务器上存储的就是这种。
 
-特别注意的是，如果是一个 **子模块 （submodule）** `.git` 回是一个文件，文件内容为 `gitdir:/path/to/gitdir`
+特别注意的是，如果是一个 **子模块 （submodule）** `.git` 会是一个文件，文件内容为 `gitdir:/path/to/gitdir`
 
 下文是一个表格，关于目录结构和描述信息。
 

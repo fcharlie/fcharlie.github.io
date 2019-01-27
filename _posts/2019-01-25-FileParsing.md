@@ -432,10 +432,26 @@ Function Expand-Msi {
 
 ## 文档格式
 
-大家比较熟知的文档格式有 `PDF`，`RTF`，`Microsoft WORD (.doc)`
+现代计算机非常重要的一个功能就是文档处理，特别是办公室白领，民工经常需要接触到文档处理软件，比如做演示要写 PPT，求职简历要用 WORD，查看技术文档需要下载 PDF 等等。
+
+文档格式有非常多的种类，有富文本格式 RTF，OLE 文档格式 `Microsoft Word .doc`，有便携式文档格式 PDF，有 Office Open XML (.docx) 等等。
+
+RTF 的格式是一种文本格式，由控制字符串和文档内容组成，RTF 的格式规范下载地址为：[Word 2007: Rich Text Format (RTF) Specification, version 1.9.1](https://www.microsoft.com/en-us/download/details.aspx?id=10725)。
+
+一个空 RTF 文档内容如下：
+
+```txt
+{\rtf1}
+```
+
+RTF 实际上表现力度有限，在 2007 年之前，Microsoft Word 优先支持的格式是二进制 word 格式，这是一种 OLE 流格式，相关的规范可以访问：[了解 Word MS-DOC 二进制文件格式](https://docs.microsoft.com/zh-cn/previous-versions/office/gg615596(v=office.14))。实际上无论是 `.doc` 还是 `.xls` 以及 `.ppt`，三种文件格式实际上都是二进制文档格式下的特殊实现，基本上无法只检测 Magic 就判断文件到底是哪一个类型，还需要进一步检测。
+
+PDF 文档被用来传播居多，大多数时候人们使用其他工具或者语言编写文档，然后生成 PDF 文档并发布到互联网，PDF 文档格式类似 RTF，也是一个控制字符串+文档内容的格式，文档以 `%PDF-$version` 开头。
+
+在 Microsoft Office 2007 中，微软将 Office 的默认文档格式切换到 `Office Open XML`，这种格式使用 xml 作为描述语言，将图片文档，主题等单独存储在特定目录，最后将文档目录使用 Zip 压缩起来，这种格式的优点是格式解析更简单，压缩后的文档体积更小。要检测文件是否是 PPTX DOCX XLSX 只需要在检测文件是 Zip 文件的前提下，判断 Zip 压缩包的目录结构是否由特殊的文件名。可以参考 Planck 实现： [lib/inquisitive/zip.cc](https://github.com/fcharlie/Planck/blob/master/lib/inquisitive/zip.cc) 
 
 ## 压缩文件
 
-### ZIP 文件格式
+### Zip 文件格式
 
 ### 其他压缩格式
