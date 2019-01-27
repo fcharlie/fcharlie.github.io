@@ -6,7 +6,7 @@ published: true
 categories: toolset
 ---
 
-# 前言
+## 前言
 
 本文探讨的是计算机文件，**计算机文件** 用于记录数据到计算机设备上，维基百科上有简短的介绍：
 
@@ -450,8 +450,29 @@ PDF 文档被用来传播居多，大多数时候人们使用其他工具或者�
 
 在 Microsoft Office 2007 中，微软将 Office 的默认文档格式切换到 `Office Open XML`，这种格式使用 xml 作为描述语言，将图片文档，主题等单独存储在特定目录，最后将文档目录使用 Zip 压缩起来，这种格式的优点是格式解析更简单，压缩后的文档体积更小。要检测文件是否是 PPTX DOCX XLSX 只需要在检测文件是 Zip 文件的前提下，判断 Zip 压缩包的目录结构是否由特殊的文件名。可以参考 Planck 实现： [lib/inquisitive/zip.cc](https://github.com/fcharlie/Planck/blob/master/lib/inquisitive/zip.cc) 
 
-## 压缩文件
+## 文件的压缩
+
+将文件通过压缩算法减小存储或传输的体积这是压缩软件主要的初衷。压缩软件既要支持将不同的文件归档到同一文件还要将文件压缩，
+常见的压缩文件格式有 `.zip`，`.7z`，`.rar`，`.tar.gz`，除了 `tar.*` 格式之外，其他压缩格式大多是自有的归档机制，通常压缩和归档合并在一起，而对于 `tar.*` 而言，先使用 tar 将文件归档，然后再使用特定的压缩算法将其压缩。不同的文件格式支持的压缩算法不同，通常如下：
+
+|File Formats|Compression methods|
+|---|---|
+|zip|Deflate|
+|7z|LZMA, LZMA2, Bzip2, PPMd, Deflate, Zstd, Brotli|
+|Rar|PPMII|
+|tar.gz|Deflate|
+|tar.bz2|Bzip2|
+|tar.xz|LZMA/LZMA2|
+
+有关压缩软件的比较可以参考：[Comparison of file archivers](https://en.wikipedia.org/wiki/Comparison_of_file_archivers)
 
 ### Zip 文件格式
 
-### 其他压缩格式
+Zip 是一种比较悠久的压缩文件格式，文件头为 `{'P','K'}`，这是以 [Phil Katz](https://en.wikipedia.org/wiki/Phil_Katz) 的名字缩写开头，在 Windows 系统上，资源管理器默认支持打开 Zip 文件，在 Unix 系统上，可以使用 unzip 命令。Zip 使用 `Deflate` 压缩算法，解析 Zip 文件可以使用 [`zlib: contrib/minizip`](https://github.com/madler/zlib/tree/master/contrib/minizip)。zlib 被非常多的软件使用，比如 git 的对象压缩算法就是 Deflate，无论是 git 还是 libgit2 均依赖了 zlib。`Office Open XML`，`OpenDocument`，`EPUB`，还有 Windows UWP appx 等均使用了 zip 格式。
+
+Zip 格式数据布局：
+
+![ZIP-64_Internal_Layout](https://upload.wikimedia.org/wikipedia/commons/6/63/ZIP-64_Internal_Layout.svg)
+
+
+## 总结
