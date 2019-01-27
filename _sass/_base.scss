@@ -43,7 +43,6 @@ ul, ol, dl, figure,
 img {
     max-width: 100%;
     vertical-align: middle;
-    background-color:transparent;
 }
 
 
@@ -191,7 +190,7 @@ pre {
  * Icons
  */
 .icon {
-
+    background-color: white;
     > svg {
         display: inline-block;
         width: 16px;
