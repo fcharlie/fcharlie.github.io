@@ -12,11 +12,11 @@ categories: toolset
 
 >A computer file is a computer resource for recording data discretely in a computer storage device. Just as words can be written to paper, so can information be written to a computer file.
 
-当人们需要使用这些文件的时候，需要从光盘，磁盘，闪存等设备上将文件读取到内存，按照文件的格式进行解析，然后供用户使用。在这个过程中，正确的或得文件格式信息是非常重要的，只有在识别出文件格式之后，才能够选择正确的的处理程序对文件进行解析。在 Windows 上通常是 Shell 外壳（`Shell32.dll`）根据文件后缀名在注册表中找到对应的关联程序然后使用特定的程序处理相应的文件，比如 `.docx` 的关联程序往往是 `Microsoft Word`。`.txt` 的关联程序是 `Notepad`。但如果文件没有后缀名时，Windows Shell 就需要用用户自己选择对应的关联程序了。
+当人们需要使用这些文件的时候，需要从光盘，磁盘，闪存等设备上将文件读取到内存，按照文件的格式进行解析，然后供用户使用。在这个过程中，正确的获得文件格式信息是非常重要的，只有在识别出文件格式之后，才能够选择正确的的处理程序对文件进行解析。在 Windows 上通常是 Shell 外壳（`Shell32.dll`）在注册表中查找文件后缀名的关联程序，然后交由关联程序处理相应的文件，比如 `.docx` 的关联程序往往是 `Microsoft Word`。`.txt` 的关联程序是 `Notepad`。但如果文件没有后缀名时，Windows Shell 就需要用用户自己选择对应的关联程序了。
 
-在 Unix 操作系统上，命令行下检测文件格式的检测通常使用 `file` ([`file — determine file type`](https://linux.die.net/man/1/file)) ，file 的源码在 Github 上有镜像：[https://github.com/file/file](https://github.com/file/file)。file 这样的工具通过分析文件魔数，文件头部特征分析文件格式，这样的工具严重依赖 **Magdir**，Magic 文件越多支持的格式越丰富。file 这样的命令与 Windows 资源管理器相比，已经有很大的进步。
+在 Unix 操作系统上，命令行下检测文件格式的检测通常使用 `file` ([`file — determine file type`](https://linux.die.net/man/1/file)) ，file 的源码可以在 Github 上有找到：[https://github.com/file/file](https://github.com/file/file)。file 这样的工具通过分析文件魔数，文件头部特征分析文件格式。这样的工具严重依赖 **Magdir**，Magic 文件越多支持的格式越丰富。与 Windows 资源管理器相比，file 对文件格式的感知实际上更加强大。
 
-在图形系统中，文件的检测由文件管理器实现，像 `Gnome Nemo` 这样的文件管理器会优先处理文件后缀名，在识别不到文件格式时才会去根据文件特征检测文件格式。Nemo 依赖 glib(gio [`_xdg_mime_magic_lookup_data`](https://github.com/GNOME/glib/blob/cbfa776fc149fcc3e351fbdf68c1a299519f4905/gio/xdgmime/xdgmimemagic.c#L657))，和 file 的原理类似但没有 `file` 强大。
+在 Unix like 图形系统中，文件的检测由文件管理器实现，像 `Gnome Nemo` 这样的文件管理器会优先处理文件后缀名，在识别不到文件格式时才会去根据文件特征检测文件格式。Nemo 依赖 glib(gio [`_xdg_mime_magic_lookup_data`](https://github.com/GNOME/glib/blob/cbfa776fc149fcc3e351fbdf68c1a299519f4905/gio/xdgmime/xdgmimemagic.c#L657))，解析文件格式的原理与 file 类似，但不及 file 强大。
 
 `file` 程序目前已经被移植到 Windows 使用，比如 `Cygwin`，`MSYS2` 的 Bash 环境中，均携带有 `file` 命令。
 
@@ -64,7 +64,7 @@ Windows NTFS，Unix EXT4，ZFS，Btrfs 等文件系统均支持硬链接，ReFS 
 
 在 Windows 中，硬链接被广泛使用，尤其是 [Side-by-side assembly](https://en.wikipedia.org/wiki/Side-by-side_assembly) 机制大量使用了硬链接 ，查看 `C:\Windows\System32` 的文件，基本都会有相应的硬链接存在于 `C:\Windows\WinSxS`。
 
-Git 在克隆本地存储库时，`objects` 目录的对象文件（主要是 pack）创建的是硬链接。这样避免了复制，git 的**对象**文件名与其内容的 SHA1 一致，当文件内容改变时，文件名也会改变，因此，使用硬链接不用当心互相修改破坏。
+Git 在克隆本地存储库时，`objects` 目录的对象文件（主要是 pack）创建的是硬链接。这样避免了复制，git 的**对象**文件名与其内容的 SHA1 一致，当文件内容改变时，文件名也会改变，git 修改存储库 pack 文件的流程实际上是 `新建`--`删除`，因此，使用硬链接不用当心互相修改破坏。
 
 在 Windows 中，可以使用 `GetFileInformationByHandle`, `FindFirstFileNameW`, `FindNextFileNameW` 组合查询文件所有的硬链接。
 在 POSIX 系统中，查询硬链接需要解析对应的 inode，如果 inode 值相同，则互为硬链接。`struct stat` 结构中有 `st_nlink` 表示此文件有多少个硬链接。
@@ -85,7 +85,7 @@ NTFS 系统还支持一些其他的重解析点，包括 `MountPoint`, 与 UWP �
 
 在 Windows 系统中，桌面快捷方式文件的后缀名为 `.lnk`，用户只需要点击桌面上的快捷方式就可以很方便的打开应用程序，网站或者文件。快捷方式的格式名称叫做 `Shell Link`，是一种二进制格式文件，相应的规范在 [[MS-SHLLINK]: Shell Link (.LNK) Binary File Format](https://msdn.microsoft.com/en-us/library/dd871305.aspx)。在 Planck 中，ShellLink 的定义和实现分别是 [lib/inquisitive/shl.hpp](https://github.com/fcharlie/Planck/blob/master/lib/inquisitive/shl.hpp) 和 [lib/inquisitive/shl.cc](https://github.com/fcharlie/Planck/blob/master/lib/inquisitive/shl.cc)，目前只支持解析 `HasLinkInfo` 以及 `HasRelativePath` 标志的快捷方式。
 
-在 X-Window 系统上，也存在一种类似桌面快捷方式的文件，后缀名为 `.desktop` ，当文件属性为可执行时，文件管理器会解析 `Icon`，`Name` 然后读取设置的图标，名称显示。下面是我 Ubuntu 系统上的 `wireshark.desktop` 文件内容。
+在 X-Window 系统上，也存在一种类似桌面快捷方式的文件，后缀名为 `.desktop` ，当文件属性为可执行时，文件管理器会解析 `Icon`，`Name` 然后读取设置的图标，名称显示出来。下面是我使用的 Ubuntu 系统上的 `wireshark.desktop` 文件内容。
 
 ```shell
 #!/usr/bin/env xdg-open
@@ -110,8 +110,8 @@ MimeType=text/plain;
 
 ### 快速区分文本二进制
 
-实际上，文本文件还是偶尔会携带不可见字符，这样情况下我们很难 100% 区分一个文件是否是文本文件（二进制文件）。如果能够容忍一些误差，
-，我们可以检测文件中是否存在 `NUL` 来区分文件是文本文件还是二进制文件。虽然这种方法可能误差较大，但是检测过程非常简单，速度也非常可观，这种方法也被 `git` 使用，用于在 diff 过程中判断文件是否是二进制：
+文本文件还是偶尔会携带不可见字符，这样情况下我们很难 100% 区分一个文件是否是文本文件（二进制文件）。如果我们能够容忍一些误差，
+，则可以通过检测文件中是否存在 `NUL` 来区分文件是文本文件还是二进制文件。这种方法的检测过程非常简单，速度也非常可观，这种方法也被 `git` 使用，用于在 diff 过程中判断文件是否是二进制：
 
 ```c
 //https://github.com/git/git/blob/d166e6afe5f257217836ef24a73764eba390c58d/xdiff-interface.c#L188
@@ -123,7 +123,7 @@ int buffer_is_binary(const char *ptr, unsigned long size)
 }
 ```
 
-我们知道，在 C 语言的标准库函数 `strlen` 中，字符串的长度计算是通过判断字符是否是 [Null-terminated string](https://en.wikipedia.org/wiki/Null-terminated_string)，这就意味着大多数时候，ASCII 文本文件不应该有 `NUL`，在 UTF-8 与 ASCII 兼容，这种情况下是一致的。当然这种设计也保守批评：[The Most Expensive One-byte Mistake](http://queue.acm.org/detail.cfm?id=2010365)
+我们知道，在 C 语言的标准库函数 `strlen` 中，字符串的长度计算是通过判断字符是否是 [Null-terminated string](https://en.wikipedia.org/wiki/Null-terminated_string)，这就意味着大多数时候，ASCII 文本文件不应该有 `NUL`，在 UTF-8 与 ASCII 兼容，这种情况下是一致的。当然这种设计也饱受批评：[The Most Expensive One-byte Mistake](http://queue.acm.org/detail.cfm?id=2010365)
 
 ```c
 size_t strlen(const char *s)
@@ -148,7 +148,7 @@ ASCII 编码的范围是 0 ~127，这就意味着只能用于 `A-Z;a-z;0-9,+-` �
 |UTF-16 LE|0xFF,0xFE|
 |UTF-8 with BOM|0xEF,0xBB,0xBF|
 
-UTF-8 是一种字节序无关的可变字节编码（1 ~ 4 字节），因此，不带字节序没有任何问题，并且 ASCII 编码 0 ~ 127 完全是 UTF-8 的子集，如果不携带字节序，能够很好的兼容以前的 ASCII 文本。这也是 UTF-8 在 Unix 系统上被广泛使用的原因之一。而 Windows 记事本采用 UTF-8 with BOM 也由于这一点广受批评。
+UTF-8 是一种字节序无关的可变字节编码（1 ~ 4 字节），因此，不带字节序没有任何问题，并且 ASCII 编码 0 ~ 127 完全是 UTF-8 的子集，如果不携带字节序，则能够很好的兼容以前的 ASCII 文本。这也是 UTF-8 在 Unix 系统上被广泛使用的原因之一。而 Windows 记事本采用 UTF-8 with BOM 也由于不兼容 ASCII 而广受批评。
 
 Windows 系统是一个国际化做的非常棒的操作系统，对于各国的本地字符集支持也非常好，比如，在中国大陆，文本编辑器的默认编码是 ANSI，是 ASCII 扩展编码，0 ~ 127 编码与 ASCII 相同，0x80 ~ 0xFFFF 则表示对应代码页的所有编码。我们可以看到，ANSI 编码的范围小于 UTF-8，并且绝大多数 ANSI 字符的码点相同数字的 UTF-8 码点都是有效的 UTF-8 字符，因此如果要区分 `UTF-8 without BOM` 还是 `ANSI`，实际上相当麻烦。
 
@@ -298,7 +298,7 @@ PE 是 Windows NT 系统的可执行文件格式，同样还被 ReactOS 使用�
 #endif
 ```
 
-EXE，DLL 文件的魔数是 `{'M','Z',0x90,0x0}` 这实际上是 `IMAGE_DOS_HEADER` 的 `e_magic`，不同系统的签名并不一样：
+EXE，DLL 文件的魔数是 `{'M','Z',0x90,0x0}` 这实际上是 `IMAGE_DOS_HEADER.e_magic` 的值，不同系统的签名并不一样：
 
 ```c++
 #ifndef _MAC
@@ -323,7 +323,7 @@ EXE，DLL 文件的魔数是 `{'M','Z',0x90,0x0}` 这实际上是 `IMAGE_DOS_HEA
 #define IMAGE_NT_SIGNATURE                  0x50450000  // PE00
 #endif
 ```
-PE 格式的 `IMAGE_NT_HEADERS` 才是真正的 NT 头，DOS 头或者 OS2 头，主要用于兼容，毕竟 Windows 操作系统是从 16 位过来的。
+PE 格式的 `IMAGE_NT_HEADERS` 才是真正的 NT 头，DOS 头或者 OS2 头，目前存在的原因是为了保持兼容，毕竟 Windows 操作系统是从 16 位过来的。
 
 `IMAGE_FILE_HEADER` 结构存储了机器架构，可执行文件特征和可选头大小等，解析到 `IMAGE_OPTIONAL_HEADER` 才算正式解析 PE。IMAGE_OPTIONAL_HEADER32 与 IMAGE_OPTIONAL_HEADER64 中的成员顺序有一些差别，这样的好处是在以 32位 IMAGE_OPTIONAL_HEADER 读取 64 位 PE 时依然能够解析到基本字段（反之也是一样）。解析 PE 很重要的一个函数是 [`ImageRvaToVa`](https://docs.microsoft.com/en-us/windows/desktop/api/dbghelp/nf-dbghelp-imagervatova) 在映射为文件的文件的映像头中查找相对虚拟地址（RVA），并返回文件中相应字节的虚拟地址。
 
@@ -412,7 +412,7 @@ Github 上有个项目叫 `loadlibrary`: [Porting Windows Dynamic Link Libraries
 在 Unix 系统上，很少有使用 ELF 制作安装包的，通常使用 Shell Script 来制作 STGZ 安装包，比如 cmake 在 Unix 系统中运行 cpack 默认打包时会将模块 [CPack.STGZ_Header.sh.in](https://github.com/Kitware/CMake/blob/master/Modules/CPack.STGZ_Header.sh.in) 与压缩包合并制作成一个  `.sh` 的安装程序。
 
 
-从自解压文件或者安装包中提取绿色软件通常的做法是使用 7z。而 MSI 的文件可以使用 msiexec 提取，也可以使用图形化的 MSI 提取工具 [Krycekium Installer](https://github.com/fcharlie/Krycekium) 提取，msiexec 的命令使用如下：
+从自解压文件或者安装包中提取绿色软件通常的做法是使用 7z 解压。而 MSI 的文件可以使用 msiexec 提取，也可以使用图形化的 MSI 提取工具 [Krycekium Installer](https://github.com/fcharlie/Krycekium) 提取，msiexec 的命令使用如下：
 
 ```powershell
 #https://github.com/fstudio/clangbuilder/blob/master/modules/Devi/Devi.psm1
@@ -432,7 +432,7 @@ Function Expand-Msi {
 
 ## 文档格式
 
-现代计算机非常重要的一个功能就是文档处理，特别是办公室白领，民工经常需要接触到文档处理软件，比如做演示要写 PPT，求职简历要用 WORD，查看技术文档需要下载 PDF 等等。
+现代计算机非常重要的一个功能就是文档处理，特别是办公室白领，民工经常需要接触到文档处理软件，比如做演示要写 PPT，求职简历要用 WORD，查看技术文档需要 PDF 阅读器等等。
 
 文档格式有非常多的种类，有富文本格式 RTF，OLE 文档格式 `Microsoft Word .doc`，有便携式文档格式 PDF，有 Office Open XML (.docx) 等等。
 
