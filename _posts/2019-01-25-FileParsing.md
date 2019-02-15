@@ -468,11 +468,15 @@ PDF 文档被用来传播居多，大多数时候人们使用其他工具或者�
 
 ### Zip 文件格式
 
-Zip 是一种比较悠久的压缩文件格式，文件头为 `{'P','K'}`，这是以 [Phil Katz](https://en.wikipedia.org/wiki/Phil_Katz) 的名字缩写开头，在 Windows 系统上，资源管理器默认支持打开 Zip 文件，在 Unix 系统上，可以使用 unzip 命令。Zip 使用 `Deflate` 压缩算法，解析 Zip 文件可以使用 [`zlib: contrib/minizip`](https://github.com/madler/zlib/tree/master/contrib/minizip)。zlib 被非常多的软件使用，比如 git 的对象压缩算法就是 Deflate，无论是 git 还是 libgit2 均依赖了 zlib。`Office Open XML`，`OpenDocument`，`EPUB`，还有 Windows UWP appx 等均使用了 zip 格式。
+Zip 是一种比较悠久的压缩文件格式，文件头为 `{'P','K'}`，这是以 [Phil Katz](https://en.wikipedia.org/wiki/Phil_Katz) 的名字缩写开头，在 Windows 系统上，资源管理器默认支持打开 Zip 文件，在 Unix 系统上，可以使用 unzip 命令解压 zip 文件，zip 格式还被用于其他文件格式作为容器格式，如
+`Office Open XML`，`OpenDocument`，`EPUB`，还有 Windows UWP appx 等均使用了 zip 格式。
 
 Zip 格式数据布局：
 
 ![ZIP-64_Internal_Layout](https://upload.wikimedia.org/wikipedia/commons/6/63/ZIP-64_Internal_Layout.svg)
 
+Zip 通常使用 `Deflate` 压缩算法，解析 Zip 文件可以使用 [`zlib: contrib/minizip`](https://github.com/madler/zlib/tree/master/contrib/minizip)。zlib 库被非常多的软件使用，比如 git 以及 libgit2 都依赖 zlib（git 的对象压缩算法就是 Deflate）。
 
 ## 总结
+
+文件格式种类繁多，一一研究也十分吃力，掌握文件的格式规律，不失为一条捷径。
