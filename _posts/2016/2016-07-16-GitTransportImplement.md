@@ -173,7 +173,7 @@ fail:
 
 `socket_.native_non_blocking(false);`
 
-另外，为了记录子进程是否异常退出，需要注册信号 SIGCHLD 并且使用 waitpid 函数去等待，boost 就有`boost::asio::signal_set::async_wait` 可以异步安全的监听紫禁城是否退出 。
+另外，为了记录子进程是否异常退出，需要注册信号 SIGCHLD 并且使用 waitpid 函数去等待，boost 就有`boost::asio::signal_set::async_wait` 可以异步安全的监听子进程是否退出 。
 
 一般而言，在 Windows 平台上，进程的输入输出并不能重定向到 socket，但你可以使用将进程的输入输出重定向到管道，然后使用 IOCP 去将管道与 socket 联系起来，性能并不会很差。
 
