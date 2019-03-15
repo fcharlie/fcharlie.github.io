@@ -27,7 +27,7 @@ make-smaller-titles: true
               <h2>Latest Blog Articles</h2>
 
               <ul>
-                {% for post in site.posts | limit: site.post_limit %}
+                {% for post in site.posts limit: site.post_limit %}
                   {% unless post.pubdraft %}
                       <li>
                           <a href="{{ post.url | prepend: site.baseurl }}">{{ post.title }}</a>
