@@ -146,9 +146,9 @@ echo;There;are;spaces;in;the;statement;done
    commands.
 ```
 
-这种没有明确规定命令行解析的规范实际上很依赖服务器的实现，只能依赖事实标准，比如跟随 OpenSSH 的实现。
+SSH 的规范并没有指出命令行的解析格式规则，但实际上，`command` 的解析应当符合 POSIX 1003.1 的 Shell 部分。当然，显式描述一下会更好。
 
-我觉得 Windows 这一点做的比较好，比如 Windows 上命令行的解析实际上是有规范的：[Parsing C Command-Line Arguments](https://docs.microsoft.com/en-us/previous-versions/ms880421(v=msdn.10))。
+我觉得 Windows 这一点做的比较好，文档规范比较完备：[Parsing C Command-Line Arguments](https://docs.microsoft.com/en-us/previous-versions/ms880421(v=msdn.10))。
 
 ## OpenSSH 服务端的命令行解析
 
