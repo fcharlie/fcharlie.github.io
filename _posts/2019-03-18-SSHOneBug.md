@@ -237,7 +237,87 @@ session_exec_req(struct ssh *ssh, Session *s)
 
 这里还有一个问题，服务器上的 Shell 可能是 Dash shell，抑或是 Bash Shell，还有可能是 Zsh 等等，不同的 shell 语法的村子一定的差异，对 `sh -c '$command'` 的解析并不一定相同，这也可能导致更多的不确定性。 
 
+## 尝试修复
+
+我创建了一个 PR：[Fix SSH incorrect command line conversion](https://github.com/openssh/openssh-portable/pull/123)，这个 PR 将命令行参数编码，核心代码如下：
+
+```c
+static const char* escape_argument(char *buf, int bufsize, char *arg){
+	int len = strlen(arg);
+	if (len == 0){
+		return "\"\"";
+	}
+	if(len+2>=bufsize){
+		return arg;
+	}
+	int hasspace, i ,n;
+	hasspace = 0;
+	n = len;
+	for (i=0; i<len; i++){
+		switch(arg[i]){
+			case '"':
+			case '\\':
+			n++;
+			break;
+			case ' ':
+			case '\t':
+			hasspace =1;
+			break;
+			default:
+			break;
+		}
+	}
+	if(hasspace){
+		n+=2;
+	}
+	if (n == len||bufsize+1<n){
+		return arg;
+	}
+	int j=0;
+	int slashes=0;
+	if(hasspace){
+		buf[j]='"';
+		j++;
+	}
+	for(i=0; i<len; i++){
+		switch(arg[i]){
+			case '\\':
+				slashes++;
+				buf[j]=arg[i];
+			break;
+			case '"':{
+				for(;slashes>0;slashes--){
+					buf[j]='\\';
+					j++;
+				}
+				buf[j]='\\';
+				j++;
+				buf[j]=arg[i];
+			}
+			break;
+			default:
+				slashes=0;
+				buf[j]=arg[i];
+			break;
+		}
+		j++;
+	}
+	if(hasspace){
+		for(;slashes>0;slashes--){
+			buf[j]='\\';
+			j++;
+		}
+		buf[j]='"';
+		j++;
+	}
+	buf[j]=0;
+	//memchr(, int __c, size_t __n)
+	return buf;
+}
+```
+
+但 PR 被关闭了,这个问题最终需要 SSH 协议的改进，否则难以修复。而在 OpenSSH BUG 社区实际上早有讨论：[http://bugzilla.mindrot.org/show_bug.cgi?id=2283](http://bugzilla.mindrot.org/show_bug.cgi?id=2283)。
 
 ## 最后
 
-这个 Bug 的修复技术上并不难，只需要将命令行数组转变为兼容 `sh -c` 的方式即可。但让 OpenSSH 修复或许有点麻烦。另一方面，SSH 协议规范并不很理想。
+SSH 并不完美，OpenSSH 也不完美。
