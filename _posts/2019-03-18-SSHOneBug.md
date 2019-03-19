@@ -150,6 +150,93 @@ echo;There;are;spaces;in;the;statement;done
 
 我觉得 Windows 这一点做的比较好，比如 Windows 上命令行的解析实际上是有规范的：[Parsing C Command-Line Arguments](https://docs.microsoft.com/en-us/previous-versions/ms880421(v=msdn.10))。
 
+## OpenSSH 服务端的命令行解析
+
+在 OpenSSH SSHD 的源码中，命令行的处理流程如下：
+
+当请求为 `exec` 时：
+
+```c
+//https://github.com/openssh/openssh-portable/blob/9edbd7821e6837e98e7e95546cede804dac96754/session.c#L2221
+		if (strcmp(rtype, "shell") == 0) {
+			success = session_shell_req(ssh, s);
+		} else if (strcmp(rtype, "exec") == 0) {
+			success = session_exec_req(ssh, s);
+		} else if (strcmp(rtype, "pty-req") == 0) {
+			success = session_pty_req(ssh, s);
+		} else if (strcmp(rtype, "x11-req") == 0) {
+			success = session_x11_req(ssh, s);
+		} else if (strcmp(rtype, "auth-agent-req@openssh.com") == 0) {
+			success = session_auth_agent_req(ssh, s);
+		} else if (strcmp(rtype, "subsystem") == 0) {
+			success = session_subsystem_req(ssh, s);
+		} else if (strcmp(rtype, "env") == 0) {
+			success = session_env_req(ssh, s);
+		}
+```
+
+获得 `Command` 并执行命令：
+
+```c
+//https://github.com/openssh/openssh-portable/blob/9edbd7821e6837e98e7e95546cede804dac96754/session.c#L2047
+static int
+session_exec_req(struct ssh *ssh, Session *s)
+{
+	u_int success;
+	int r;
+	char *command = NULL;
+
+	if ((r = sshpkt_get_cstring(ssh, &command, NULL)) != 0 ||
+	    (r = sshpkt_get_end(ssh)) != 0)
+		sshpkt_fatal(ssh, r, "%s: parse packet", __func__);
+
+	success = do_exec(ssh, s, command) == 0;
+	free(command);
+	return success;
+}
+```
+
+无论是何种途径，在 OpenSSH 中，sshd 启动进程都是通过 `sh -c` 这样的方式实现的，这就意味着，命令行应当符合 sh 的标准。
+
+```c
+// https://github.com/openssh/openssh-portable/blob/9edbd7821e6837e98e7e95546cede804dac96754/session.c#L1681
+	if (!command) {
+		char argv0[256];
+
+		/* Start the shell.  Set initial character to '-'. */
+		argv0[0] = '-';
+
+		if (strlcpy(argv0 + 1, shell0, sizeof(argv0) - 1)
+		    >= sizeof(argv0) - 1) {
+			errno = EINVAL;
+			perror(shell);
+			exit(1);
+		}
+
+		/* Execute the shell. */
+		argv[0] = argv0;
+		argv[1] = NULL;
+		execve(shell, argv, env);
+
+		/* Executing the shell failed. */
+		perror(shell);
+		exit(1);
+	}
+	/*
+	 * Execute the command using the user's shell.  This uses the -c
+	 * option to execute the command.
+	 */
+	argv[0] = (char *) shell0;
+	argv[1] = "-c";
+	argv[2] = (char *) command;
+	argv[3] = NULL;
+	execve(shell, argv, env);
+	perror(shell);
+	exit(1);
+```
+
+
+
 ## 最后
 
-实际上这个 Bug 已经很难修复，并不是技术原因，而是大量依赖 OpenSSH 的工具，组件，这些老旧的东西可能无法兼容。
+这个 Bug 的修复技术上并不难，只需要将命令行数组转变为兼容 `sh -c` 的方式即可。但让 OpenSSH 修复或许有点麻烦。
