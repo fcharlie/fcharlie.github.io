@@ -196,7 +196,7 @@ session_exec_req(struct ssh *ssh, Session *s)
 }
 ```
 
-无论是何种途径，在 OpenSSH 中，sshd 启动进程都是通过 `sh -c` 这样的方式实现的，这就意味着，命令行应当符合 sh 的标准。
+无论是何种途径，在 OpenSSH 中，sshd 启动进程都是通过 `sh -c` 这样的方式实现的，这就意味着，命令行应当符合 shell 的标准。
 
 ```c
 // https://github.com/openssh/openssh-portable/blob/9edbd7821e6837e98e7e95546cede804dac96754/session.c#L1681
@@ -235,8 +235,9 @@ session_exec_req(struct ssh *ssh, Session *s)
 	exit(1);
 ```
 
+这里还有一个问题，服务器上的 Shell 可能是 Dash shell，抑或是 Bash Shell，还有可能是 Zsh 等等，不同的 shell 语法的村子一定的差异，对 `sh -c '$command'` 的解析并不一定相同，这也可能导致更多的不确定性。 
 
 
 ## 最后
 
-这个 Bug 的修复技术上并不难，只需要将命令行数组转变为兼容 `sh -c` 的方式即可。但让 OpenSSH 修复或许有点麻烦。
+这个 Bug 的修复技术上并不难，只需要将命令行数组转变为兼容 `sh -c` 的方式即可。但让 OpenSSH 修复或许有点麻烦。另一方面，SSH 协议规范并不很理想。
