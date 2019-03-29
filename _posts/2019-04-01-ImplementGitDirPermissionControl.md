@@ -10,6 +10,7 @@ categories: git
  
  Git 与 Subversion 有诸多不同，最核心的一点是前者属于分布式版本控制工具，后者属于集中式版本控制工具。前者的提交行为是离线的，本地的，后者的提交是在线的，需要与远程中央服务器通信，在线创建提交。基于这种现实，Git 和 Subversion 在原生提供的附加功能也存在很大的差别。比如目录权限控制。Git 原生并不支持目录权限控制，而 Subversion 支持。
 
+
  ## Subversion 的目录权限控制
 
  用户接入远程服务器上的 Subversion 存储库通常可以使用 HTTP 协议 SVN 协议以及 SVN+SSH 协议，HTTP 协议本质上是 HTTP 客户端与 Apache httpd 服务器通信，此时，请求由 `mod_dav_svn.so` 模块处理，然后调用 subversion 的核心模块，包括文件系统和存储库模块。使用 HTTP 访问 Subversion 存储库时，可以如下：
@@ -52,7 +53,7 @@ Subversion 的原理也就使其很容易支持细粒度的权限控制，可以
 
 综合来看，Git 是完全不支持目录权限控制的。
 
-## Git 实现目录权限控制的一种方法
+## Git 实现目录权限控制的一种途径
 
 **Git 的目录级别粒度的禁止读取并不在本文的研究范围，本文所述的目录权限控制仅指 '目录的只读'。**
 
@@ -77,9 +78,194 @@ Subversion 的原理也就使其很容易支持细粒度的权限控制，可以
 
 ```
 
-规则按分支名划分，其中 `.all` 表示所有分支，`.all` 不能被用于 git 分支或者引用名称，因此代表所有的分支。规则有目录级别匹配和正则匹配，`lib` 表示 `lib` 文件或者目录不可被修改。而 `regex` 则表示目录符合正则表达式的路径不可被修改。
+规则按分支名划分，当相关的分支并没有设置只读目录时，则查找 `.all` 配置，其中 `.all` 表示所有分支，`.all` 不能被用于 git 分支或者引用名称<sup>1</sup>，因此代表所有的分支。规则有目录级别匹配和正则匹配，`lib` 表示 `lib` 文件或者目录不可被修改。而 `regex` 则表示目录符合正则表达式的路径不可被修改。
 
+对于正则表达式，我们使用的是 [RE2](https://github.com/google/re2)，这是一个非常高效的正则表达式库，由 Google 开发。拥有多种语言绑定。
+
+无论是目录匹配还是正则表达式，我们都需要设置规则数量的上限，避免过多的规则导致计算量过大。目录匹配目前的限制为 256，正则限制为 64。
+
+在确定好规则后，我们需要获得目录树的修改细节，包括文件的修改，文件的删除，文件的添加，以及文件的重命名，其中文件的 UNIX 属性修改应当属于文件的修改。update 钩子的命令行为 `refname oldrev newrev`，我们可以使用 `git diff oldrev newrev` 这样的思路获得文件修改细节。在 libgit2 中，可以使用 `git_diff_tree_to_tree` 去获得目录的差异。如果 oldrev 或者 newrev 二者中有一个是 `zeroid`，此时只需要使用 treewalk 遍历目录即可，当然，二者不可能同时为零 ID。核心代码如下：
+
+```c++
+////////
+#include "executor.hpp"
+#include <git2.h>
+
+struct commit_t {
+  commit_t() = default;
+  ~commit_t() {
+    if (tree != nullptr) {
+      git_tree_free(tree);
+    }
+    if (commit != nullptr) {
+      git_commit_free(commit);
+    }
+  }
+  git_commit *commit{nullptr};
+  git_tree *tree{nullptr};
+  bool lookup(git_repository *repo, const git_oid *id) {
+    if (git_commit_lookup(&commit, repo, id) != 0) {
+      return false;
+    }
+    return git_commit_tree(&tree, commit) == 0;
+  }
+};
+
+class executor_base {
+public:
+  executor_base() {
+    //
+    git_libgit2_init();
+  }
+  ~executor_base() {
+    if (repo_ != nullptr) {
+      git_repository_free(repo_);
+    }
+    git_libgit2_shutdown();
+  }
+  bool open(std::string_view path) {
+    return git_repository_open(&repo_, path.data()) == 0;
+  }
+  git_repository *repo() { return repo_; }
+
+private:
+  git_repository *repo_{nullptr};
+};
+
+Executor::Executor() {
+  // initialzie todo
+  base = new executor_base();
+}
+Executor::~Executor() {
+  // delete
+  delete base;
+}
+
+bool Executor::InitializeRules(std::string_view sv, std::string_view ref) {
+  if (ref.compare(0, sizeof("refs/heads/") - 1, "refs/heads/") != 0) {
+    return true;
+  }
+  auto branch = ref.substr(sizeof("refs/heads/") - 1);
+  return engine.PreInitialize(sv, branch);
+}
+
+////////////////////////////////////////////////
+int git_treewalk_impl(const char *root, const git_tree_entry *entry,
+                      void *payload) {
+  auto e = reinterpret_cast<Executor *>(payload);
+  std::string name = root;
+  name.append(git_tree_entry_name(entry));
+  if (e->FullMatch(name)) {
+    fprintf(stderr, "Path %s is readonly\n", name.c_str());
+    return 1;
+  }
+  return 0;
+}
+bool Executor::ExecuteTreeWalk(std::string_view rev) {
+  git_oid oid;
+  if (git_oid_fromstrn(&oid, rev.data(), rev.size()) != 0) {
+    return false;
+  }
+  commit_t commit;
+  if (!commit.lookup(base->repo(), &oid)) {
+    return false;
+  }
+  return (git_tree_walk(commit.tree, GIT_TREEWALK_PRE, git_treewalk_impl,
+                        this) == 0);
+}
+
+int git_diff_callback(const git_diff_delta *delta, float progress,
+                      void *payload) {
+  (void)progress;
+  auto e = reinterpret_cast<Executor *>(payload);
+  switch (delta->status) {
+  case GIT_DELTA_ADDED:
+    /*fallthrough*/
+  case GIT_DELTA_MODIFIED:
+  /*fallthrough*/
+  case GIT_DELTA_COPIED: // copy to new path
+    if (e->FullMatch(delta->new_file.path)) {
+      fprintf(stderr, "Path '%s' is readonly\n", delta->old_file.path);
+      return 1;
+    }
+    break;
+  case GIT_DELTA_DELETED:
+    if (e->FullMatch(delta->old_file.path)) {
+      fprintf(stderr, "Path '%s' is readonly\n", delta->old_file.path);
+      return 1;
+    }
+    break;
+  default:
+    // ex. GIT_DELTA_RENAMED
+    if (e->FullMatch(delta->new_file.path)) {
+      fprintf(stderr, "Path '%s' is readonly\n", delta->old_file.path);
+      return 1;
+    }
+    if (e->FullMatch(delta->old_file.path)) {
+      fprintf(stderr, "Path '%s' is readonly\n", delta->old_file.path);
+      return 1;
+    }
+    break;
+  }
+  return 0;
+}
+
+struct diff_t {
+  ~diff_t() {
+    if (p != nullptr) {
+      git_diff_free(p);
+    }
+  }
+  git_diff *p{nullptr};
+};
+
+bool Executor::Execute(std::string_view path, std::string_view oldrev,
+                       std::string_view newrev) {
+  if (engine.Empty()) {
+    // Engine rules empty so return
+    return true;
+  }
+  if (!base->open(path)) {
+    return false;
+  }
+  constexpr const char zerooid[] = "0000000000000000000000000000000000000000";
+  if (oldrev == zerooid) {
+    return ExecuteTreeWalk(newrev);
+  }
+  if (newrev == zerooid) {
+    return ExecuteTreeWalk(oldrev);
+  }
+  git_oid ooid, noid;
+  if (git_oid_fromstrn(&ooid, oldrev.data(), oldrev.size()) != 0) {
+    return false;
+  }
+  if (git_oid_fromstrn(&noid, newrev.data(), newrev.size()) != 0) {
+    return false;
+  }
+  commit_t oldcommit, newcommit;
+  if (!oldcommit.lookup(base->repo(), &ooid)) {
+    return false;
+  }
+  if (!newcommit.lookup(base->repo(), &noid)) {
+    return false;
+  }
+  diff_t diff;
+  git_diff_options opts;
+  git_diff_init_options(&opts, GIT_DIFF_OPTIONS_VERSION);
+  if (git_diff_tree_to_tree(&diff.p, base->repo(), oldcommit.tree,
+                            newcommit.tree, &opts) != 0) {
+    return false;
+  }
+  return git_diff_foreach(diff.p, git_diff_callback, nullptr, nullptr, nullptr,
+                          this) == 0;
+}
+
+```
 
 ## 反思
 
 虽然本文讲述了实现 Git 目录权限控制的一个实现机制，但笔者比较反对过分使用 Git 服务端钩子实现过多额外的功能。这些功能大多数都能可以通过规范的协作方式实现相同的目的。
+
+## 备注
+
+1. Git 引用名格式检查：[https://git-scm.com/docs/git-check-ref-format](https://git-scm.com/docs/git-check-ref-format)
