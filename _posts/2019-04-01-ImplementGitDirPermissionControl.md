@@ -11,7 +11,7 @@ categories: git
  Git 与 Subversion 有诸多不同，最核心的一点是前者属于分布式版本控制工具，后者属于集中式版本控制工具。前者的提交行为是离线的，本地的，后者的提交是在线的，需要与远程中央服务器通信，在线创建提交。基于这种现实，Git 和 Subversion 在原生提供的附加功能也存在很大的差别。比如目录权限控制。Git 原生并不支持目录权限控制，而 Subversion 支持。
 
 
- ## Subversion 的目录权限控制
+## Subversion 的目录权限控制
 
  用户接入远程服务器上的 Subversion 存储库通常可以使用 HTTP 协议 SVN 协议以及 SVN+SSH 协议，HTTP 协议本质上是 HTTP 客户端与 Apache httpd 服务器通信，此时，请求由 `mod_dav_svn.so` 模块处理，然后调用 subversion 的核心模块，包括文件系统和存储库模块。使用 HTTP 访问 Subversion 存储库时，可以如下：
 
