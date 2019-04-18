@@ -267,11 +267,18 @@ bool Executor::Execute(std::string_view path, std::string_view oldrev,
 update 工具源码地址为：[https://gitee.com/oscstudio/git-analyze/tree/master/tools/update](https://gitee.com/oscstudio/git-analyze/tree/master/tools/update)。
 
 在本方案中，我们直接比较 oldrev-newrev 的差异，而不是回溯递归去判断 commit 与 parent-commit 的差异，这有以下考虑：
->我们只需要考虑修改后的目录结构符合权限控制要求即可，无论中间环节如何变化，只要最终的只读目录，文件未发生修改即可。未发生修改表示 blob 的 id 不变，tree 的 id 不变。
++  我们需要限制的是最终的结果而无需考虑中间的过程，无论中间环节如何变化，只要最终的只读目录，文件未发生修改即可。未发生修改表示 blob 不变，tree 不变。
++  我们只 diff oldrev-newrev 两者，避免校验中间环境能够降低只读文件功能造成代码推送的响应速率下降。
 
 这实际上与使用 `update` 钩子实现大文件检测的策略有很大的不同，大文件检测如果不回溯去检测，则可能会忽略中间 commit 引入的大文件，这些大文件会一直存在于存储库中，导致存储库体积较大，打包困难，传输时间长。这也是我使用 pre-receive 钩子基于环境隔离，使用 Pack-Index 文件检测大文件取代 update 钩子的原因之一。
 
-如果使用 `update` 钩子实现 commit 私有邮箱过滤，也是需要回溯，策略同样是不同的。
+在 git diff 的文件修改中，文件路径为相对路径，如果是在 worktree 中，diff 的输出结果与当前目录有关，而在裸存储库中，diff 的文件路径与是相对于 存储库 worktree 根目录的路径。那么我们在生成路径校验规则时，则需对文件路径进行处理以符合相对路径。并且 git diff 的文件路径以 `/` 分割，要判断一个路径是否为只读文件或者属于只读目录下的文件，只需要判断文件路径与以只读路径开始并且存在如下两种情况：
+
++  文件路径长度与只读路径长度相符。
++  只读路径长度为 l，文件路径为符号 P，其中 `P[l]='/'`，此时路径为只读路径的子路经。
+
+
+如果使用 `update` 钩子实现 commit 私有邮箱过滤，为了避免私有邮箱逃逸，则需要回溯。
 
 ## 反思
 
