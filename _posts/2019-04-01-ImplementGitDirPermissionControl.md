@@ -277,6 +277,18 @@ update 工具源码地址为：[https://gitee.com/oscstudio/git-analyze/tree/mas
 +  文件路径长度与只读路径长度相符。
 +  只读路径长度为 l，文件路径为符号 P，其中 `P[l]='/'`，此时路径为只读路径的子路经。
 
+路径包含判断代码如下：
+
+```c++
+// when sub startswith parant
+// 1.  size equal --> path equal
+// 2.  path[p.size()]=='/' At this point, 'path' is a subpath of p
+inline bool IsPathContains(std::string_view parent, std::string_view sub) {
+  return (parent.size() <= sub.size() &&
+          memcmp(parent.data(), sub.data(), parent.size()) == 0 &&
+          (sub.size() == parent.size() || sub[parent.size()] == '/'));
+}
+```
 
 如果使用 `update` 钩子实现 commit 私有邮箱过滤，为了避免私有邮箱逃逸，则需要回溯。
 
@@ -284,7 +296,7 @@ update 工具源码地址为：[https://gitee.com/oscstudio/git-analyze/tree/mas
 
 虽然本文讲述了实现 Git 目录权限控制的实现的一种途径，但笔者比较反对过分使用 Git 服务端钩子实现过多额外的功能。一方面，这些功能并非不可替代，大多数都能可以通过规范的协作方式实现相同的目的。比如我们可以使用 fork-RP 模型参与协作开发，然后在主存储库中设置保护分支，严格限制修改，我们还可以实现只读存储库，即修改只能通过 PR 修改存储库，拒绝从客户端推送等。
 
-另一方面，如果在钩子中实现的功能过多，这势必会导致服务器上存储库响应时间变长，服务器并发降低，这时候加机器也效果有限，何况舍不得买几器的。功能过多也会导致开发变得异常复杂，钩子除了做这个还要做那个，整个流程处理流程一环扣一环，这对开发者要求比较高。如果出于效率原因修改 git 源码实现这些功能则可能带来自行维护 git 分支的困境，特别是 git 也是在不断发展的，比如 git 计划实施的部分克隆，SHA1 到 SHA-256 的转换，v2 协议的进一步发展，以及 VFSforGit 移植到 Linux。如果没有充足的人力去维护这些修改，很容易就跟不上 git 的步伐，则很容易在代码托管平台的竞争中落后。
+另一方面，如果在钩子中实现的功能过多，这势必会导致服务器上存储库响应时间变长，服务器并发降低，这时候加机器也效果有限，特别是硬件设施不足的影响更大。功能过多也会导致开发变得异常复杂，钩子除了做这个还要做那个，整个流程处理流程一环扣一环，这对开发者要求比较高。如果出于效率原因修改 git 源码实现这些功能则可能带来自行维护 git 分支的困境，特别是 git 也是在不断发展的，比如 git 计划实施的部分克隆，SHA1 到 SHA-256 的转换，v2 协议的进一步发展，以及 VFSforGit 移植到 Linux。如果没有充足的人力去维护这些修改，很容易就跟不上 git 的步伐，则很容易在代码托管平台的竞争中落后。
 
 
 ## 备注
