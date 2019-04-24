@@ -159,7 +159,7 @@ int git_treewalk_impl(const char *root, const git_tree_entry *entry,
   name.append(git_tree_entry_name(entry));
   if (e->FullMatch(name)) {
     fprintf(stderr, "Path %s is readonly\n", name.c_str());
-    return 1;
+    return -1;
   }
   return 0;
 }
