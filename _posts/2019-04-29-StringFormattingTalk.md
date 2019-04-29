@@ -647,13 +647,13 @@ auto result =
 ```
 与 Subsititute 一样，StrCat 也是用了类似 `Arg` 的 `AlphaNum` 将字符串和基本类型按照原因（或者 Hex,Dec）拼接成特定的字符串，并且在拼接字符串时能够提前 resize 从而减少内存分配次数，达到优化的目的，在 GNK 的代码中，凡是需要连接字符串的操作，我们都使用 StrCat 来操作，避免使用 snprintf 或者 strcat 操作。
 
-在 [Privexec](https://github.com/M2Team/Privexec), [Clangbuilder](https://github.com/fstudio/clangbuilder) 和 [Planck](https://github.com/fcharlie/Planck) 当中，我借鉴 absl::StrCat 实现了一个宽字符版本的 [`base::StringCat`](https://github.com/M2Team/Privexec/blob/master/include/strcat.hpp) 不支持 double/float，不支持 Hex，Dec ，仅支持其他基本类型和 `char*` `std::wstring_view` `std::string`。
+在 [Privexec](https://github.com/M2Team/Privexec), [Clangbuilder](https://github.com/fstudio/clangbuilder) 和 [Planck](https://github.com/fcharlie/Planck) 当中，我借鉴 absl::StrCat 实现了一个宽字符版本的 [`base::StringCat`](https://github.com/M2Team/Privexec/blob/master/include/strcat.hpp) 不支持 double/float，不支持 Hex，Dec ，仅支持其他基本类型和 `char*` `std::wstring_view` `std::wstring`。
 
 ## 异步信号安全的字符串格式化
 
-上述现代 C++ 格式化方案通常情况下令人满意，但是当我们需要实现一个异步信号安全的格式化输出方案时，缺不得不重新打算，异步信号安全指的是在信号中断的回调函数中不得调用非异步安全的函数，由于信号随时可能发生，因此，在信号中断函数中必须不存在内存分配，互斥锁等等，在 Glibc 和 musl 之中由于使用了文件对象和锁，snprintf 不是异步信号安全的，但在 OpenBSD 当中，snprintf 实现是异步信号安全的，在 Github 上有异步信号安全的 snprintf 实现如 [c99-snprintf](https://github.com/weiss/c99-snprintf) 以及 [safe_snprintf](https://github.com/idning/safe_snprintf)。前面所说的 `ngx_snprintf` 也可以轻松的实现异步信号安全。
+上述现代 C++ 格式化方案通常情况下令人满意，但是当我们需要实现一个异步信号安全的格式化输出方案时，则不得不重新打算，异步信号安全指的是在信号中断的回调函数中不得调用非异步安全的函数，由于信号随时可能发生，因此，在信号中断函数中必须不存在内存分配，不能拥有互斥锁等，在 Glibc 和 musl 之中，由于 snprintf 使用了文件对象和锁，则 snprintf 不是异步信号安全的，在 OpenBSD 当中，snprintf 实现是异步信号安全的，在 Github 上有异步信号安全的 snprintf 实现，如 [c99-snprintf](https://github.com/weiss/c99-snprintf) 和 [safe_snprintf](https://github.com/idning/safe_snprintf)。前面所说的 `ngx_snprintf` 也可以轻松的实现异步信号安全。
 
-在 Chromium 项目中，也有一个基于现代 C++ 实现的异步信号安全的 [SafeSNPrintf](https://github.com/chromium/chromium/blob/master/base/strings/safe_sprintf.h)。在这个实现中，使用 union 包装变量，这种常见于 Json, Toml 文件的解析。在格式化时，解析 format 字符串，期望的格式与输入的参数匹配类型，一旦类型匹配，则正常格式化，不匹配则退出，这种方案比 snprintf 要好的多，而且我们还可以使用 `%v` 按照输入参数的类型自主格式化。
+在 Chromium 项目中，也有一个基于现代 C++ 实现的异步信号安全的 [SafeSNPrintf](https://github.com/chromium/chromium/blob/master/base/strings/safe_sprintf.h)。在这个实现中，使用 union 包装变量，并增加类型信息，这种常见于 Json, Toml 等格式文件的解析。在格式化时，解析 format 字符串，期望的格式与输入的参数匹配类型，一旦类型匹配，则正常格式化，不匹配则退出，这种方案比 snprintf 要好的多，毕竟 snprintf 只预期输入格式正确。
 
 ```
 struct Arg {
@@ -732,7 +732,8 @@ struct {
     size_t len;
 }stringview;
 ```
-这样的好处在无需计算字符串长度，并且不用调用 `str.data()` 这样的转换函数。
+
+这样的好处在无需计算字符串长度，并且不用调用 `str.data()` 这样的转换函数。我们还可以使用 `%v` 按照输入参数的类型自主格式化，这样就不存在类型不匹配了。
 
 ## 结尾
 
