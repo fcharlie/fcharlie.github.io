@@ -639,8 +639,9 @@ auto result =
 
 ## 异步信号安全的字符串格式化
 
-上述现代 C++ 格式化方案通常情况下令人满意，但是当我们需要实现一个异步信号安全的格式化输出方案时，则不得不重新打算，异步信号安全指的是在信号中断的回调函数中不得调用非异步安全的函数，由于信号随时可能发生，因此，在信号中断函数中必须不存在内存分配，不能拥有互斥锁等，在 Glibc 和 musl 之中，由于 snprintf 使用了文件对象和锁调用了 `vfprintf` 则不是异步信号安全的，这很容易理解，由于 `FILE` 使用了缓存，需要使用锁保证线程安全。
-在 OpenBSD 当中，snprintf 实现是异步信号安全的，在 Github 上有异步信号安全的 snprintf 实现，如 [c99-snprintf](https://github.com/weiss/c99-snprintf) 和 [safe_snprintf](https://github.com/idning/safe_snprintf)。前面所说的 `ngx_snprintf` 也可以轻松的实现异步信号安全。
+上述现代 C++ 格式化方案通常情况下令人满意，但是当我们需要实现一个异步信号安全的格式化输出方案时，则不得不重新打算，异步信号安全指的是在信号中断的回调函数中不得调用非异步安全的函数，由于信号随时可能发生，因此，在信号中断函数中必须不存在内存分配，不能拥有互斥锁等，在 Glibc 和 musl 之中，由于 snprintf 使用了文件对象和锁调用了 `vfprintf` 则不是异步信号安全的，这很容易理解，由于 `FILE` 使用了缓存，需要使用锁保证线程安全。在 OpenBSD 当中，snprintf 实现是异步信号安全的，在 Github 上有异步信号安全的 snprintf 实现，如 [c99-snprintf](https://github.com/weiss/c99-snprintf) 和 [safe_snprintf](https://github.com/idning/safe_snprintf)。前面所说的 `ngx_snprintf` 也可以轻松的实现异步信号安全。
+
+在 absl::StrFormat 中，查看源码发现 `absl::SNPrintF` 是没有内存分配的，但异步信号安全还有待考察。
 
 在 Chromium 项目中，也有一个基于现代 C++ 实现的异步信号安全的 [SafeSNPrintf](https://github.com/chromium/chromium/blob/master/base/strings/safe_sprintf.h)。在这个实现中，使用 union 包装变量，并增加类型信息，这种常见于 Json, Toml 等格式文件的解析。在格式化时，解析 format 字符串，期望的格式与输入的参数匹配类型，一旦类型匹配，则正常格式化，不匹配则退出，这种方案比 snprintf 要好的多，毕竟 snprintf 只预期输入格式正确。
 
