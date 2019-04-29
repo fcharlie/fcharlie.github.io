@@ -21,7 +21,7 @@ printf 函数类型为：
 ```c
 int printf(const char *fmt,...);
 ```
-据此我们可以格式化输出：
+按照此声明我们可以格式化输出：
 ```c
 #include <stdio.h>
 int main() {
@@ -52,7 +52,7 @@ int vsnprintf( char* buffer, std::size_t buf_size, const char* format, va_list v
 
 ## 格式化内幕
 
-要了解 snprintf 的细节，我们需要去找一个 libc 了解一番，这里建议是 [musl](https://github.com/bminor/musl)，musl 只支持 Linux，没有像 Glibc 那么多的遗留代码，代码比较整洁。而 Visual C++ 的 ucrt 源码基本使用 C++ 模板编写，比较复杂，不容易借此说清 snprintf 的细节。在 musl snprintf.c 源码中，snprintf 将会调用 `vsnprintf`，
+要了解 snprintf 的细节，我们需要去找一个 libc 了解一番，这里建议是 [musl](https://github.com/bminor/musl)，musl 只支持 Linux，没有像 Glibc 那么多的遗留代码，代码比较整洁。而 Visual C++ 的 ucrt 源码基本使用 C++ 模板编写，比较复杂，不容易借此理清 snprintf 的细节。翻阅 musl snprintf.c 源码，我们发现 snprintf 将会调用 `vsnprintf`，
 
 ```c
 // https://github.com/bminor/musl/blob/master/src/stdio/snprintf.c
@@ -92,33 +92,17 @@ int vsnprintf(char *restrict s, size_t n, const char *restrict fmt, va_list ap)
 }
 ```
 
-在 musl 之中，vsnprintf 创建一个 FILE 结构，使用 vsnprintf 格式化字符串。这里使用了 `va_list` `va_start` `va_end` 宏，这组宏将变参函数的参数从函数栈中取出来，从而实现了变参函数的功能，在 `va_*` musl 和 reactos (AMD64) 中实现分别如下：
+在 musl 之中，vsnprintf 创建一个 FILE 结构，然后最终使用 vfprintf 格式化字符串。这里使用了 `va_list` `va_start` `va_end` 宏，这组宏将变参函数的参数从函数栈中取出来，从而实现了变参函数的功能，我们可以参考 Visual C++ 在 [`vadefs.h`](https://gist.github.com/fcharlie/e2b6a2d578d7b484d0338886ce0db768) 中的定义：<script src="https://gist.github.com/fcharlie/e2b6a2d578d7b484d0338886ce0db768.js"></script>
 
-```c
-// https://github.com/bminor/musl/blob/master/include/stdarg.h
-#define va_start(v,l)   __builtin_va_start(v,l)
-#define va_end(v)       __builtin_va_end(v)
-#define va_arg(v,l)     __builtin_va_arg(v,l)
-#define va_copy(d,s)    __builtin_va_copy(d,s)
-// https://github.com/reactos/reactos/blob/master/sdk/include/crt/vadefs.h
-// AMD64
-#define _PTRSIZEOF(n) ((sizeof(n) + sizeof(void*) - 1) & ~(sizeof(void*) - 1))
-#define _ISSTRUCT(t) ((sizeof(t) > sizeof(void*)) || (sizeof(t) & (sizeof(t)-1)) != 0)
-#define _crt_va_start(v,l)	((void)((v) = (va_list)_ADDRESSOF(l) + _PTRSIZEOF(l)))
-#define _crt_va_arg(v,t)	(_ISSTRUCT(t) ? \
-                            (**(t**)(((v) += sizeof(void*)) - sizeof(void*))) : \
-                            (*(t*)(((v) += sizeof(void*)) - sizeof(void*))))
-#define _crt_va_end(v)	((void)((v) = (va_list)0))
-#define __va_copy(d,s)	((void)((d) = (s)))
-```
+而 va_list 本质上是从函数参数栈中获得特定位置的值。
 
-`vfprintf` 函数的源码在： [musl: src/stdio/vfprintf.c](https://github.com/bminor/musl/blob/master/src/stdio/vfprintf.c)。我们可以发现格式化输出实际上是结写 `format`，在解析到占位符时，使用 `va_arg` 提取 `va_list` 中的变量（或者转变为特定格式字符串后）替换占位符，从而实现格式化输出的目的（文件或者缓冲区）。格式化占位符以 `%` 开头，支持格式化的类型可以参考 [http://pubs.opengroup.org/onlinepubs/9699919799/functions/fprintf.html](http://pubs.opengroup.org/onlinepubs/9699919799/functions/fprintf.html)
+`vfprintf` 函数的源码在： [musl: src/stdio/vfprintf.c](https://github.com/bminor/musl/blob/master/src/stdio/vfprintf.c)。我们可以发现格式化输出实际上是解析 `format` 字符串，在解析到占位符时，使用 `va_arg` 提取 `va_list` 中的变量（或者转变为特定格式字符串后）替换占位符，从而实现格式化输出的目的（文件或者缓冲区）。格式化占位符以 `%` 开头，支持格式化的类型可以参考 [http://pubs.opengroup.org/onlinepubs/9699919799/functions/fprintf.html](http://pubs.opengroup.org/onlinepubs/9699919799/functions/fprintf.html)
 
-了解到格式化输出的原理之后，我们可以很容易的实现一个格式化字符串或者格式化输出函数，在 nginx 源码中，就有一个 [`ngx_vslprintf`](https://github.com/nginx/nginx/blob/27b3d3dcca5fcc82350a823881f3d06161327b59/src/core/ngx_string.c#L163) 很容易移植。
+了解到格式化输出的原理之后，我们可以很容易的实现一个格式化字符串或者格式化输出函数，在 nginx 源码中，就有一个 类似实现： [`ngx_vslprintf`](https://github.com/nginx/nginx/blob/27b3d3dcca5fcc82350a823881f3d06161327b59/src/core/ngx_string.c#L163) ，这个代码比较简单比较容易移植。
 
 ## C-Style 格式化的缺陷
 
-上述格式化使用变参函数，在 C++ 中是 **C-Style format**，这种使用 va_list 的函数在 C++ 中是不被推荐的 [F.55: Don't use va_arg arguments](https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#F-varargs)，可能是程序员疏忽或者故意，依赖 va_list 的代码很容易由于类型不匹配，参数个数不匹配而出现溢出。导致安全漏洞或者是程序崩溃。以下代码可能会导致程序崩溃，并且编译器也不会警告： 
+上述格式化使用变参函数，使用 va_list 获得参数值，这种使用 va_list 的函数在 C++ 中是不被推荐的 [F.55: Don't use va_arg arguments](https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#F-varargs)。当用户编码时，可能是程序员疏忽或者故意，依赖 va_list 的代码很容易由于类型不匹配，参数个数不匹配而造成栈溢出。导致安全漏洞或者是程序崩溃。以下代码可能会导致程序崩溃，并且编译器也不会警告： 
 ```c++
 #include <string_view>
 #include <cstdio>
@@ -141,7 +125,7 @@ int main(){
 
 ```
 
-编译器的信息为:
+编译器的构建信息如下:
 ```
 使用内建 specs。
 COLLECT_GCC=/opt/gcc/bin/g++
@@ -179,11 +163,12 @@ SUMMARY: AddressSanitizer: SEGV (/usr/lib/x86_64-linux-gnu/libasan.so.5+0x109af1
 ==16509==ABORTING
 
 ```
-其实很容易理解，由于 std::string_view 的结构大致如下：
+
+出现问题其实很容易理解，由于 std::string_view 的结构大致如下：
 ```c++
- template<class charT, class traits = char_traits<charT>>
-    class basic_string_view {
-      public:
+template<class charT, class traits = char_traits<charT>>
+class basic_string_view {
+public:
       // types
       typedef traits traits_type;
       typedef charT value_type;
@@ -269,14 +254,14 @@ SUMMARY: AddressSanitizer: SEGV (/usr/lib/x86_64-linux-gnu/libasan.so.5+0x109af1
       constexpr bool ends_with(basic_string_view s) const noexcept;   // C++2a
       constexpr bool ends_with(charT c) const noexcept;               // C++2a
       constexpr bool ends_with(const charT* s) const;                 // C++2a
-     private:
+private:
       const_pointer data_;  // exposition only
       size_type     size_;  // exposition only
     };
 
 ```
 
-由于 string_view 值被错误的转变为 `char *`，而 C-Style 的字符串是 `null-terminated string`，在处理 `%s` 的时候就容易出现溢出而导致程序崩溃，同样，如果类型宽度不一致，比如 format 中需要 `%lld`，而输入为 `int` 同样容易出现问题。但这种问题可能由于对齐的缘故而不容易导致程序崩溃。 
+由于 string_view 值被错误的转变为 `char *`，而 C-Style 的字符串是 `null-terminated string`，在处理 `%s` 的时候无法正常解析到终止字符，出现溢出然后导致程序崩溃，同样，如果类型宽度不一致，比如 format 中需要 `%lld`，而输入为 `int` 同样容易出现问题，但这种问题可能更多的预期结果不一致。。 
 
 在这个例子中，如果将 `std::string_view` 改成 `std::string`, clang 8.0.1 则会报告 std::string 不是 POD 类型的错误：
 ```
@@ -339,7 +324,7 @@ std::string StrFormat(const char *format, Args... args) {
 
 ## 现代 C++ 格式化库
 
-既然 C-Style 的格式化方案缺陷那么多，C++ 开发者们也会不遗余力的去造轮子，实现自己的目标的，比如我刚学 C++ 那会，都是 `iostream` 家族，字符串格式化可以使用 `stringstream`，`iostream` 这类方案一直被视为糟糕的设计，一来继承复杂，二来效率低。特别在 C++11 变参模板等特性出来后，饱受鄙视，因此也不是建议的格式化方案。限制 C++20 都快发布了，好的格式化库有积极入标准的 [fmtlib](https://github.com/fmtlib/fmt)。而 Facebook 的 C++ 标准库补充 [folly](https://github.com/facebook/folly) 也有一个 `format` 实现。在 Google 里面，很多项目使用了 C++，他们也积累了一些 C++ 组件，后来开源了 [Abseil](https://github.com/abseil/abseil-cpp)，Abseil 中也有字符串格式化函数 `absl::StrFormat`，`absl::StrAppendFormat` 还有一些实现比较慢，代码不太干净的，这里也就不多说了。
+既然 C-Style 的格式化方案缺陷那么多，那么 C++ 开发者们也会不遗余力的去造轮子，实现自己的目标的，早期比如我刚学 C++ 那会，都是 `iostream` 家族，字符串格式化可以使用 `stringstream`，`iostream` 这类方案一直被视为糟糕的设计，一来继承复杂，二来效率低。特别在 C++11 变参模板等特性出来后，饱受鄙视，因此也不是建议的格式化方案。现在 C++20 都快发布了，也涌现了一些更好的方案，好的格式化库有积极入标准的 [fmtlib](https://github.com/fmtlib/fmt)。还有 Facebook 的 C++ 标准库补充 [folly](https://github.com/facebook/folly) 也有一个 `format` 实现。在 Google 里面，很多项目使用了 C++，他们也积累了一些 C++ 组件，后来开源了 [Abseil](https://github.com/abseil/abseil-cpp)，Abseil 中也有字符串格式化函数 `absl::StrFormat`，`absl::StrAppendFormat` ，当然还有一些实现比较慢，代码不太干净的，这里也就不多说了。
 
 ### 积极入标准的 fmtlib
 
@@ -349,12 +334,13 @@ fmt::format("The answer is {}.", 42);
 fmt::print("I'd rather be {1} than {0}.", "right", "happy");
 ```
 
-通过重载 `format_to` 函数， 还可以输出特定的对象。
-fmtlib 还支持 printf 的格式化风格，但是是格式化安全的。
+这种风格还可以通过重载 `format_to` 函数， 输出特定的对象。
+
+fmtlib 还支持 printf 的格式化风格，使用变参模板展开，是格式化安全的。
 ```c++
 std::string message = fmt::sprintf("The answer is %d", 42);
 ```
-当类型不匹配时会抛出异常，这是一种运行时行为。另外 fmtlib 还支持 `wchar_t`，这在 `Windows` 系统中比较重要。在格式化浮点类型时，可能会回退到 `snprintf`。
+当类型不匹配时 fmtlib 会抛出异常，这是一种运行时行为。另外 fmtlib 还支持 `wchar_t`，这在 `Windows` 系统中比较重要。在格式化浮点类型时，可能会回退到 `snprintf`。
 
 ### Facebook folly format
 
@@ -450,11 +436,11 @@ std::cout << s;
 std::cout << format("Only 2 decimals is {:.2f}", 23.34134534535);
 // => "Only 2 decimals is 23.34"
 ```
-但 Folly 的构建是个重量级的活动，所以像我这样的开发者一般是不会采用 folly 的，虽然 folly 在 Linux 上推出，但目前可以构建为 Windows x64，使用 vcpkg 亦可安装。
+但 Folly 的构建是个重量级的活动，所以像我这样的开发者一般是不会采用 folly 的。虽然 folly 侧重与 Linux ，但目前可以构建为 Windows x64 目标，使用 vcpkg 亦可安装。
 
 ### Google Abseil StrFormat
 
-在 GNK 项目中，我曾使用 fmtlib，但 clang-tidy 老是警告没有捕获异常，后来加了捕获异常，在考察 Abseil 之后，我就将其切换到 Abseil 了。  
+在 GNK 项目中，我曾使用 fmtlib，但 clang-tidy 老是警告没有捕获异常，添加异常捕获，代码繁琐不整洁，我在考察 Abseil 之后，发现使用体验要优于 fmtlib，就将其切换到 Abseil 了。  
 Abseil StrFormat 只支持 C-Style 的格式化风格，格式化支持的类型可以查看如下注释：
 ```
 // In specific, the `FormatSpec` supports the following type specifiers:
