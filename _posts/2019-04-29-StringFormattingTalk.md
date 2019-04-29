@@ -279,7 +279,6 @@ SUMMARY: AddressSanitizer: SEGV (/usr/lib/x86_64-linux-gnu/libasan.so.5+0x109af1
 由于 string_view 值被错误的转变为 `char *`，而 C-Style 的字符串是 `null-terminated string`，在处理 `%s` 的时候就容易出现溢出而导致程序崩溃，同样，如果类型宽度不一致，比如 format 中需要 `%lld`，而输入为 `int` 同样容易出现问题。但这种问题可能由于对齐的缘故而不容易导致程序崩溃。 
 
 在这个例子中，如果将 `std::string_view` 改成 `std::string`, clang 8.0.1 则会报告 std::string 不是 POD 类型的错误：
-
 ```
 fuck2.cc:16:21: error: cannot pass object of non-trivial type 'std::string' (aka 'basic_string<char>') through variadic
       function; call will abort at runtime [-Wnon-pod-varargs]
@@ -351,16 +350,11 @@ fmt::print("I'd rather be {1} than {0}.", "right", "happy");
 ```
 
 通过重载 `format_to` 函数， 还可以输出特定的对象。
-
 fmtlib 还支持 printf 的格式化风格，但是是格式化安全的。
 ```c++
 std::string message = fmt::sprintf("The answer is %d", 42);
 ```
-当类型不匹配时会抛出异常，这是一种运行时行为。
-
-另外 fmtlib 还支持 `wchar_t`，这在 `Windows` 系统中比较重要。
-
-在格式化浮点类型时，可能会回退到 `snprintf`。
+当类型不匹配时会抛出异常，这是一种运行时行为。另外 fmtlib 还支持 `wchar_t`，这在 `Windows` 系统中比较重要。在格式化浮点类型时，可能会回退到 `snprintf`。
 
 ### Facebook folly format
 
@@ -460,8 +454,7 @@ std::cout << format("Only 2 decimals is {:.2f}", 23.34134534535);
 
 ### Google Abseil StrFormat
 
-在 GNK 项目中，我曾使用 fmtlib，但 clang-tidy 老是警告没有捕获异常，后来加了捕获异常，在考察 Abseil 之后，我就将其切换到 Abseil 了。
-
+在 GNK 项目中，我曾使用 fmtlib，但 clang-tidy 老是警告没有捕获异常，后来加了捕获异常，在考察 Abseil 之后，我就将其切换到 Abseil 了。  
 Abseil StrFormat 只支持 C-Style 的格式化风格，格式化支持的类型可以查看如下注释：
 ```
 // In specific, the `FormatSpec` supports the following type specifiers:
@@ -525,11 +518,8 @@ Abseil 支持如下函数：
 +  FPrintF
 +  SNPrintF
 
-我们在实现日志库时，可以使用 `StrFormat` 格式化日志级别，时间等信息，然后使用 `StrAppendFormat` 格式化日志内容，这比 fmtlib 要方便的多。Abseil StrFormat 使用编译期检查取代运行时异常，这是让我选择的主要原因。配合 `absl::string_view` 在 GNK 一个 C++14 项目中，C++17 的使用体验非常好，字符串内存分配也减少了很多。
-
-如果在 Windows 环境 `wchar_t` 编码环境使用 Abseil 可能效果还不如 fmtlib。
-
-如果要将 Abseil StrFormat 剥离出来还比较麻烦，由于实现了编译期类型检查，代码还是比较复杂的。
+我们在实现日志库时，可以使用 `StrFormat` 格式化日志级别，时间等信息，然后使用 `StrAppendFormat` 格式化日志内容，这比 fmtlib 要方便的多。Abseil StrFormat 使用编译期检查取代运行时异常，这是让我选择的主要原因。配合 `absl::string_view` 在 GNK 一个 C++14 项目中，C++17 的使用体验非常好，字符串内存分配也减少了很多。  
+如果在 Windows 环境 `wchar_t` 编码环境使用 Abseil 可能效果还不如 fmtlib。由于实现了编译期类型检查，代码还是比较复杂，如果要将 Abseil StrFormat 剥离出来还比较麻烦。
 
 ## 字符串去格式化
 
@@ -631,8 +621,7 @@ absl::Substitute("$0$1$2$3$4 $5", //
                  absl::Dec(0x123456789abcdef, absl::kZeroPad16));
 ```
 
-对于 bool 类型，则会输出 `true` 或者 `false`。
-
+对于 bool 类型，则会输出 `true` 或者 `false`。  
 本质上来说 `Substitute` 是一种简化的格式化输出方案，使用编译器重载解决了运行时检查类型的麻烦，因此，这种方案安全程度比较高，效率也非常不错。但 format 支持的参数个数比较有限。absl::Substitute 同样实现了编译器参数个数检查。
 
 ### StrCat
@@ -646,12 +635,12 @@ auto result =
 // 123456789abcdefghijklmnopq
 ```
 与 Subsititute 一样，StrCat 也是用了类似 `Arg` 的 `AlphaNum` 将字符串和基本类型按照原因（或者 Hex,Dec）拼接成特定的字符串，并且在拼接字符串时能够提前 resize 从而减少内存分配次数，达到优化的目的，在 GNK 的代码中，凡是需要连接字符串的操作，我们都使用 StrCat 来操作，避免使用 snprintf 或者 strcat 操作。
-
 在 [Privexec](https://github.com/M2Team/Privexec), [Clangbuilder](https://github.com/fstudio/clangbuilder) 和 [Planck](https://github.com/fcharlie/Planck) 当中，我借鉴 absl::StrCat 实现了一个宽字符版本的 [`base::StringCat`](https://github.com/M2Team/Privexec/blob/master/include/strcat.hpp) 不支持 double/float，不支持 Hex，Dec ，仅支持其他基本类型和 `char*` `std::wstring_view` `std::wstring`。
 
 ## 异步信号安全的字符串格式化
 
-上述现代 C++ 格式化方案通常情况下令人满意，但是当我们需要实现一个异步信号安全的格式化输出方案时，则不得不重新打算，异步信号安全指的是在信号中断的回调函数中不得调用非异步安全的函数，由于信号随时可能发生，因此，在信号中断函数中必须不存在内存分配，不能拥有互斥锁等，在 Glibc 和 musl 之中，由于 snprintf 使用了文件对象和锁，则 snprintf 不是异步信号安全的，在 OpenBSD 当中，snprintf 实现是异步信号安全的，在 Github 上有异步信号安全的 snprintf 实现，如 [c99-snprintf](https://github.com/weiss/c99-snprintf) 和 [safe_snprintf](https://github.com/idning/safe_snprintf)。前面所说的 `ngx_snprintf` 也可以轻松的实现异步信号安全。
+上述现代 C++ 格式化方案通常情况下令人满意，但是当我们需要实现一个异步信号安全的格式化输出方案时，则不得不重新打算，异步信号安全指的是在信号中断的回调函数中不得调用非异步安全的函数，由于信号随时可能发生，因此，在信号中断函数中必须不存在内存分配，不能拥有互斥锁等，在 Glibc 和 musl 之中，由于 snprintf 使用了文件对象和锁调用了 `vfprintf` 则不是异步信号安全的，这很容易理解，由于 `FILE` 使用了缓存，需要使用锁保证线程安全。
+在 OpenBSD 当中，snprintf 实现是异步信号安全的，在 Github 上有异步信号安全的 snprintf 实现，如 [c99-snprintf](https://github.com/weiss/c99-snprintf) 和 [safe_snprintf](https://github.com/idning/safe_snprintf)。前面所说的 `ngx_snprintf` 也可以轻松的实现异步信号安全。
 
 在 Chromium 项目中，也有一个基于现代 C++ 实现的异步信号安全的 [SafeSNPrintf](https://github.com/chromium/chromium/blob/master/base/strings/safe_sprintf.h)。在这个实现中，使用 union 包装变量，并增加类型信息，这种常见于 Json, Toml 等格式文件的解析。在格式化时，解析 format 字符串，期望的格式与输入的参数匹配类型，一旦类型匹配，则正常格式化，不匹配则退出，这种方案比 snprintf 要好的多，毕竟 snprintf 只预期输入格式正确。
 
