@@ -655,7 +655,7 @@ auto result =
 
 在 Chromium 项目中，也有一个基于现代 C++ 实现的异步信号安全的 [SafeSNPrintf](https://github.com/chromium/chromium/blob/master/base/strings/safe_sprintf.h)。在这个实现中，使用 union 包装变量，并增加类型信息，这种常见于 Json, Toml 等格式文件的解析。在格式化时，解析 format 字符串，期望的格式与输入的参数匹配类型，一旦类型匹配，则正常格式化，不匹配则退出，这种方案比 snprintf 要好的多，毕竟 snprintf 只预期输入格式正确。
 
-```
+```c++
 struct Arg {
   enum Type { INT, UINT, STRING, POINTER };
 
