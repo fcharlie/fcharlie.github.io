@@ -239,7 +239,7 @@ WSUDO 是 Priexec 的命令行版本。很早就支持颜色高亮，在前文�
 
 ![WSUDO](https://github.com/M2Team/Privexec/raw/master/docs/images/wsudo.png)
 
-在创建进程时，如果 `CreateProcess` 的参数 [`lpEnvironment`](https://docs.microsoft.com/en-us/windows/desktop/api/processthreadsapi/nf-processthreadsapi-createprocessw) 为 `NULL` 时，子进程将继承父进程的环境变量，这与 `Unix` (`exec` 函数家族) 系统是一致的。如果我们要设置子进程的环境变量，我们可以修改 wsudo 的环境变量传递给子进程即可。这次，我给 WSUDO 添加了 `-e(--env)` flag. 可以使用 `-eK=V`，`-e K=V` `--env=K=V`，`--env K=V` 这样的方式设置环境变量。也可以在要启动的命令（Alias）之前以 `K=V` 的方式设置环境变量，这给设计思路来自于 `Unix Shell`。类似于 `make KEY=VALUE all` 
+在创建进程时，如果 `CreateProcess` 的参数 [`lpEnvironment`](https://docs.microsoft.com/en-us/windows/desktop/api/processthreadsapi/nf-processthreadsapi-createprocessw) 为 `NULL` 时，子进程将继承父进程的环境变量，这与 `Unix` (`exec` 函数家族) 系统是一致的。如果我们要设置子进程的环境变量，我们可以修改 wsudo 的环境变量传递给子进程即可。这次，我给 WSUDO 添加了 `-e(--env)` flag. 可以使用 `-eK=V`，`-e K=V` `--env=K=V`，`--env K=V` 这样的方式设置环境变量。
 
 WSUDO 目前还支持 `--new-console` `--wait` 这样的 flag，在 Windows 中，创建 CUI 进程时，默认参数下，如果程序的子系统是 `Windows CUI`，如果父进程也是 `CUI` 程序就会继承父进程的控制台窗口，否则会创建一个新的控制台窗口。这就意味这 WSUDO 在启动 CUI 子进程时，CUI 子进程实际上的窗口也会继承 WSUDO 的当前窗口，而之前的 WSUDO 在子进程启动后就结束了，CMD/PowerShell 的等待也就结束了，这时候如果 CUI 子进程还活跃，可能对控制台窗口读写从而会导致控制台窗口输入输出紊乱。这个问题的解决方法有：
 
