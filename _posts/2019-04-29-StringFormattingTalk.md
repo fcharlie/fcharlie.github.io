@@ -787,7 +787,7 @@ inline ssize_t FPrintF(FILE *out, const wchar_t *fmt) {
 
 ```
 
-一个简单的例子（此代码能够在 Windows Terminal 和 Mintty 等终端上正常显示：）：
+一个简单的例子（此代码能够在 Windows Terminal 和 Mintty 等终端上正常显示 emoji）：
 
 ```c++
 // https://github.com/fcharlie/bela/blob/master/test/fmt/main.cc
