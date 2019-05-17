@@ -787,6 +787,21 @@ inline ssize_t FPrintF(FILE *out, const wchar_t *fmt) {
 
 ```
 
+一个简单的例子（此代码能够在 Windows Terminal 和 Mintty 等终端上正常显示：）：
+
+```c++
+// https://github.com/fcharlie/bela/blob/master/test/fmt/main.cc
+#include <bela/stdwriter.hpp>
+
+int wmain(int argc, wchar_t **argv) {
+  auto ux = "\xf0\x9f\x98\x81 UTF-8 text \xE3\x8D\xA4"; // force encode UTF-8
+  wchar_t wx[] = L"Engine \xD83D\xDEE0";
+  bela::FPrintF(stderr, L"Argc: %d Arg0: %s W: %s UTF-8: %s __cplusplus: %d\n",
+                argc, argv[0], wx, ux, __cplusplus);
+  return 0;
+}
+```
+
 ## 结尾
 
 在格式化函数的过程中，C++ 的不足在于没有反射，从而无法很好的获得对象的类型，这样传统的格式化方案就容易出现问题，而是用变参模板，在复杂的编码技巧加成后，使用编译器的检查能够很好的实现类型安全高效的格式化，但是也存在一个问题，那就是程序编译后提交较大，但都到了 9012，只要不超过 Clang 的体积都是能接受的。
