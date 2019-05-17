@@ -92,7 +92,7 @@ int vsnprintf(char *restrict s, size_t n, const char *restrict fmt, va_list ap)
 }
 ```
 
-在 musl 之中，vsnprintf 创建一个 FILE 结构，然后最终使用 vfprintf 格式化字符串。这里使用了 `va_list` `va_start` `va_end` 宏，这组宏将变参函数的参数从函数栈中取出来，从而实现了变参函数的功能，我们可以参考 Visual C++ 在 [`vadefs.h`](https://gist.github.com/fcharlie/e2b6a2d578d7b484d0338886ce0db768) 中的定义：<script src="https://gist.github.com/fcharlie/e2b6a2d578d7b484d0338886ce0db768.js"></script>
+在 musl 之中，vsnprintf 创建一个 FILE 结构，然后最终使用 vfprintf 格式化字符串。这里使用了 `va_list` `va_start` `va_end` 宏，这组宏将变参函数的参数从函数栈中取出来，从而实现了变参函数的功能，我们可以参考 Visual C++ 在 [`vadefs.h`](https://gist.github.com/fcharlie/e2b6a2d578d7b484d0338886ce0db768) 中的定义。
 
 而 va_list 本质上是从函数参数栈中获得特定位置的值。
 
