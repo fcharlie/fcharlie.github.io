@@ -711,6 +711,82 @@ struct {
 
 这样的好处是 `std::string/std::string_view` 不再需要计算长度。我们还可以使用 `%v` 按照输入参数的类型自主格式化，这样就不存在类型不匹配了。
 
+## Bela StrFormat 
+
+**2019-05-17 Update:** 最近我编写了一个基于 C++17 的 Windows 系统上的工具库，叫 [Bela](https://github.com/fcharlie/bela)，Bela 学习了 `Chromium SafeNPrintf`，实现了类型安全的字符串格式化，任意长度整型 `%d`，字符串`%s`, 浮点(float, double) `%f`, 十六进制 `%x` `%X`，还有 `%p` 输出指针。支持 Pading 输出。
+
+```c++
+// https://github.com/fcharlie/bela/blob/master/include/bela/fmt.hpp
+template <typename... Args>
+ssize_t StrFormat(wchar_t *buf, size_t N, const wchar_t *fmt, Args... args) {
+  const format_internal::FormatArg arg_array[] = {args...};
+  return format_internal::StrFormatInternal(buf, N, fmt, arg_array,
+                                            sizeof...(args));
+}
+
+template <size_t N, typename... Args>
+ssize_t StrFormat(wchar_t (&buf)[N], const wchar_t *fmt, Args... args) {
+  // Use Arg() object to record type information and then copy arguments to an
+  // array to make it easier to iterate over them.
+  const format_internal::FormatArg arg_array[] = {args...};
+  return format_internal::StrFormatInternal(buf, N, fmt, arg_array,
+                                            sizeof...(args));
+}
+
+template <typename... Args>
+std::wstring StrFormat(const wchar_t *fmt, Args... args) {
+  const format_internal::FormatArg arg_array[] = {args...};
+  return format_internal::StrFormatInternal(fmt, arg_array, sizeof...(args));
+}
+
+// Fast-path when we don't actually need to substitute any arguments.
+ssize_t StrFormat(wchar_t *buf, size_t N, const wchar_t *fmt);
+std::wstring StrFormat(const wchar_t *fmt);
+template <size_t N>
+inline ssize_t StrFormat(wchar_t (&buf)[N], const wchar_t *fmt) {
+  return StrFormat(buf, N, fmt);
+}
+
+```
+
+支持的字符串类型：
+
++   `std::wstring`
++   `std::wstring_view`
++   `const wchar_t *`
++   `wchar_t *`
++   `std::u16string`
++   `std::u16string_view`
++   `const char16_t *`
++   `char16_t *`
+
+以及以下会转换为 UTF-16 的 UTF-8 字符串类型：
++   `std::string`
++   `std::string_view`
++   `const char *`
++   `char *`
+
+基于 `Bela Format` 我还编写了 `bela::FPrintF` 将格式化的数据输出到控制台终端或者文件，单输出为 Conhost 时，保持 UTF-16 编码，当输出到文件或者 Cygwin 终端时，则会转为 UTF-8。
+
+```c++
+//https://github.com/fcharlie/bela/blob/master/include/bela/stdwriter.hpp
+ssize_t StdWrite(FILE *out, std::wstring_view msg);
+
+template <typename... Args>
+ssize_t FPrintF(FILE *out, const wchar_t *fmt, Args... args) {
+  const format_internal::FormatArg arg_array[] = {args...};
+  auto str =
+      format_internal::StrFormatInternal(fmt, arg_array, sizeof...(args));
+  return StdWrite(out, str);
+}
+
+inline ssize_t FPrintF(FILE *out, const wchar_t *fmt) {
+  auto str = StrFormat(fmt);
+  return StdWrite(out, str);
+}
+
+```
+
 ## 结尾
 
 在格式化函数的过程中，C++ 的不足在于没有反射，从而无法很好的获得对象的类型，这样传统的格式化方案就容易出现问题，而是用变参模板，在复杂的编码技巧加成后，使用编译器的检查能够很好的实现类型安全高效的格式化，但是也存在一个问题，那就是程序编译后提交较大，但都到了 9012，只要不超过 Clang 的体积都是能接受的。
