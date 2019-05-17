@@ -766,7 +766,7 @@ inline ssize_t StrFormat(wchar_t (&buf)[N], const wchar_t *fmt) {
 +   `const char *`
 +   `char *`
 
-基于 `Bela Format` 我还编写了 `bela::FPrintF` 将格式化的数据输出到控制台终端或者文件，单输出为 Conhost 时，保持 UTF-16 编码，当输出到文件或者 Cygwin 终端时，则会转为 UTF-8。
+基于 `Bela Format` 我还编写了 `bela::FPrintF` 将格式化的数据输出到控制台终端或者文件，当输出到 Conhost 时，则会以 UTF-16 编码输出，若输出到文件或者 Cygwin 终端时，则会转为 UTF-8 输出。
 
 ```c++
 //https://github.com/fcharlie/bela/blob/master/include/bela/stdwriter.hpp
