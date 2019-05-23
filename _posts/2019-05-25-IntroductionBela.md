@@ -8,10 +8,15 @@ categories: cxx
 
 # 前言
 
-在前面，我曾经写过一篇文章 [《字符串格式化漫谈》](https://forcemz.net/cxx/2019/04/29/StringFormattingTalk/) 文章最后提到了 [`Bela`](https://github.com/fcharlie/bela) 里面实现了一个类型安全的 `bela::StrFormat`，实际上 `bela` 还有很多有趣的功能，让我们往下看。
+在前面，我曾经写过一篇文章 [《字符串格式化漫谈》](https://forcemz.net/cxx/2019/04/29/StringFormattingTalk/) 文章最后提到了 [`Bela`](https://github.com/fcharlie/bela) 里面实现了一个类型安全的 `bela::StrFormat`，实际上 `bela` 还有很多有趣的功能，本文也就是说一说 Bela 有哪些有趣功能和故事。
 
+# 一. Bela 的缘由
 
-# Bela 字符串功能库
+之前，我开发了几个开源软件，如 Windows 系统以指定权限启动进程的 [Privexec](https://github.com/M2Team/Privexec)，Clang Windows 操作系统上自动化构建依赖管理工具 [Clangbuilder](https://github.com/fstudio/clangbuilder)，还有 PE 分析工具 [PEAnalyzer](https://github.com/fcharlie/PEAnalyzer)，文件分析工具 [Planck](https://github.com/fcharlie/Planck) 等等。在编写这些工具时要重复编写一些代码，毕竟大家都知道 C++ STL 有时候并不能称心如意。在 [Google Abseil](https://github.com/abseil/abseil-cpp) 开源后，我借鉴了这个项目的一些代码重新造了一些 `wchar_t` 版本的轮子，后来把这些代码单独抽离出来，进一步改进，也就成了现在的 `Bela`。不直接用 `Absl` 的原因很简单，它不支持 `wchar_t`。格式化字符串不使用 `fmtlib` 的原因也很简单，不喜欢异常，它的代码库也比较大。叫 `bela ['bələ]` 的原因依然很简单，简短易读易拼写。
+
+Bela 的字符串函数基本基于 `Abseil`，`Unicode` 转换基于 LLVM 的 `ConvertUTF.cc` , `charconv` 基于 `Visual C++ STL`。
+
+# 二. Bela 字符串功能库
 
 ## StrFormat
 
@@ -84,7 +89,7 @@ int wmain(int argc, wchar_t **argv) {
 
 请注意，如果上述 emoji 要正常显示，应当使用 `Windows Terminal` 或者是 `Mintty`。
 
-# Bela Windows 系统功能库
+# 三. Bela Windows 系统功能库
 
 ## PathCat 路径规范化连接函数
 
