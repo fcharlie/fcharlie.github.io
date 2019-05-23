@@ -227,6 +227,7 @@ int wmain(int argc, wchar_t **argv) {
 在 bela 中，我们提供了命令行合成，拆分和解析类，具体如下：
 
 |类名|功能|文件|
+|---|---|---|
 |ParseArgv|解析命令行参数，类似 GNU `getopt_long`，支持 `wchar_t`，不使用全局变量，错误信息详细|`<bela/parseargv.hpp>`|
 |Tokenizer|将命令行字符串 Windows commandline 形式转变为 `wchar_t **Argv` 形式|`<bela/tokenizecmdline.hpp>`|
 |EscapeArgv|将 `Argv` 形式命令行参数转为 `commdline` 形式，主要用于 `CreateProcess`|`<bela/escapeargv.hpp>`|
