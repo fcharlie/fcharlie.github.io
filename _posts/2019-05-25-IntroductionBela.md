@@ -15,7 +15,7 @@ categories: cxx
 之前，我开发了几个开源软件，如 Windows 系统以指定权限启动进程的 [Privexec](https://github.com/M2Team/Privexec)，Clang Windows 操作系统上自动化构建依赖管理工具 [Clangbuilder](https://github.com/fstudio/clangbuilder)，还有 PE 分析工具 [PEAnalyzer](https://github.com/fcharlie/PEAnalyzer)，文件分析工具 [Planck](https://github.com/fcharlie/Planck) 等等。在编写这些工具时要重复编写一些代码，毕竟大家都知道 C++ STL 有时候并不能称心如意。在 [Google Abseil](https://github.com/abseil/abseil-cpp) 开源后，我借鉴了这个项目的一些代码重新造了一些 `wchar_t` 版本的轮子，后来把这些代码单独抽离出来，进一步改进，也就成了现在的 `Bela`。不直接用 `Absl` 的原因很简单，它不支持 `wchar_t`。格式化字符串不使用 `fmtlib` 的原因也很简单，不喜欢异常，它的代码库也比较大。叫 `bela ['bələ]` 的原因依然很简单，简短易读易拼写。
 
 Bela 的字符串函数基本基于 `Abseil`，`Unicode` 转换基于 LLVM 的 `ConvertUTF.cpp`，最初 `ConvertUTF` 的版权属于 **Unicode.org** , `charconv` 基于 `Visual C++ STL`，`EscapeArgv` 借鉴了 Golang 源码，`endian.hpp`，`tokenziecmdline.hpp` 借鉴了 `LLVM Support Library` 等等。
- 
+
 # 二. Bela 字符串功能库
 
 ## bela::error_code
@@ -108,16 +108,18 @@ ssize_t StrFormat(wchar_t *buf, size_t N, const wchar_t *fmt, Args... args)
 下面是一个示例：
 
 ```cpp
-///
+/// C++17
 #include <bela/strcat.hpp>
 #include <bela/stdwriter.hpp>
+
+constexpr auto cv=__cplusplus;
 
 int wmain(int argc, wchar_t **argv) {
   auto ux = "\xf0\x9f\x98\x81 UTF-8 text \xE3\x8D\xA4"; // force encode UTF-8
   wchar_t wx[] = L"Engine \xD83D\xDEE0 中国";
   bela::FPrintF(
       stderr,
-      L"Argc: %d Arg0: \x1b[32m%s\x1b[0m W: %s UTF-8: %s __cplusplus: %d\n", argc, argv[0], wx, ux, __cplusplus);
+      L"Argc: %d Arg0: \x1b[32m%s\x1b[0m W: %s UTF-8: %s C++ version: %d\n",  argc, argv[0], wx, ux, cv);
   char32_t em = 0x1F603;//😃
   auto s = bela::StringCat(L"Look emoji -->", em, L" U: ",
                            static_cast<uint32_t>(em));
@@ -126,7 +128,6 @@ int wmain(int argc, wchar_t **argv) {
                 bela::FileTypeName(stderr), bela::FileTypeName(stdin));
   return 0;
 }
-
 ```
 
 请注意，如果上述 emoji 要正常显示，应当使用 `Windows Terminal` 或者是 `Mintty`。
@@ -235,6 +236,37 @@ int wmain(int argc, wchar_t **argv) {
 ## MapView
 
 在 bela 中，我还提供 `MapView`，这是一个只读的文件内存映射，通常用于文件解析。文件 `<bela/mapview.hpp>` 还有与 `std::string_view` 类似的 `MemView ` 类。
+
+## PESimpleDetailsAze 获得 PE 的简单信息
+
+在 Bela 中，我添加了一个 `PESimpleDetailsAze` 用于获得 PE 可执行文件的一些信息，其结构体如下：
+```cpp
+struct PESimpleDetails {
+  std::wstring clrmsg;
+  std::vector<std::wstring> depends; // depends dll
+  std::vector<std::wstring> delays;  // delay load library
+  PEVersionPair osver;
+  PEVersionPair linkver;
+  PEVersionPair imagever;
+  Machine machine;
+  Subsytem subsystem;
+  uint16_t characteristics{0};
+  uint16_t dllcharacteristics{0};
+  bool IsConsole() const { return subsystem == Subsytem::CUI; }
+  bool IsDLL() const {
+    constexpr uint16_t imagefiledll = 0x2000;
+    return (characteristics & imagefiledll) != 0;
+  }
+};
+```
+
+函数的声明如下：
+```cpp
+std::optional<PESimpleDetails> PESimpleDetailsAze(std::wstring_view file,
+                                                      bela::error_code &ec);
+```
+
+通过此函数，你可以获得 PE 可执行文件的目标机器类型，子系统，连接器版本，系统版本，Image 版本，PE 的特征，PE 依赖的 dll 和延时加载的 dll。如果是 CLR PE 文件，则clrmsg 不为空描述的是 CLR 的信息。`PESimpleDetailsAze` 并不依赖 `DbgHelp.dll (ImageRvaToVa)`。
 
 # 最后
 
