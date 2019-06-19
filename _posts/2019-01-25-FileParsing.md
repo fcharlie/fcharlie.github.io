@@ -79,7 +79,7 @@ Git 在克隆本地存储库时，`objects` 目录的对象文件（主要是 pa
 
 在 POSIX 系统中，`readlink` 可以解析符号链接获得真实的目标路径，在 Windows 中，则可以使用 `GetFinalPathNameByHandleW` 获得文件真实的路径。
 
-NTFS 系统还支持一些其他的重解析点，包括 `MountPoint`, 与 UWP 快捷命令目标相关的 `AppExecLink`, 与 Windows 10 Unix domain socket 相关的 `AF Unix`, 与 OneDrive 相关的 `OneDrive`, 与 Git VFS（GVFS） 相关的 `ProjFS`, 以及与 WIM 挂载相关的 `WimImage` 等等。Planck 中实现了函数 [`ResolveTarget`](https://github.com/fcharlie/Planck/blob/a400828e62804b9c38c4e164e9f3efe559245e50/lib/inquisitive/resolve.cc#L82) 用于分析重解析点。
+NTFS 系统还支持一些其他的重解析点，包括 `MountPoint`, 与 UWP 快捷命令目标相关的 `AppExecLink`, 与 Windows 10 Unix domain socket 相关的 `AF Unix`, 与 OneDrive 相关的 `OneDrive`, 与 Git VFS（GVFS） 相关的 `ProjFS`, 以及与 WIM 挂载相关的 `WimImage` 还有 [WOF - Windows Overlay Filter](https://devblogs.microsoft.com/oldnewthing/20190618-00/?p=102597) 等等。Planck 中实现了函数 [`ResolveTarget`](https://github.com/fcharlie/Planck/blob/a400828e62804b9c38c4e164e9f3efe559245e50/lib/inquisitive/resolve.cc#L82) 用于分析重解析点。
 
 ### 快捷方式和桌面文件
 
