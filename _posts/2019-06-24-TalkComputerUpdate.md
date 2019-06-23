@@ -9,9 +9,8 @@ categories: talk
 # 前言
 
 今天在微博上看到了新浪科技的一篇微博，其主要内容如下：
-```txt
-#创事记#【用不胜其烦的update，将Windows用户捆绑上未来战车】网友苦Windows久矣。众所周知，Windows Update是很烦人的更新，其中以win10的用户最为水深火热。目前看来，用户还需要在一次次漫长而琐碎的更新升级中等待，而时代的洪流终会蜿蜒地书写出微软的对与错。@脑极体Unity Windows不胜其烦的update
-```
+
+>#创事记#【用不胜其烦的update，将Windows用户捆绑上未来战车】网友苦Windows久矣。众所周知，Windows Update是很烦人的更新，其中以win10的用户最为水深火热。目前看来，用户还需要在一次次漫长而琐碎的更新升级中等待，而时代的洪流终会蜿蜒地书写出微软的对与错。@脑极体Unity Windows不胜其烦的update
 
 链接为：[https://m.weibo.cn/status/4385983862343989](https://m.weibo.cn/status/4385983862343989)。
 
