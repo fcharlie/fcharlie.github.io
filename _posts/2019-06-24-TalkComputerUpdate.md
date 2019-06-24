@@ -22,17 +22,19 @@ categories: talk
 
 ## 安全更新
 
-无论是何种计算机，操作系统，系统核心组件，基础软件的安全更新是最为重要的。在实际情况中，硬件，软件的安全状况并不容乐观。
+无论是何种计算机，操作系统，系统核心组件，基础软件的安全更新是最为重要的。在实际情况中，硬件，软件的安全状况并不容乐观。下面是一些漏洞的回顾。
 
-### OpenSSL 'Heartbleed' vulnerability (CVE-2014-0160)
+2014年4月，国外黑客曝光了 OpenSSL Heartbleed 漏洞（在国内称为心血漏洞）：[OpenSSL 'Heartbleed' vulnerability (CVE-2014-0160)](https://www.us-cert.gov/ncas/alerts/TA14-098A)，此漏洞危害之大，影响之大，堪称网络安全里程碑时间。此漏洞是利用 OpenSSL TLS 心跳包没有做边界检查进行攻击，黑客可以拿到用户加密后的数据，此漏洞使得受影响的用户使用 HTTPS 访问网银，在线支付等行为都变得不安全。 全球有大量网站使用 OpenSSL 实现 HTTPS 接入，这些网站都受到了影响。这件事还深远影响了 OpenSSL 的开发流程，改变了 SSL/TLS 库的格局，导致了 OpenSSL 的分裂，比如 OpenBSD fork OpenSSL 创建了 LibreSSL。Google fork OpenSSL 创建 boringssl 项目，甚至一些厂商开始使用自己的 SSL/TLS 实现，如 Amazon 的 [s2n](https://github.com/awslabs/s2n) 以及 Facebook 的 [Fizz(TLS 1.3)](https://github.com/facebookincubator/fizz)。而一些其他加密/TLS 库也受到了更多关注，如 ARM 的 [mbedtls](https://github.com/ARMmbed/mbedtls)。
 
-[OpenSSL 'Heartbleed' vulnerability (CVE-2014-0160)](https://www.us-cert.gov/ncas/alerts/TA14-098A)
-
-### Intel CPU vulnerability
+2017年3月补丁星期二，微软发布了 SMB
 
 ### Microsoft SMBv1 Vulnerability
 
 [SMB Exploited: WannaCry Use of "EternalBlue"](https://www.fireeye.com/blog/threat-research/2017/05/smb-exploited-wannacry-use-of-eternalblue.html)
+
+### Intel CPU vulnerability
+
+
 
 ## 功能更新
 
