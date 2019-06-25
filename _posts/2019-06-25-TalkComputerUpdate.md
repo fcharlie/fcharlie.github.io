@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "坐和放宽 - 您的计算机需要更新"
-date:   2019-06-24 10:00:00
+date:   2019-06-25 10:00:00
 published: true
 categories: talk
 ---
@@ -30,7 +30,7 @@ categories: talk
 
 2018年，Intel 不断的爆出 CPU 漏洞，“熔断”（Meltdown）和“幽灵”（Spectre）及其变种，这些漏洞让云服务厂商惊出一身冷汗，Azure 亚马逊都停机维护。这种漏洞的危害非常严重，对于使用虚拟机或者容器隔离的云服务厂商，CPU 漏洞可以轻易突破宿主机隔离，更可获得关键数据。还有黑客演示使用 JavaScript 利用漏洞攻击，普通用户也难以免受其害。Clang GCC 均增加了防御 CPU 漏洞的代码。MSVC 发布了抵御 Spectre 漏洞的编译器版本。
 
-2019-06-25 CURL 作者 又撰文披露了 [OPENSSL ENGINE CODE INJECTION IN CURL](https://daniel.haxx.se/blog/2019/06/24/openssl-engine-code-injection-in-curl/)  [CVE-2019-5443: Windows OpenSSL engine code injection](https://curl.haxx.se/docs/CVE-2019-5443.html)，此缺陷可以导致非特权用户将恶意配置放置在 OpenSSL 搜索目录，当特权用于运行 cURL 时，实现攻击。漏洞真是防不胜防。
+2019-06-24 CURL 作者 又撰文披露了 [OPENSSL ENGINE CODE INJECTION IN CURL](https://daniel.haxx.se/blog/2019/06/24/openssl-engine-code-injection-in-curl/)  [CVE-2019-5443: Windows OpenSSL engine code injection](https://curl.haxx.se/docs/CVE-2019-5443.html)，此缺陷可以导致非特权用户将恶意配置放置在 OpenSSL 搜索目录，当特权用于运行 cURL 时，实现攻击。漏洞真是防不胜防。
 
 [Zero Day Initiative: ZDI](https://www.zerodayinitiative.com/) 是趋势科技建立的一个零日漏洞计划，在 2019-06 月的零日漏洞分享目前就有 3个，相关博客地址：[https://www.zerodayinitiative.com/blog](https://www.zerodayinitiative.com/blog)，6 月份的零日漏洞如下：
 
