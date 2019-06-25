@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "坐和放宽 - 您的计算机需要更新"
-date:   2019-06-25 10:00:00
+date:   2019-06-24 10:00:00
 published: true
 categories: talk
 ---
