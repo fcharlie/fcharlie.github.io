@@ -265,7 +265,8 @@ inline bool Derivative::ExpandEnv(std::string_view raw, std::string &w,
 在 Gitee 中，有一些项目基于 Golang 编写，而 cmake 目前并不支持 golang，虽然使用 cmake 可以打包，但是还是有一些麻烦，实际上编写 stgz 构建脚本非常简单，相应脚本如下：
 
 主构建脚本（bali：我使用 [https://github.com/fcharlie/bali](https://github.com/fcharlie/bali) 作为 Golang 项目的构建软件）：
-```ps1
+
+```powershell
 #!/usr/bin/env pwsh
 
 param(
