@@ -252,6 +252,8 @@ inline bool Derivative::ExpandEnv(std::string_view raw, std::string &w,
 
 这个 `Derivative` 类是我借鉴 `Golang` 先在 bela 中实现的，在 bela 中，我们使用了 [parallel-hashmap](https://github.com/greg7mdp/parallel-hashmap) 作为环境变量容器，并且提供了支持 `std::wstring` 异构查找的[补丁](https://github.com/fcharlie/bela/blob/master/include/bela/phmap/std_wstring.patch)。并且还使用 `parallel_flat_hash_map` 实现了线程安全的 `DerivativeMT`，测试无误后将其移植到到 Gitee 的项目中。
 
+**2019-07-10** [Gregory Popovitch](https://github.com/greg7mdp) 接受了我的 [PR](https://github.com/greg7mdp/parallel-hashmap/pull/15)，目前已经使用官方的 `parallel-hashmap` 作为 Bela 的环境变量容器。
+
 因此，如果你需要在 Windows 中使用 `Derivative`，建议使用 [`bela`](https://github.com/fcharlie/bela/blob/master/include/bela/env.hpp)，其他环境可以使用这个 `header-only` 版本。
 
 ## 可回滚的 Shell 自解压安装包
