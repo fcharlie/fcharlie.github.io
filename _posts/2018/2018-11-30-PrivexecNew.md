@@ -86,7 +86,7 @@ Appinfo 服务描述：
 
 因此要获得此权限，需要先模拟到 `System` 权限，然后启动 `TrustedInstaller` 服务，然后获得服务进程的权限句柄，以该句柄拷贝启动新的进程。
 
-Privexec 的进程启动相关代码在：[https://github.com/M2Team/Privexec/tree/master/include/process](https://github.com/M2Team/Privexec/tree/master/include/process)，使用 C++17，利用 *Lambda*，*RIIA* 这样的功能可以轻易的写出句柄安全的代码。
+Privexec 的进程启动相关代码在：[https://github.com/M2Team/Privexec/tree/master/lib/ProcessCore](https://github.com/M2Team/Privexec/tree/master/lib/ProcessCore)，使用 C++17，利用 *Lambda*，*RIIA* 这样的功能可以轻易的写出句柄安全的代码。
 
 ```c++
 template <class F> class final_act {
