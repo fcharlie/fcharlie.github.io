@@ -314,7 +314,9 @@ const char *argvblock="pwsh\0-NoExit\0-Command\0\"$Host.UI.RawUI.WindowTitle=\"W
 
 Windows Terminal 开源还是非常不错的，参与到其中改进在 Windows 系统的开发体验感觉很不错，而其中的 OpenConsole 源码也让我更加深入了解了 Windows Console 的一些原理。
 
-OpenConsole 目前可以开启 注册表选项 `HKCU\Console\UseDx`=`DWORD(1)` 从而使用 DirectWrite 渲染字体，但我目前（2019-07-20）测试 Emoji 无法显示。控制台团队还预留了实现一个 Console 控件，这样一来，在第三方程序中集成控制台窗口非常有意思了。Visual Studio [WhackWhackTerminal](https://github.com/microsoft/WhackWhackTerminal) 的作者 Daniel Griffen 还增加了一些 PR, 实现 WPF 控制台控件，这可以预见，可能将新的控制台集成到 Visual Studio。
+OpenConsole 目前可以开启 注册表选项 `HKCU\Console\UseDx`=`DWORD(1)` 切换到使用 DirectWrite 渲染字体，但我目前（2019-07-20）测试虽然使用 DirectWrite 渲染，但 Emoji 无法显示，这个问题我将进一步跟踪。
+
+控制台团队还在 Windows Terminal 源码中添加了一个 Console 控件，这样一来，第三方程序中集成控制台窗口将更加容易。Visual Studio [WhackWhackTerminal](https://github.com/microsoft/WhackWhackTerminal) 的作者 Daniel Griffen 还增加了一些 PR, 实现 WPF 控制台控件，这可以预见，可能将新的控制台集成到 Visual Studio。
 
 下面是一些控制台的文档和关键代码：
 
