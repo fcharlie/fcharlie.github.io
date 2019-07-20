@@ -14,7 +14,7 @@ categories: windows
 
 ![](https://user-images.githubusercontent.com/6904176/58634006-b05e6080-82d9-11e9-9e3f-2715647edf1b.png)
 
-在使用的过程中，多标签，亚克力的窗口背景和 `Colour Emojis` 都让我非常满意，而且由于是使用 Direct2D 绘制的 emoji，看起来要比 Mintty 使用 GDI+PNG 的 emoji 方案好的多（PNG 的 emoji 无论是放大和缩小都更容易失真，并且 Mintty 并没有 Segeo UI 的 emoji 风格）。但我在使用的过程中发现了一个 BUG，即 [Bug Report: The conhost command line is not properly escaped #1090 ](https://github.com/microsoft/terminal/issues/1090)，后来我又提交了一个 PR 修复了此问题，在研究其他软件源码时，我发现这个问题并不是个例，因此有必要对此问题进行一次讨论，便有了此文。
+在使用的过程中，多标签，亚克力的窗口背景和 `Colour Emojis` 都让我非常满意，而且使用 Direct2D 绘制的 emoji，看起来要比 Mintty 使用 GDI+PNG 的 emoji 方案好的多（PNG 的 emoji 无论是放大和缩小都更容易失真，Mintty 并没有 Segoe UI 字体的 emoji 风格，其他风格我并不太喜欢）。不过我在使用的过程中发现了一个 BUG，即 [Bug Report: The conhost command line is not properly escaped #1090 ](https://github.com/microsoft/terminal/issues/1090)，后来我又提交了一个 PR 修复了此问题，在研究其他软件源码时，我发现这个问题并不是个例，因此有必要对此问题进行一次讨论，便有了此文。
 
 ## Windows Terminal 的命令行转义错误
 
