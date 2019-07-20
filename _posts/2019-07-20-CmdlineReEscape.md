@@ -308,7 +308,7 @@ const char *argvblock="pwsh\0-NoExit\0-Command\0\"$Host.UI.RawUI.WindowTitle=\"W
 //char *const argv[]={0x0100,...};
 ```
 
-因此，Argv 的这种命令行形式在真正启动进程时，Windows 仍需要一次转换，这就容易带来问题，这也是命令行转义问题在 Windows 平台太比较多的原因。
+因此，以 Argv 的这种命令行形式在使用系统调用真正启动进程时，Windows 仍需要一次转换，这就容易带来问题，这也是命令行转义问题在 Windows 平台太比较多的原因。
 
 ## 最后
 
