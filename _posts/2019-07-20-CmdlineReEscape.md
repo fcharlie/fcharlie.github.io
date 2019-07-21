@@ -63,11 +63,7 @@ categories: windows
 ARGV0: C:\Program Files\PowerShell\7-preview\pwsh.exe
 ARGV1: -NoExit
 ARGV2: -Command
-ARGV3: $Host.UI.RawUI.WindowTitle=Windows
-ARGV4: Pwsh
-ARGV5: 💙 
-ARGV6: (7
-ARGV7: Preview)
+ARGV3: $Host.UI.RawUI.WindowTitle=Windows Pwsh 💙 (7 Preview)
 ```
 
 但实际上我们预期的命令行应该是：
@@ -79,7 +75,7 @@ ARGV2: -Command
 ARGV3: $Host.UI.RawUI.WindowTitle="Windows Pwsh 💙 (7 Preview)"
 ```
 
-这样一来命令行肯定就会出错，那么问题是怎么产生的？
+这样一来在 Pwsh 解析命令行后设置 `$Host.UI.RawUI.WindowTitle` 肯定就会出错，那么问题是怎么产生的？
 
 我们查看进程树，发现 Pwsh 的父进程是 OpenConsole，也就是图中的 `conhost.exe`, 即 Windows 控制台窗口主机的开源版本。
 
