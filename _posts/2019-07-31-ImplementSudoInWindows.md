@@ -7,4 +7,15 @@ categories: windows
 ---
 # 前言
 
-*这篇文章的想法来源于我在 Windows Terminal Issue: [Sudo/command line only elevation?](https://github.com/microsoft/terminal/issues/146) 的[评论](https://github.com/microsoft/terminal/issues/146#issuecomment-515812461)。*
+*这篇文章的想法来源于我在 [Windows Terminal Issue#146](https://github.com/microsoft/terminal/issues/146) 的[评论](https://github.com/microsoft/terminal/issues/146#issuecomment-515812461)。*
+
+
+## Linux 的 sudo 内幕
+
+## 在 Windows 实现 Sudo
+
+### ShellExecute 内幕与 sudo
+
+### C/S sudo 机制
+
+### 需要 UI 交互的 wsudo
