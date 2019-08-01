@@ -130,7 +130,7 @@ Git-Analyze 开源地址 [https://gitee.com/oscstudio/git-analyze](https://gitee
    [https://github.com/fcharlie/WiFiAssistant](https://github.com/fcharlie/WiFiAssistant)
 -   Exile 基于 Microsoft cpprestsdk 以及 HTTP.sys 的 Git Smart HTTP Server。
    [https://github.com/fstudio/Exile](https://github.com/fstudio/Exile)
--   Bela 基于 C++17/20 开发的 Windows 系统功能库。
+-   Bela 基于 C++17/20 开发的 Windows 系统功能库。 
    [https://github.com/fcharlie/bela](https://github.com/fcharlie/bela)
 
 ## 开源参与
