@@ -346,7 +346,7 @@ std::string message = fmt::sprintf("The answer is %d", 42);
 
 [Folly format](https://github.com/facebook/folly/blob/master/folly/docs/Format.md) 的风格类似于 python 的格式化风格，与 fmtlib 的第一种一致。
 
-```c++
+```cpp
 using folly::format;
 using folly::sformat;
 using folly::vformat;

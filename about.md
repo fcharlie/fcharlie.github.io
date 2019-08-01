@@ -1,9 +1,7 @@
 ---
 layout: post
 title: Charlie's Resume
-date:   2015-12-30 12:00:00
-published: true
-categories: other
+permalink: /about/
 ---
 
 
@@ -23,7 +21,7 @@ Email: forcemz@outlook.com
 2014.06 ~ 至今 深圳市奥思网络科技有限公司（开源中国），码云团队核心工程师，主要负责码云基础架构设计和开发，
 Git 基础软件开发，服务器软件开发。
 
--   实现码云（GIT@OSC）代码托管平台的 Subversion（SVN）接入，国内第一家。
+-   实现码云（GITEE）代码托管平台的 Subversion（SVN）接入，国内第一家。
 -   从事 GIT 基础服务开发，包括不限于分布式架构，实用工具等。
 -   开发了 svnsbz, 即 svn:// 协议动态代理服务器,支持智能感知黑名单功能（黑名单文件修改无需重启，或重新加载服务器）。
 -   开发了 Git 分布式前端，NGINX 模块，核心路由模块，核心路由库实现了 O1 高效路由缓存，支持 Hostname，内部 DNS 缓存以及实时 DNS。
