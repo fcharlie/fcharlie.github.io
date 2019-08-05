@@ -81,3 +81,11 @@ sudo 命令启动后可以运行 `setuid(0)` 将自身权限设置为 `root` 然
 ### C/S sudo 机制
 
 ### 需要 UI 交互的 wsudo
+
+[AttachConsole](https://docs.microsoft.com/en-us/windows/console/attachconsole)
+
+[Windows Terminal: oDispatchers::ConsoleHandleConnectionRequest](https://github.com/microsoft/terminal/blob/0d8f2998d6fdfa6013854ea66ccf26ed34ba8de2/src/server/IoDispatchers.cpp#L141)
+
+[Windows Terminal: IoDispatchers::ConsoleClientDisconnectRoutine](https://github.com/microsoft/terminal/blob/0d8f2998d6fdfa6013854ea66ccf26ed34ba8de2/src/server/IoDispatchers.cpp#L267)
+
+[ReactOS: AttachConsole](https://github.com/reactos/reactos/blob/3f1ab92d3aca8b7b0965a1004e4a5f25b4d64025/dll/win32/kernel32/client/console/console.c#L2675)
