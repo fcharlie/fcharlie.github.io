@@ -72,7 +72,7 @@ Change: 2018-05-12 07:49:34.051952000 +0800
 
 >If a process has a file ID (user or group), then it can at any time change its effective ID to its real ID and back to its file ID. Programs use this feature to relinquish their special privileges except when they actually need them. This makes it less likely that they can be tricked into doing something inappropriate with their privileges.
 
-sudo 命令启动后可以运行 `setuid(0)` 将自身权限设置为 `root` 然后验证用户凭据，有效时则可以以 root 用户权限运行相应的命令。在 Linux/POSIX 系统中，`sudo` 的原理并不复杂，当然要处理好不同用户的环境变量，涉及到的代码还是比较繁琐的。
+sudo 命令启动后可以运行 `setuid(0)` 将自身权限设置为 `root` 然后验证用户凭据，有效时则可以以 root 用户权限运行相应的命令。在 Linux/POSIX 系统中，`sudo` 的原理并不复杂，当然要处理好不同用户的环境变量，提权的有效期等等涉及到的代码还是比较繁琐的。
 
 ## 在 Windows 实现 Sudo
 
