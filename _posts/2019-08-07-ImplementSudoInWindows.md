@@ -2,7 +2,7 @@
 layout: post
 title:  "在 Windows 中实现 sudo"
 date:   2019-08-07 12:00:00
-published: false
+published: true
 categories: windows
 ---
 # 前言
@@ -83,6 +83,8 @@ sudo 命令启动后可以运行 `setuid(0)` 将自身权限设置为 `root` 然
 
 理解 Windows 权限机制需要了解 [ACL](https://en.wikipedia.org/wiki/Access-control_list) 以及 [User Account Control (UAC)](https://en.wikipedia.org/wiki/User_Account_Control)。在 Windows 系统上并不存在原生的 sudo 命令，标准用户的提权在开启 UAC 时，会出现一个提权对话框和安全桌面，那么在 Windows 中，从标准用户到特权用户 (Administrator) 内部是怎样的实现呢？如果我们需要实现一个不需要 UI 交互的 `Windows sudo` 又应该如何实现呢？
 
+>Windows 属于多用户操作系统，这里的权限讨论并未讲述来宾账户，仅限于标准账户，即同时属于 User 和 Administrators 组且开启了 UAC 提示的账户。
+
 ### UAC 提权与 sudo 实现探讨
 
 在 [《Privexec 杂谈》](https://forcemz.net/windows/2018/12/01/PrivexecNew/) 一文中，就讲过 UAC 提权，这里再重复一遍。
@@ -112,34 +114,211 @@ sudo 命令启动后可以运行 `setuid(0)` 将自身权限设置为 `root` 然
 Appinfo 服务描述：
 >使用辅助管理权限便于交互式应用程序的运行。如果停止此服务，用户将无法使用辅助管理权限启动应用程序，而执行所需用户任务可能需要这些权限。
 
+我们可以看到 Windows 中，提权本质上是通过去特权服务进行通信，校验后，由特权用户创建进程，这里并没有使用 `S_ISUID` 这样的机制，当然 UAC 白名单的自动提升和 `setuid` 也是不一样的，前者是系统创建进程便是创建了管理员权限，后者是 fork-exec 后，通过 `setuid` 切换到 `root`（Linux/Apple sudo 均是如此）。
+
 sudo 是 CUI 程序，如果我们需要实现类似 sudo 这样的程序，像标准输入输出的继承，工作目录的设置都必不可少，遗憾的是，在使用 ShellExecuteEx 启动管理员进程时，无法设置子进程的工作目录，也无法让子进程继承当前的控制台，终端，因此提权后，如果子进程子系统是 `Windows CUI` 时，会弹出一个新的控制台窗口。
 
 在 UAC 提权的过程，我们知道创建进程实际上是由 Appinfo 服务创建的，因此，如果在 `CreateProcessAsUserW` 之际直接 `lpCurrentDirectory` 即可设置子进程的工作目录。
 
 sudo 不需要 UI 交互验证用户的权限，这个时候，可以在终端或者控制台提示用户输入密码，在 Appinfo 中调用 [`LogonUserW`](https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-logonuserw) 验证用户凭据的合法性。当然，密码在跨进程传输的过程中要保证安全。
 
-唯一值得商榷的是，AppInfo 服务如何获得调用进程的标准输入输出标准错误，将控制台或者管道给子进程继承。Windows 拥有控制台 API [`AttachConsole`](https://docs.microsoft.com/en-us/windows/console/attachconsole)，可以让进程连接到另一个进程的控制台，这在后面有介绍，但是否可以不需要 `AttachConsole` 直接获取特定进程的控制台句柄，并将子进程的 `STARTUPINFOW` 的 `hStdInput`,`hStdOutput` 以及 `hStdError` 设置到控制台，如果调用进程的终端是 cygwin，msys2 这样的以管道模拟的，则需要获得这些管道的名称，然后使用 `CreateFileA` 创建句柄，绑定到子进程的输入输出错误。
+唯一值得商榷的是，AppInfo 服务如何获得调用进程的标准输入输出标准错误，将控制台或者管道给子进程继承。Windows 拥有控制台 API [`AttachConsole`](https://docs.microsoft.com/en-us/windows/console/attachconsole)，可以让进程连接到另一个进程的控制台，这在后面有介绍，但是否可以不需要 `AttachConsole` 直接获取特定进程的控制台句柄，并将子进程的 `STARTUPINFOW` 的 `hStdInput`,`hStdOutput` 以及 `hStdError` 设置到控制台。如果调用进程的终端是 cygwin，msys2 这样的以管道模拟的，则需要获得这些管道的名称，然后使用 `CreateFileA` 创建句柄，绑定到子进程的输入输出错误。要处理不同的情况还是比较麻烦。
 
 在 Appinfo 服务中实现 sudo 的逻辑的困难在于 Windows 团队需要谨慎处理各种情况，避免安全问题引入 Windows。并且，实现 sudo 逻辑到上线可能需要几个 Windows 发行版。
 
 ### sudo bridge 设想
 
-在 WSL 发布之后，[winpty](https://github.com/rprichard/winpty) Ryan Prichard 开源了 [wslbridge](https://github.com/rprichard/wslbridge) 项目，wslbridge 分为前端和后端，前端是一个基于 cygwin 的 Windows 程序，后端是一个 Linux 程序，当使用 PTY 模式时 wslbridge-backend 会使用 `forkpty` 创建一个 `pseudoterminal` 然后将终端的数据通过 socket 发送到 wslbridge-frontend （通常会被 mintty conemu 这样的终端读取呈现给用户）. wslbridge-frontend 接受到用户输入的数据发送到 wslbridge-backend. 如果不使用 `PTY` 模式，wslbridge 还可以使用 Pipe 去模拟，这和 Cygwin/MSYS 在 Windows 的机制是一样的。 
+在 WSL 发布之后，[winpty](https://github.com/rprichard/winpty) Ryan Prichard 开源了 [wslbridge](https://github.com/rprichard/wslbridge) 项目，wslbridge 分为前端和后端，前端是一个基于 cygwin 的 Windows 程序，后端是一个 Linux 程序，当使用 PTY 模式时 wslbridge-backend 会使用 `forkpty` 创建一个 `pseudoterminal` 然后将终端的数据通过 socket 发送到 wslbridge-frontend （通常会被 mintty conemu 这样的终端读取呈现给用户）. wslbridge-frontend 接受到用户输入的数据发送到 wslbridge-backend. 如果不使用 `PTY` 模式，wslbridge 还可以使用 Pipe 去模拟终端行为，这和 Cygwin/MSYS 在 Windows 的机制是一样的。 
+
+Windows Terminal 项目实际上包括了 Windows conhost 的源码，基本上 OpenConsole 与目前 Windows 10 conhost.exe 的代码绝大多数是相同的。要了解控制台的一些源码可以好好的看看代码。
+
+WindowsTerminal.exe 是一个 UWP 程序，在启动终端时，通过 conhost.exe(OpenConsole) 创建一个 PTY 模式的终端: [CreateConPty](https://github.com/microsoft/terminal/blob/8fa42e09dfc6cd57d29e517a002d8c7a99e2aebd/src/cascadia/TerminalConnection/ConhostConnection.cpp#L94)。创建终端的 `CreateConPty` 代码如下：
+
+
+```c++
+// Function Description:
+// - Creates a headless conhost in "pty mode" and launches the given commandline
+//      attached to the conhost. Gives back handles to three different pipes:
+//   * hInput: The caller can write input to the conhost, encoded in utf-8, on
+//      this pipe. For keys that don't have character representations, the
+//      caller should use the `TERM=xterm` VT sequences for encoding the input.
+//   * hOutput: The caller should read from this pipe. The headless conhost will
+//      "render" it's state to a stream of utf-8 encoded text with VT sequences.
+//   * hSignal: The caller can use this to resize the size of the underlying PTY
+//      using the SignalResizeWindow function.
+// Arguments:
+// - cmdline: The commandline to launch as a console process attached to the pty
+//      that's created.
+// - startingDirectory: The directory to start the process in
+// - w: The initial width of the pty, in characters
+// - h: The initial height of the pty, in characters
+// - hInput: A handle to the pipe for writing input to the pty.
+// - hOutput: A handle to the pipe for reading the output of the pty.
+// - hSignal: A handle to the pipe for writing signal messages to the pty.
+// - piPty: The PROCESS_INFORMATION of the pty process. NOTE: This is *not* the
+//      PROCESS_INFORMATION of the process that's created as a result the cmdline.
+// - extraEnvVars : A map of pairs of (Name, Value) representing additional
+//      environment variable strings and values to be set in the client process
+//      environment.  May override any already present in parent process.
+// Return Value:
+// - S_OK if we succeeded, or an appropriate HRESULT for failing format the
+//      commandline or failing to launch the conhost
+[[nodiscard]] __declspec(noinline) inline HRESULT CreateConPty(const std::wstring& cmdline,
+                                                               std::optional<std::wstring> startingDirectory,
+                                                               const unsigned short w,
+                                                               const unsigned short h,
+                                                               HANDLE* const hInput,
+                                                               HANDLE* const hOutput,
+                                                               HANDLE* const hSignal,
+                                                               PROCESS_INFORMATION* const piPty,
+                                                               DWORD dwCreationFlags = 0,
+                                                               const EnvironmentVariableMapW& extraEnvVars = {}) noexcept
+{
+    // Create some anon pipes so we can pass handles down and into the console.
+    // IMPORTANT NOTE:
+    // We're creating the pipe here with un-inheritable handles, then marking
+    //      the conhost sides of the pipes as inheritable. We do this because if
+    //      the entire pipe is marked as inheritable, when we pass the handles
+    //      to CreateProcess, at some point the entire pipe object is copied to
+    //      the conhost process, which includes the terminal side of the pipes
+    //      (_inPipe and _outPipe). This means that if we die, there's still
+    //      outstanding handles to our side of the pipes, and those handles are
+    //      in conhost, despite conhost being unable to reference those handles
+    //      and close them.
+    // CRITICAL: Close our side of the handles. Otherwise you'll get the same
+    //      problem if you close conhost, but not us (the terminal).
+    HANDLE outPipeConhostSide;
+    HANDLE inPipeConhostSide;
+    HANDLE signalPipeConhostSide;
+
+    SECURITY_ATTRIBUTES sa;
+    sa = { 0 };
+    sa.nLength = sizeof(sa);
+    sa.bInheritHandle = FALSE;
+    sa.lpSecurityDescriptor = nullptr;
+
+    CreatePipe(&inPipeConhostSide, hInput, &sa, 0);
+    CreatePipe(hOutput, &outPipeConhostSide, &sa, 0);
+    CreatePipe(&signalPipeConhostSide, hSignal, &sa, 0);
+
+    SetHandleInformation(inPipeConhostSide, HANDLE_FLAG_INHERIT, 1);
+    SetHandleInformation(outPipeConhostSide, HANDLE_FLAG_INHERIT, 1);
+    SetHandleInformation(signalPipeConhostSide, HANDLE_FLAG_INHERIT, 1);
+
+    std::wstring conhostCmdline = L"conhost.exe";
+    conhostCmdline += L" --headless";
+    std::wstringstream ss;
+    if (w != 0 && h != 0)
+    {
+        ss << L" --width " << (unsigned long)w;
+        ss << L" --height " << (unsigned long)h;
+    }
+
+    ss << L" --signal 0x" << std::hex << HandleToUlong(signalPipeConhostSide);
+    conhostCmdline += ss.str();
+    conhostCmdline += L" -- ";
+    conhostCmdline += cmdline;
+
+    STARTUPINFO si = { 0 };
+    si.cb = sizeof(STARTUPINFOW);
+    si.hStdInput = inPipeConhostSide;
+    si.hStdOutput = outPipeConhostSide;
+    si.hStdError = outPipeConhostSide;
+    si.dwFlags |= STARTF_USESTDHANDLES;
+
+    std::unique_ptr<wchar_t[]> mutableCommandline = std::make_unique<wchar_t[]>(conhostCmdline.length() + 1);
+    if (mutableCommandline == nullptr)
+    {
+        return E_OUTOFMEMORY;
+    }
+    HRESULT hr = StringCchCopy(mutableCommandline.get(), conhostCmdline.length() + 1, conhostCmdline.c_str());
+    if (!SUCCEEDED(hr))
+    {
+        return hr;
+    }
+
+    LPCWSTR lpCurrentDirectory = startingDirectory.has_value() ? startingDirectory.value().c_str() : nullptr;
+
+    std::vector<wchar_t> newEnvVars;
+    auto zeroNewEnv = wil::scope_exit([&] {
+        ::SecureZeroMemory(newEnvVars.data(),
+                           newEnvVars.size() * sizeof(decltype(newEnvVars.begin())::value_type));
+    });
+
+    if (!extraEnvVars.empty())
+    {
+        EnvironmentVariableMapW tempEnvMap{ extraEnvVars };
+        auto zeroEnvMap = wil::scope_exit([&] {
+            // Can't zero the keys, but at least we can zero the values.
+            for (auto& [name, value] : tempEnvMap)
+            {
+                ::SecureZeroMemory(value.data(), value.size() * sizeof(decltype(value.begin())::value_type));
+            }
+
+            tempEnvMap.clear();
+        });
+
+        RETURN_IF_FAILED(UpdateEnvironmentMapW(tempEnvMap));
+        RETURN_IF_FAILED(EnvironmentMapToEnvironmentStringsW(tempEnvMap, newEnvVars));
+
+        // Required when using a unicode environment block.
+        dwCreationFlags |= CREATE_UNICODE_ENVIRONMENT;
+    }
+
+    LPWCH lpEnvironment = newEnvVars.empty() ? nullptr : newEnvVars.data();
+    bool fSuccess = !!CreateProcessW(
+        nullptr,
+        mutableCommandline.get(),
+        nullptr, // lpProcessAttributes
+        nullptr, // lpThreadAttributes
+        true, // bInheritHandles
+        dwCreationFlags, // dwCreationFlags
+        lpEnvironment, // lpEnvironment
+        lpCurrentDirectory, // lpCurrentDirectory
+        &si, // lpStartupInfo
+        piPty // lpProcessInformation
+    );
+
+    CloseHandle(inPipeConhostSide);
+    CloseHandle(outPipeConhostSide);
+    CloseHandle(signalPipeConhostSide);
+
+    return fSuccess ? S_OK : HRESULT_FROM_WIN32(GetLastError());
+}
+
+```
+
+实际上是通过三根管道与 conhost 相连，conhost.exe 将数据通过管道发送到 WindowsTerminal.exe，从管道接收到信号和数据。
+
+在实现 wsudo 的过程中，我们也可以使用类似的机制，简单点就是创建一个 sudo-service 作为特权服务运行，当用户运行 sudo 时，与服务通信，授权成功后，sudo-service 创建一个 `ConPty` （或者直接使用 OpenConsole）与作为特权进程的父进程。sudo-service 与 sudo 交互数据即可。架构如下图所示：
+
+![](https://user-images.githubusercontent.com/6904176/62018098-da55d580-b1eb-11e9-8cab-8a68ea273d46.png)
+
+这种机制的缺陷是，需要多次转发数据，以输入为例，数据输入从用户到 sudo, sudo 发送给 sudo-service, sudo-service 写入到 OpenConsole. OpenConsole 写入到特权进程。这样一来，大量数据时，可能需要大量 IO 和 CPU。不过这种情况下无需考虑 Console 和 Cygwin/MSYS PTY 的差异。
 
 ### 需要 UI 交互的 wsudo
 
-[AttachConsole](https://docs.microsoft.com/en-us/windows/console/attachconsole)
+前面说到，我们可以使用 [AttachConsole](https://docs.microsoft.com/en-us/windows/console/attachconsole) 将进程附加到旧的控制台上，如果可以接受需要 UI 交互，我们可以使用 `AttachConsole` 实现不完整的 `sudo`。
 
-[Windows Terminal: oDispatchers::ConsoleHandleConnectionRequest](https://github.com/microsoft/terminal/blob/0d8f2998d6fdfa6013854ea66ccf26ed34ba8de2/src/server/IoDispatchers.cpp#L141)
+在 [Privexec](https://github.com/M2Team/Privexec) 中，我通过 [`wsudo-tie`](https://github.com/M2Team/Privexec/blob/master/wsudo/wsudo-tie.cc) 命令作为中间件实现不完整的 `sudo`。当用户在控制台中使用 `wsudo -A` 启动管理员进程时，如果目标可执行程序的子系统为 `Windows CUI`（或者后缀为 `.bat`,`.com`,`.cmd`），并且启动参数没有 `--hide` `--new-console`则使用 ShellExecuteEx 启动 `wsudo-tie`，在 `wsudo-tie` 中，设置好工作目录，环境变量，并调用 `FreeConsole`，`AttachConsole` 后，启动新的进程，这样无论是工作目录还是环境变量等，都与预期的相符。下图在控制台中使用 wsudo 启动一个管理员权限的 wsudo，后者再启动了 `TrustedInstaller` 的 `pwsh`。
 
-[Windows Terminal: IoDispatchers::ConsoleClientDisconnectRoutine](https://github.com/microsoft/terminal/blob/0d8f2998d6fdfa6013854ea66ccf26ed34ba8de2/src/server/IoDispatchers.cpp#L267)
+![](https://user-images.githubusercontent.com/6904176/62051234-8972cb00-b245-11e9-958d-e3af4ca614f7.png)
 
-[ReactOS: AttachConsole](https://github.com/reactos/reactos/blob/3f1ab92d3aca8b7b0965a1004e4a5f25b4d64025/dll/win32/kernel32/client/console/console.c#L2675)
+这种方案借鉴了 [lukesampson/psutils](https://github.com/lukesampson/psutils/blob/master/sudo.ps1) 的 sudo 机制，但有所改善。
+
+wsudo-tie 的方案并不适合 Cygwin/MSYS 的终端，如 Mintty，因为这些终端使用管道模拟而不是像 ConEmu 内部有个控制台，此时使用 AttachConsole 会失败。
+
+另外需要注意的是，在 `wsudo-tie` 中，`CreateProcessW` 启动 `.bat`/`.cmd` 可能会出现找不到文件的情况，我这里使用 `bela::ExecutableExistsInPath` 避免这种情况的发生。
+
+AttachConsole 的相关流程可以参考：
++   [Windows Terminal: oDispatchers::ConsoleHandleConnectionRequest](https://github.com/microsoft/terminal/blob/0d8f2998d6fdfa6013854ea66ccf26ed34ba8de2/src/server/IoDispatchers.cpp#L141)
++   [Windows Terminal: IoDispatchers::ConsoleClientDisconnectRoutine](https://github.com/microsoft/terminal/blob/0d8f2998d6fdfa6013854ea66ccf26ed34ba8de2/src/server/IoDispatchers.cpp#L267)
++   [ReactOS: AttachConsole](https://github.com/reactos/reactos/blob/3f1ab92d3aca8b7b0965a1004e4a5f25b4d64025/dll/win32/kernel32/client/console/console.c#L2675)
 
 
-## Final
+## 最后
 
-最小特权原则 [Principle of least privilege](https://en.wikipedia.org/wiki/Principle_of_least_privilege)
+在 Windows 上实现非 Windows 哲学的 sudo 还是比较复杂的，sudo 虽然好玩，但我们还是应该遵循 **最小特权原则 [Principle of least privilege](https://en.wikipedia.org/wiki/Principle_of_least_privilege)** ，减少提权请求。
 
 ## 备注
 
