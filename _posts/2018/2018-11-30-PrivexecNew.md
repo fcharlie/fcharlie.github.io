@@ -38,7 +38,7 @@ categories: windows
 
 在 Windows 中，如果要实现 `UAC` 提权，需要调用 `ShellExecute` 以 `runas` 的参数启动新的进程。如果在程序编译的清单文件中添加了如下清单代码：
 
-```
+```xml
  <trustInfo xmlns="urn:schemas-microsoft-com:asm.v2">
     <security>
       <requestedPrivileges xmlns="urn:schemas-microsoft-com:asm.v3">
