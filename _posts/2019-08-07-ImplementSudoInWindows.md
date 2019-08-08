@@ -304,7 +304,7 @@ WindowsTerminal.exe 是一个 UWP 程序，在启动终端时，通过 conhost.e
 
 这种机制还是比较简单的，不过需要安装服务，Windows 上使用此机制实现 `sudo`，复杂性较低。
 
-但在 Windows 团队好像并不乐意这样做（[NTSetInformationProcess (ProcessAccessToken) fails with STATUS_NOT_SUPPORTED](https://social.msdn.microsoft.com/forums/windowsdesktop/en-US/86602194-c8f7-4c42-b349-fd78e1bdb5f2/ntsetinformationprocess-processaccesstoken-fails-with-statusnotsupported)）：
+但在 Windows 内核团队好像并不意见用户这样做（[NTSetInformationProcess (ProcessAccessToken) fails with STATUS_NOT_SUPPORTED](https://social.msdn.microsoft.com/forums/windowsdesktop/en-US/86602194-c8f7-4c42-b349-fd78e1bdb5f2/ntsetinformationprocess-processaccesstoken-fails-with-statusnotsupported)）：
 
 ```
 Hello.
@@ -320,7 +320,7 @@ Arun Kishan
 Windows Kernel Team
 ```
 
-不过上述回复是 2007 年，时至今日，不知道又没有新的看法。
+不过上述回复是 2007 年，时至今日，不知道 Windows 内核团队有没有新的看法。当然，遗憾的是 Parker Snell 采取的是 GPLv3 协议，因此，如果要使用此方案，则可能需要在 `cleanroot` 中实现，在 Windows Terminal 的评论中，我也没有添加此方案的介绍。当然 Windows 团队如果想到了使用此方案，或许要简单的多。
 
 ### 需要 UI 交互的 wsudo
 
