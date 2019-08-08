@@ -320,7 +320,7 @@ Arun Kishan
 Windows Kernel Team
 ```
 
-不过上述回复是 2007 年，时至今日，不知道 Windows 内核团队有没有新的看法。当然，遗憾的是 Parker Snell 采取的是 GPLv3 协议，因此，如果要使用此方案，则可能需要在 `cleanroot` 中实现，在 Windows Terminal 的评论中，我也没有添加此方案的介绍。当然 Windows 团队如果想到了使用此方案，或许要简单的多。
+不过上述回复是 2007 年，时至今日，不知道 Windows 内核团队有没有新的看法。当然，遗憾的是 Parker Snell 采取的是 GPLv3 协议，因此，如果要使用此方案，则可能需要在 `cleanroot` 中实现，在 Windows Terminal 的评论中，我也没有添加此方案的介绍。
 
 ### 需要 UI 交互的 wsudo
 
