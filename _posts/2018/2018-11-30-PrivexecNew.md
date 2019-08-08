@@ -27,8 +27,8 @@ categories: windows
 `CreateProcessWithTokenW` 内部在调用好几个函数之后才会调用 `CreateProcessAsUserW`，在 `Privexec` 中并未使用它。
 在 `ReactOS` 中，没有实现 `CreateProcessWithTokenW`，下面附上 `CreateProcessWithTokenW` 调用图：
 
-![CreateProcessWithTokenW](https://i.imgur.com/V51b0vx.png)
-![CreateProcessWithTokenW](https://i.stack.imgur.com/Vn7Qe.png)
+![CreateProcessWithTokenW](https://user-images.githubusercontent.com/6904176/62693095-6645d980-ba04-11e9-92bf-53fb526d11e9.png)
+![CreateProcessWithTokenW](https://user-images.githubusercontent.com/6904176/62693086-62b25280-ba04-11e9-84ee-d0ec5786bed3.png)
 
 实际上在 `ReactOS` 中，`CreateProcessAsUser` 最终依然调用的是 `CreateProcess` 创建进程，然后将进程挂起，设置好 `Token` 后再恢复进程。在 Windows 中，你可以使用 `Process Monitor` 跟踪 `CreateProcessAsUser` 的调用堆栈，在 Windows 10  18.09 (10.0.17763.167) 中，`CreateProcessAsUser` 会调用 `CreateProcessInternalW`，而 CreateProcess 也是调用 `CreateProcessInternalW`。如果用 `IDA Freeware` <sup>2</sup> 反汇编 `KernelBase.dll` 可以发现 `CreateProcessAsUserW` 的权限最后传递到 `CreateProcessInternalW` 由 `CreateProcessInternalW` 处理了，这里与 `ReactOS` 有一定差别。
 

@@ -300,7 +300,7 @@ WindowsTerminal.exe 是一个 UWP 程序，在启动终端时，通过 conhost.e
 
 ### NtSetInformationProcess 的 sudo 机制
 
-在 Github 上，Parker Snell 开发了 [wsudo: Proof of concept sudo for Windows](https://github.com/parkovski/wsudo)（和 Privexec wsudo 同名），在这个 wsudo 里面，使用 C/S 架构和 `NtSetInformationProcess` 实现了 sudo 的机制，这种机制实际上与 Linux sudo 类似，即都是从标准用户中启动，这样便可以完整的继承当前的终端设备，环境变量，不同之处在于，这里是 wsudo_client 是通过请求 wsudo_server，授权请求成功返回后，使用 `CREATE_SUSPENDED` 标志创建暂停的子进程，将进程的句柄发送给 `wsudo_server`，`wsudo_server` 使用 `NtSetInformationProcess` 修改子进程的 `Token`，将其提升为特权进程，wsudo_client 再运行 `ResumeThread` 将其唤醒。
+在 Github 上，Parker Snell 开发了 [wsudo: Proof of concept sudo for Windows](https://github.com/parkovski/wsudo)（和 Privexec wsudo 同名），在这个 wsudo 里面，使用 C/S 架构和 `NtSetInformationProcess` 实现了 sudo 的机制，这种机制实际上与 Linux sudo 类似，即都是从标准用户中启动，这样便可以完整的继承当前的终端设备，环境变量，不同之处在于，这里是 wsudo_client 是通过请求 wsudo_server，授权请求成功返回后，使用 `CREATE_SUSPENDED` 标志创建暂停的子进程，将进程的句柄发送给 `wsudo_server`，`wsudo_server` 使用 `NtSetInformationProcess` 修改子进程的 `Token`，将其提升为特权进程，wsudo_client 再运行 `ResumeThread` 将其唤醒。在 ReactOS 中 `CreateProcessAsUser` 实际上同样使用了 `NtSetInformationProcess`，即使用 `CreateProcessW` 创建挂起的进程后，使用 `NtSetInformationProcess` 设置进程的 `Token` 然后使进程的主线恢复运行程运行。在 Windows 中大致如此，但具体的细节存在差异。当然不同的是，此方案并非子进程的父进程去修复其 Token，而是交由 wsudo_server 修改其 `Token`。
 
 这种机制还是比较简单的，不过需要安装服务，Windows 上使用此机制实现 `sudo`，复杂性较低。
 
@@ -320,7 +320,7 @@ Arun Kishan
 Windows Kernel Team
 ```
 
-不过上述回复是 2007 年，时至今日，不知道 Windows 内核团队有没有新的看法。当然，遗憾的是 Parker Snell 采取的是 GPLv3 协议，因此，如果要使用此方案，则可能需要在 `cleanroot` 中实现，在 Windows Terminal 的评论中，我也没有添加此方案的介绍。
+不过上述回复是 2007 年，时至今日，不知道 Windows 内核团队有没有新的看法。遗憾的是 Parker Snell 采取的是 GPLv3 协议，如果要使用此方案，则可能需要在 `cleanroot` 中实现，在 Windows Terminal 的评论中，我也没有添加此方案的介绍。
 
 ### 需要 UI 交互的 wsudo
 
