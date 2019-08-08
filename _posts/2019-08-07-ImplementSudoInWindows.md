@@ -300,7 +300,7 @@ WindowsTerminal.exe 是一个 UWP 程序，在启动终端时，通过 conhost.e
 
 ### NtSetInformationProcess 的 sudo 机制
 
-在 Github 上，Parker Snell 开发了 [wsudo: Proof of concept sudo for Windows](https://github.com/parkovski/wsudo)（和 Privexec wsudo 同名），在这个 wsudo 里面，使用 C/S 架构和 `NtSetInformationProcess` 实现了 sudo 的机制，这种机制实际上与 Linux sudo 类似，即都是从标准用户中启动，这样便可以完整的继承当前的终端设备，环境变量，不同之处在于，这里是 wsudo_client 是通过请求 wsudo_server，授权请求成功返回后，使用 `CREATE_SUSPENDED` 标志创建暂停的子进程，将进程的 PID 发送给 `wsudo_server`，`wsudo_server` 使用 `NtSetInformationProcess` 修改子进程的 `Token`，将其提升为特权进程，wsudo_client 再运行 `ResumeThread` 将其唤醒。
+在 Github 上，Parker Snell 开发了 [wsudo: Proof of concept sudo for Windows](https://github.com/parkovski/wsudo)（和 Privexec wsudo 同名），在这个 wsudo 里面，使用 C/S 架构和 `NtSetInformationProcess` 实现了 sudo 的机制，这种机制实际上与 Linux sudo 类似，即都是从标准用户中启动，这样便可以完整的继承当前的终端设备，环境变量，不同之处在于，这里是 wsudo_client 是通过请求 wsudo_server，授权请求成功返回后，使用 `CREATE_SUSPENDED` 标志创建暂停的子进程，将进程的句柄发送给 `wsudo_server`，`wsudo_server` 使用 `NtSetInformationProcess` 修改子进程的 `Token`，将其提升为特权进程，wsudo_client 再运行 `ResumeThread` 将其唤醒。
 
 这种机制还是比较简单的，不过需要安装服务，Windows 上使用此机制实现 `sudo`，复杂性较低。
 
