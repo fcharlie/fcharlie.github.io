@@ -114,6 +114,8 @@ sudo 命令启动后可以运行 `setuid(0)` 将自身权限设置为 `root` 然
 Appinfo 服务描述：
 >使用辅助管理权限便于交互式应用程序的运行。如果停止此服务，用户将无法使用辅助管理权限启动应用程序，而执行所需用户任务可能需要这些权限。
 
+如果在标准用户中使用 `CreateProcessW` 启动需要提升的进程，会返回 `elevation required`（GetLastError 740）错误。
+
 我们可以看到 Windows 中，提权本质上是通过去特权服务进行通信，校验后，由特权用户创建进程，这里并没有使用 `S_ISUID` 这样的机制，当然 UAC 白名单的自动提升和 `setuid` 也是不一样的，前者是系统创建进程便是创建了管理员权限，后者是 fork-exec 后，通过 `setuid` 切换到 `root`（Linux/Apple sudo 均是如此）。
 
 sudo 是 CUI 程序，如果我们需要实现类似 sudo 这样的程序，像标准输入输出的继承，工作目录的设置都必不可少，遗憾的是，在使用 ShellExecuteEx 启动管理员进程时，无法设置子进程的工作目录，也无法让子进程继承当前的控制台，终端，因此提权后，如果子进程子系统是 `Windows CUI` 时，会弹出一个新的控制台窗口。
@@ -295,6 +297,30 @@ WindowsTerminal.exe 是一个 UWP 程序，在启动终端时，通过 conhost.e
 ![](https://user-images.githubusercontent.com/6904176/62018098-da55d580-b1eb-11e9-8cab-8a68ea273d46.png)
 
 这种机制的缺陷是，需要多次转发数据，以输入为例，数据输入从用户到 sudo, sudo 发送给 sudo-service, sudo-service 写入到 OpenConsole. OpenConsole 写入到特权进程。这样一来，大量数据时，可能需要大量 IO 和 CPU。不过这种情况下无需考虑 Console 和 Cygwin/MSYS PTY 的差异。
+
+### NtSetInformationProcess 的 sudo 机制
+
+在 Github 上，Parker Snell 开发了 [wsudo: Proof of concept sudo for Windows](https://github.com/parkovski/wsudo)（和 Privexec wsudo 同名），在这个 wsudo 里面，使用 C/S 架构和 `NtSetInformationProcess` 实现了 sudo 的机制，这种机制实际上与 Linux sudo 类似，即都是从标准用户中启动，这样便可以完整的继承当前的终端设备，环境变量，不同之处在于，这里是 wsudo_client 是通过请求 wsudo_server，授权请求成功返回后，使用 `CREATE_SUSPENDED` 标志创建暂停的子进程，将进程的 PID 发送给 `wsudo_server`，`wsudo_server` 使用 `NtSetInformationProcess` 修改子进程的 `Token`，将其提升为特权进程，wsudo_client 再运行 `ResumeThread` 将其唤醒。
+
+这种机制还是比较简单的，不过需要安装服务，Windows 上使用此机制实现 `sudo`，复杂性较低。
+
+但在 Windows 团队好像并不乐意这样做（[NTSetInformationProcess (ProcessAccessToken) fails with STATUS_NOT_SUPPORTED](https://social.msdn.microsoft.com/forums/windowsdesktop/en-US/86602194-c8f7-4c42-b349-fd78e1bdb5f2/ntsetinformationprocess-processaccesstoken-fails-with-statusnotsupported)）：
+
+```
+Hello.
+
+I am a developer on the Windows Kernel Team. Before continuing, I want to stress as a disclaimer that NtSetInformationProcess, class ProcessAccessToken, is an undocumented and unsupported infterface. It is reserved for system component use and is subject to change between operating system releases. That being said, I would like to address your particular concern.
+
+The NT kernel was never intended to allow token switching once a process started running. This is because handles, etc. may have been opened in an old security context, inflight operations may use inconsistent security contexts, etc. As such, it typically does not make sense to switch a process' token once it has begun execution. However, this was not enforced until Vista.
+
+Unfortunately, it is difficult to properly implement setuid() semantics on NT as you have noted, though it too could be susceptible to the issues outlined above. After exploring alternative implementations for Interix we settled on leaving the lazy swap behavior intact for EXEs launched from POSIX binaries (image type = POSIX in the PE image). This was a reasonable compromise since the change was not security-based in nature, and allowed the legacy behavior to persist in conjunction with binaries that had (or should have) better control of their environment.
+
+Arun Kishan
+
+Windows Kernel Team
+```
+
+不过上述回复是 2007 年，时至今日，不知道又没有新的看法。
 
 ### 需要 UI 交互的 wsudo
 
