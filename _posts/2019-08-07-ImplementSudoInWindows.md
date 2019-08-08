@@ -300,11 +300,9 @@ WindowsTerminal.exe 是一个 UWP 程序，在启动终端时，通过 conhost.e
 
 ### NtSetInformationProcess 的 sudo 机制
 
-在 Github 上，Parker Snell 开发了 [wsudo: Proof of concept sudo for Windows](https://github.com/parkovski/wsudo)（和 Privexec wsudo 同名），在这个 wsudo 里面，使用 C/S 架构和 `NtSetInformationProcess` 实现了 sudo 的机制，这种机制实际上与 Linux sudo 类似，即都是从标准用户中启动，这样便可以完整的继承当前的终端设备，环境变量，不同之处在于，这里是 wsudo_client 是通过请求 wsudo_server，授权请求成功返回后，使用 `CREATE_SUSPENDED` 标志创建暂停的子进程，将进程的句柄发送给 `wsudo_server`，`wsudo_server` 使用 `NtSetInformationProcess` 修改子进程的 `Token`，将其提升为特权进程，wsudo_client 再运行 `ResumeThread` 将其唤醒。在 ReactOS 中 `CreateProcessAsUser` 实际上同样使用了 `NtSetInformationProcess`，即使用 `CreateProcessW` 创建挂起的进程后，使用 `NtSetInformationProcess` 设置进程的 `Token` 然后使进程的主线恢复运行程运行。在 Windows 中大致如此，但具体的细节存在差异。当然不同的是，此方案并非子进程的父进程去修复其 Token，而是交由 wsudo_server 修改其 `Token`。
+在 Github 上，Parker Snell 开发了 [wsudo: Proof of concept sudo for Windows](https://github.com/parkovski/wsudo)（和 Privexec wsudo 同名），在这个 wsudo 里面，使用 C/S 架构和 `NtSetInformationProcess` 实现了 sudo 的机制，这种机制实际上与 Linux sudo 类似，即都是从标准用户中启动，这样便可以完整的继承当前的终端设备，环境变量，不同之处在于，这里是 wsudo_client 是通过请求 wsudo_server，授权请求成功返回后，使用 `CREATE_SUSPENDED` 标志创建暂停的子进程，将进程的句柄发送给 `wsudo_server`，`wsudo_server` 使用 `NtSetInformationProcess` 修改子进程的 `Token`，将其提升为特权进程，wsudo_client 再运行 `ResumeThread` 将其唤醒。在 ReactOS 中 `CreateProcessAsUser` 实际上同样使用了 `NtSetInformationProcess`，即使用 `CreateProcessW` 创建挂起的进程后，使用 `NtSetInformationProcess` 设置进程的 `Token` 然后使进程的主线程恢复运行。在 Windows `CreateProcessAsUser` 的机制大致如此，但具体的实现细节存在差异。此方案与 `CreateProcessAsUser` 不同的是并非由子进程的父进程去修改 `Token`，而是交由 `wsudo_server` 这样的特权服务修改其 `Token`。因此 `CreateProcessAsUser` 实际更倾向于降权。而在 `wsudo_server` 这一端，实际上也是一种降权（Local System 权限高于 Administrator），不过整体上看就不一样了。
 
-这种机制还是比较简单的，不过需要安装服务，Windows 上使用此机制实现 `sudo`，复杂性较低。
-
-但在 Windows 内核团队好像并不意见用户这样做（[NTSetInformationProcess (ProcessAccessToken) fails with STATUS_NOT_SUPPORTED](https://social.msdn.microsoft.com/forums/windowsdesktop/en-US/86602194-c8f7-4c42-b349-fd78e1bdb5f2/ntsetinformationprocess-processaccesstoken-fails-with-statusnotsupported)）：
+这种在 Windows 中实现 `sudo` 的机制较简单，复杂性较低。当然需要安装服务，需要避免权限漏洞，这些都是一些麻烦。而且对于使用 `NtSetInformationProcess` 修改进程权限，Windows 内核团队好像并不意见用户这样做（[NTSetInformationProcess (ProcessAccessToken) fails with STATUS_NOT_SUPPORTED](https://social.msdn.microsoft.com/forums/windowsdesktop/en-US/86602194-c8f7-4c42-b349-fd78e1bdb5f2/ntsetinformationprocess-processaccesstoken-fails-with-statusnotsupported) 2007-01-03）：
 
 ```
 Hello.
@@ -320,7 +318,9 @@ Arun Kishan
 Windows Kernel Team
 ```
 
-不过上述回复是 2007 年，时至今日，不知道 Windows 内核团队有没有新的看法。遗憾的是 Parker Snell 采取的是 GPLv3 协议，如果要使用此方案，则可能需要在 `cleanroot` 中实现，在 Windows Terminal 的评论中，我也没有添加此方案的介绍。
+不过上述回复是 2007 年，时至今日，不知道 Windows 内核团队有没有新的看法。
+
+遗憾的是 Parker Snell 采取的是 GPLv3 协议，如果要使用此方案，则可能需要在 `cleanroot` 中实现，在 Windows Terminal 的评论中，我也没有添加此方案的介绍。
 
 ### 需要 UI 交互的 wsudo
 
