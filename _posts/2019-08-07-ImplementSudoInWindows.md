@@ -302,7 +302,7 @@ WindowsTerminal.exe 是一个 UWP 程序，在启动终端时，通过 conhost.e
 
 在 Github 上，Parker Snell 开发了 [wsudo: Proof of concept sudo for Windows](https://github.com/parkovski/wsudo)（和 Privexec wsudo 同名），在这个 wsudo 里面，使用 C/S 架构和 `NtSetInformationProcess` 实现了 sudo 的机制，这种机制实际上与 Linux sudo 类似，即都是从标准用户中启动，这样便可以完整的继承当前的终端设备，环境变量，不同之处在于，这里是 wsudo_client 是通过请求 wsudo_server，授权请求成功返回后，使用 `CREATE_SUSPENDED` 标志创建暂停的子进程，将进程的句柄发送给 `wsudo_server`，`wsudo_server` 使用 `NtSetInformationProcess` 修改子进程的 `Token`，将其提升为特权进程，wsudo_client 再运行 `ResumeThread` 将其唤醒。在 ReactOS 中 `CreateProcessAsUser` 实际上同样使用了 `NtSetInformationProcess`，即使用 `CreateProcessW` 创建挂起的进程后，使用 `NtSetInformationProcess` 设置进程的 `Token` 然后使进程的主线程恢复运行。在 Windows `CreateProcessAsUser` 的机制大致如此，但具体的实现细节存在差异。此方案与 `CreateProcessAsUser` 不同的是并非由子进程的父进程去修改 `Token`，而是交由 `wsudo_server` 这样的特权服务修改其 `Token`。因此 `CreateProcessAsUser` 实际更倾向于降权。而在 `wsudo_server` 这一端，实际上也是一种降权（Local System 权限高于 Administrator），不过整体上看就不一样了。
 
-不过在此例中，wsudo_server 是直接拷贝的服务的 `Token`，这种机制有很大的风险，建议的策略是使用 `LogonUserW` 获得受限的管理员 Token 后，再使用 `GetTokenInformation` 获得 `TokenLinkedToken`，由 `LinkedToken` 创建管理员进程，这与 appinfo 服务的机制类似。
+不过在此例中，wsudo_server 是直接拷贝的服务的 `Token`，这种机制有很大的风险，建议的策略是使用 `LogonUserW` 获得受限的管理员 Token 后，再使用 `GetTokenInformation` 获得 `TokenLinkedToken`，由 `LinkedToken` 创建管理员进程，这与 appinfo 服务的机制类似。当然也可以使用 `WTSQueryUserToken` 获得管理员进程的 Token 再使用 `GetTokenInformation` 获得 `TokenLinkedToken` 创建管理员进程。
 
 这种在 Windows 中实现 `sudo` 的机制较简单，复杂性较低。当然需要安装服务，进程间安全通信，避免提权漏洞，这些问题都需要解决，所以并不是那么容易的。而且对于使用 `NtSetInformationProcess` 修改进程权限，Windows 内核团队好像并不意见用户这样做（[NTSetInformationProcess (ProcessAccessToken) fails with STATUS_NOT_SUPPORTED](https://social.msdn.microsoft.com/forums/windowsdesktop/en-US/86602194-c8f7-4c42-b349-fd78e1bdb5f2/ntsetinformationprocess-processaccesstoken-fails-with-statusnotsupported) 2007-01-03）：
 
@@ -326,6 +326,8 @@ Windows Kernel Team
 
 ### 需要 UI 交互的 wsudo
 
+前面三种情况都是需要重新实现一个服务或者在现有服务基础上改进，在服务中创建管理员进程的 Token，这对于微软来说存在诸多顾虑，而第三方开发者实现也需要慎重考虑避免安全问题，如果我们在保留 UAC 的基础上，可以使用下面的方案。
+
 前面说到，我们可以使用 [AttachConsole](https://docs.microsoft.com/en-us/windows/console/attachconsole) 将进程附加到旧的控制台上，如果可以接受需要 UI 交互，我们可以使用 `AttachConsole` 实现不完整的 `sudo`。
 
 在 [Privexec](https://github.com/M2Team/Privexec) 中，我通过 [`wsudo-tie`](https://github.com/M2Team/Privexec/blob/master/wsudo/wsudo-tie.cc) 命令作为中间件实现不完整的 `sudo`。当用户在控制台中使用 `wsudo -A` 启动管理员进程时，如果目标可执行程序的子系统为 `Windows CUI`（或者后缀为 `.bat`,`.com`,`.cmd`），并且启动参数没有 `--hide` `--new-console`则使用 ShellExecuteEx 启动 `wsudo-tie`，在 `wsudo-tie` 中，设置好工作目录，环境变量，并调用 `FreeConsole`，`AttachConsole` 后，启动新的进程，这样无论是工作目录还是环境变量等，都与预期的相符。下图在控制台中使用 wsudo 启动一个管理员权限的 wsudo，后者再启动了 `TrustedInstaller` 的 `pwsh`。
@@ -337,6 +339,8 @@ Windows Kernel Team
 wsudo-tie 的方案并不适合 Cygwin/MSYS 的终端，如 Mintty，因为这些终端使用管道模拟而不是像 ConEmu 内部有个控制台，此时使用 AttachConsole 会失败。
 
 另外需要注意的是，在 `wsudo-tie` 中，`CreateProcessW` 启动 `.bat`/`.cmd` 可能会出现找不到文件的情况，我这里使用 `bela::ExecutableExistsInPath` 避免这种情况的发生。
+
+在这种方案中，弹出安全桌面时，显示的是 wsudo-tie 的信息，而不是目标进程的信息，这就意味着没有对目标程序进行数字签名校验，要实现数字签名校验，还有很多事情要做。
 
 AttachConsole 的相关流程可以参考：
 +   [Windows Terminal: oDispatchers::ConsoleHandleConnectionRequest](https://github.com/microsoft/terminal/blob/0d8f2998d6fdfa6013854ea66ccf26ed34ba8de2/src/server/IoDispatchers.cpp#L141)
