@@ -355,3 +355,5 @@ AttachConsole 的相关流程可以参考：
 ## 备注
 
 1.   [Vista UAC: The Definitive Guide](https://www.codeproject.com/Articles/19165/Vista-UAC-The-Definitive-Guide)
+2.   [How to launch a process as a Full Administrator when UAC is enabled?](https://blogs.msdn.microsoft.com/winsdk/2013/03/22/how-to-launch-a-process-as-a-full-administrator-when-uac-is-enabled/)
+3.   [Dealing with Administrator and standard user’s context](https://blogs.msdn.microsoft.com/winsdk/2010/05/31/dealing-with-administrator-and-standard-users-context/)
