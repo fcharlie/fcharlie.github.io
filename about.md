@@ -7,9 +7,12 @@ permalink: /about/
 
 # 简介
 
-Name: Force Charlie
-Email: forcemz@outlook.com  
-
+昵称：Force Charlie，博叼  
+邮箱：forcemz@outlook.com  
+个人博客： [https://forcemz.net](https://forcemz.net)  
+Github 主页：[https://github.com/fcharlie](https://github.com/fcharlie)  
+Gitee 主页：[https://gitee.com/ipvb](https://gitee.com/ipvb)  
+Gitee 核心开发者，Git 专栏[《Git 的反思》](https://gitee.com/Git-uses/rethinkgit) 作者。 
 
 # 教育
 
