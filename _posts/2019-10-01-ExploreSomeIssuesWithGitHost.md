@@ -14,4 +14,11 @@ categories: git
 
 Git 的源码通常托管在 [https://git.kernel.org/pub/scm/git/git.git/](https://git.kernel.org/pub/scm/git/git.git/)，而 `git.kernel.org` 实际上也是使用 git 内置的 git web 进行访问。Github 上也有只读镜像 [https://github.com/git/git](https://github.com/git/git)。[https://git-scm.com](https://git-scm.com) 源码也是托管在 Github 上的。通常给 git 提交 PR 需要注册 [public-inbox.org](https://public-inbox.org) 邮件列表发送补丁，但也可以在 Github 上给 [https://github.com/gitgitgadget/git](https://github.com/gitgitgadget/git) 提交 PR，这是微软 Git 开发者开发的机器人，能够帮助开发者更便利的提交补丁，笔者就有一个[补丁](https://github.com/gitgitgadget/git/pull/69)使用 gitgitgadget 提交。
 
+Git 与远程存储库之间的传输协议有 HTTP, GIT，SSH. 在 [《Pro Git - 2nd Edition》4.1 Git on the Server - The Protocols](https://git-scm.com/book/en/v2/Git-on-the-Server-The-Protocols) 中有介绍。其中 HTTP 协议包括哑协议和智能协议，由于哑协议是只读协议，目前大多数代码托管平台均不再提供支持。HTTP 智能协议和 GIT 协议，SSH 协议类似，都是特定几组 客户端/服务端 git 命令之间的输入输出数据传输和交换。
+
+|Action|Client Side|Server Side|
+|---|---|---|
+|fetch/clone|git fetch-pack|git upload-pack|
+|push|git send-pack|git receive-pack|
+
 ## 内置的 Git 托管
