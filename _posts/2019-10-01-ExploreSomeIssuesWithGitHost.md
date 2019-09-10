@@ -23,9 +23,9 @@ Git 与远程存储库之间的传输协议有 HTTP, GIT(`git://`)，SSH. 在 [�
 |fetch/clone|git fetch-pack|git upload-pack|
 |push|git send-pack|git receive-pack|
 
-## 不同规模层次的 Git 代码托管参考
+## 不同规模的 Git 代码托管平台
 
-### 内置的托管支持
+### 内置的 Git 代码托管功能
 
 Git 最初由 Linus Torvalds 开发用来取代 BitKeeper 管理 Linux 内核源码，Linux 内核源码和 Git 源码的官方地址是：[https://git.kernel.org/](https://git.kernel.org/)。在 git.kernel.org 上，Git 代码托管功能都是由 git 内置的工具实现。用户访问 [https://git.kernel.org/](https://git.kernel.org/) 时，Nginx 会以 CGI 的方式将浏览器的请求转发到 [GitWeb](https://git.wiki.kernel.org/index.php/Gitweb) GitWeb 是一个使用 Perl 编写的 CGI 程序，为用户提供简单的 git 在线交互图形界面。GitWeb 的源码地址可以在 [Github Git 镜像](https://github.com/git/git/blob/master/gitweb/gitweb.perl) 中查看，GitWeb 比较简陋，通过浏览器访问此地址就可以看到 GitWeb 的界面：[https://git.kernel.org/pub/scm/git/git.git/](https://git.kernel.org/pub/scm/git/git.git/)。而在 git.kernel.org 用户需要通过 `git-http/https` 方式获取源码时，Nginx 会以 CGI的方式将请求转发给 [git-http-backend](https://git-scm.com/docs/git-http-backend) 处理，git-http-backend 是 **Git Over HTTP** 的服务端实现。如果用户需要使用 GIT 协议 (`git://`)，在 git.kernel.org 上，[git-daemon](https://git-scm.com/docs/git-daemon) 正在监听 9418 端口，默默的等待 git 客户端的访问。如果要实现 Git Over SSH 接入支持，则需要运行 OpenSSH sshd 并允许 git-upload-pack/git-receive-pack/git-upload-archive 命令，在 `authorized_keys` 文件中添加需要被允许的用户的公钥即可。
 
