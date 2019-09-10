@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "探讨 Git 代码托管平台的若干问题"
+title:  "探讨 Git 代码托管平台的若干问题 - 2019 版"
 date:   2019-10-01 10:00:00
 published: false
 categories: git
@@ -50,9 +50,6 @@ Git 最初由 Linus Torvalds 开发用来取代 BitKeeper 管理 Linux 内核源
 [Gitee](https://gitee.com)
 
 ## Git 代码托管平台的伸缩性
-
-
-## 大文件大存储库的限制
 
 
 ## Git 代码托管平台服务实现
