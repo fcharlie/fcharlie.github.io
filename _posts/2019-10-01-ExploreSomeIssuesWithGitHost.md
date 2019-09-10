@@ -50,11 +50,17 @@ Git 最初由 Linus Torvalds 开发用来取代 BitKeeper 管理 Linux 内核源
 [Gitee](https://gitee.com)
 
 ## Git 代码托管平台的伸缩性
+<!--存储库分片，大存储库，大文件，分布式文件系统-->
 
+## Git 代码托管平台的附加功能
+<!--保护分支，只读目录，安全，两步验证...-->
 
 ## Git 代码托管平台服务实现
+<!--SSH/HTTP/GIT, LFS, GitVFS....-->
+
 
 ## 文件服务
+<!--附件下载，发布文件，Archive 下载-->
 
 ### 附件，Release
 
