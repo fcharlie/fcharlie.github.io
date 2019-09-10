@@ -41,7 +41,7 @@ Git 最初由 Linus Torvalds 开发用来取代 BitKeeper 管理 Linux 内核源
 |[GitBucket](https://github.com/gitbucket/gitbucket)|Scala/Java||
 
 
-### 巨大规模 Git 代码托管平台
+### 巨型 Git 代码托管平台
 
 [Github](https://github.com)
 
