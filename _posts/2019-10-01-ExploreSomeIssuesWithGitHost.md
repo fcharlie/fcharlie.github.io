@@ -38,7 +38,7 @@ Git 最初由 Linus Torvalds 开发用来取代 BitKeeper 管理 Linux 内核源
 |[Bonobo Git Server](https://github.com/jakubgarfield/Bonobo-Git-Server)|C#||
 |[Gitea](https://github.com/go-gitea/gitea)|Golang||
 |[Gogs](https://github.com/gogs/gogs)|Golang||
-|[GitBucket](https://github.com/gitbucket/gitbucket)|Java||
+|[GitBucket](https://github.com/gitbucket/gitbucket)|Scala/Java||
 
 
 ### 巨大规模 Git 代码托管平台
