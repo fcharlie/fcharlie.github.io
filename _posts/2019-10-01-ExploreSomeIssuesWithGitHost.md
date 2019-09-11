@@ -31,7 +31,7 @@ Git 最初由 Linus Torvalds 开发用来取代 BitKeeper 作为 Linux 内核源
 
 使用 Git 内置的 GitWeb/git-http-backend/git-daemon，我们能够搭建一个简易的 Git 代码托管服务器，但这里没有 SSH 协议支持。而实现 SSH 协议支持也非常简单，只需要在服务器上运行 `sshd` (OpenSSH)，并允许命令 `git-upload-pack/git-receive-pack/git-upload-archive` 命令的运行，对于 SSH 协议的验证，我们则可以使用 `authorized_keys` 机制，将需要允许的用户的 SSH 公钥添加到 `authorized_keys` 文件。
 
-[https://git.kernel.org/](https://git.kernel.org/) 包括驱动，文档等项目大概有 1千个存储库，Linux 内核存储库磁盘占用大概是 2GB，属于提交较大的存储库，理想情况下，一块 2TB 磁盘的服务器便可支撑 [https://git.kernel.org/](https://git.kernel.org/)  运行（实际情况下并不会这样，由于 Linux 内核的流行，需要更优异的硬件才能支撑 git.kernel.org 的稳定运行）。基于 Git 内置功能搭建的代码托管服务，麻雀虽小五脏俱全，不过回过头来说，这样的代码托管服务功能也十分有限，服务的可伸缩性，扩展性不佳。
+[https://git.kernel.org/](https://git.kernel.org/) 包括驱动，文档等项目大概有 1千个存储库，Linux 内核存储库磁盘占用大概是 2GB，属于提交较大的存储库，理想情况下，一块 2TB 磁盘的服务器便可支撑 [https://git.kernel.org/](https://git.kernel.org/)  运行（实际情况下并不会这样，由于 Linux 内核的流行，需要更优异的硬件才能支撑 git.kernel.org 的稳定运行）。基于 Git 内置功能搭建的代码托管服务，麻雀虽小五脏俱全，不过回过头来说，这样的代码托管服务功能有限，可伸缩性和扩展性不佳。
 
 ### 开箱即用的 Git 代码托管平台
 
