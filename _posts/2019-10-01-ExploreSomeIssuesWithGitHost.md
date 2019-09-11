@@ -8,9 +8,9 @@ categories: git
 
 ## 关于 Git
 
-版本控制软件种类繁多，维基百科收录的最早的版本控制系统是 1972 年贝尔实验室开发的 [Source Code Control System](https://en.wikipedia.org/wiki/Source_Code_Control_System)。1986 年 [Concurrent Versions System(CVS)](https://en.wikipedia.org/wiki/Concurrent_Versions_System) 诞生，CVS 曾非常流行，但今时用之寥寥无几，不过 OpenBSD 仍在使用 CVS。2000 年，CollabNet 创建了 Subversion 项目，2009年，Subversion 被 Apache 基金会接受成为 [Apache Subversion](https://en.wikipedia.org/wiki/Apache_Subversion)。2005 年 [Linus Torvalds](https://en.wikipedia.org/wiki/Git) 创建了 Git，至今已经有 14 年。前有 CVS 后有 SVN，今日胜之 Git。俱往矣，数风流人物，还看今朝，版本控制系统莫不如斯。
+版本控制软件种类繁多，维基百科收录的最早的版本控制系统是 1972 年贝尔实验室开发的 [Source Code Control System](https://en.wikipedia.org/wiki/Source_Code_Control_System)。1986 年 [Concurrent Versions System(CVS)](https://en.wikipedia.org/wiki/Concurrent_Versions_System) 诞生，CVS 曾非常流行，但今时用之寥寥无几，不过 OpenBSD 仍在使用 CVS。2000 年 CollabNet 创建了 Subversion 项目，2009年，Subversion 被 Apache 基金会接受成为顶级项目并被命名为 [Apache Subversion](https://en.wikipedia.org/wiki/Apache_Subversion)。2005 年 [Linus Torvalds](https://en.wikipedia.org/wiki/Git) 创建了 Git，2007 Github 诞生后，Git 随着 Github 的发展愈发流行，14 年间，Git 成为了最流行的版本控制系统，无论是 Windows 还是 Linux 或是 Android，MySQL 等等大型软件都使用 git 进行版本控制。纵观版本控制系统流行史，前有 CVS 后有 SVN，今日 Git 更风流。俱往矣，数风流人物，还看今朝，版本控制系统莫不如斯。
 
-与 CVS/Subversion 这种集中式版本控制系统不同的是，Git 的存储库数据会被存储在本地，提交也是发生在本地，远程更像一个镜像。而 CVS/Subversion 的提交都是在线的。这就是 Git 作为分布式版本控制系统的核心特性。
+与 CVS/Subversion 这种集中式版本控制系统不同的是，Git 的存储库数据会被存储在本地，提交也是发生在本地，远程可以看作是本地存储库的一个镜像。而 CVS/Subversion 的提交都是在线的。这就是 Git 作为分布式版本控制系统的核心特性。
 
 Git 的源码地址为： [https://git.kernel.org/pub/scm/git/git.git/](https://git.kernel.org/pub/scm/git/git.git/)，Github 上有只读镜像 ：[https://github.com/git/git](https://github.com/git/git)。[https://git-scm.com](https://git-scm.com) 网页源码也在 Github 上。通常给 git 提交 PR 需要注册 [public-inbox.org](https://public-inbox.org) 邮件列表然后发送补丁，但你可以在 Github 上给 [https://github.com/gitgitgadget/git](https://github.com/gitgitgadget/git) 提交 PR，这简化了给 Git 贡献的难度。[gitgitgadget](https://github.com/gitgitgadget/gitgitgadget) 是微软开发者 [Johannes Schindelin](https://github.com/dscho) 开发的机器人，用于帮助开发者更简便的向 Git 提交补丁。笔者就有一个[补丁](https://github.com/gitgitgadget/git/pull/69)使用 gitgitgadget 提交。[Johannes Schindelin](https://github.com/dscho) 此人也是 [git-for-windows](https://github.com/git-for-windows/git) 的维护者。
 
