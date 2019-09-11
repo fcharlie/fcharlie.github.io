@@ -33,7 +33,9 @@ Git 最初由 Linus Torvalds 开发用来取代 BitKeeper 作为 Linux 内核源
 
 [https://git.kernel.org/](https://git.kernel.org/) 包括驱动，文档等项目大概有 1千个存储库，Linux 内核存储库磁盘占用大概是 2GB，属于提交较大的存储库，理想情况下，一块 2TB 磁盘的服务器便可支撑 [https://git.kernel.org/](https://git.kernel.org/)  运行（实际情况下并不会这样，由于 Linux 内核的流行，需要更优异的硬件才能支撑 git.kernel.org 的稳定运行）。基于 Git 内置功能搭建的代码托管服务，麻雀虽小五脏俱全，不过回过头来说，这样的代码托管服务功能有限，可伸缩性和扩展性不佳。
 
-### 开箱即用的 Git 代码托管平台
+### 小型的 Git 代码托管平台
+
+当用户需要搭建一个几人到几十几百人规模的 Git 代码托管服务，通常有非常多的选择，下面是几个目前仍然比较活跃的小型 Git 代码托管平台。
 
 |名称|平台|语言|技术概述|
 |---|---|---|---|
@@ -42,8 +44,11 @@ Git 最初由 Linus Torvalds 开发用来取代 BitKeeper 作为 Linux 内核源
 |[Gitea](https://github.com/go-gitea/gitea)|Cross Platform|Golang|是 Gogs 的开源分叉，Web 读写 Git 存储库使用了 [src-d/go-git](https://github.com/src-d/go-git)，使用 [gliderlabs/ssh](https://github.com/gliderlabs/ssh) 提供 SSH 接入功能，支持多种数据库，可以在 Raspberry Pi 上运行。|
 |[GitBucket](https://github.com/gitbucket/gitbucket)|Cross Platform|Scala/Java|使用 [Apache Mina SSHD](https://github.com/apache/mina-sshd) 实现 SSH 功能。Mina SSHD 还专门针对 JGit 实现了一个 [sshd-git](https://github.com/apache/mina-sshd/tree/master/sshd-git) 模块，但 GitBucket 是直接使用 JGit 的 [`transport`](https://github.com/eclipse/jgit/blob/master/org.eclipse.jgit/src/org/eclipse/jgit/transport) 相关类。Eclipse JGit 主要由 Google 开发者参与贡献。|
 
+除了上述定位为代码托管平台的服务，还有像 [Phabricator](https://www.phacility.com/) 这样的 Web 软件也提供 Git 代码托管功能，但 Phabricator 的重点更多是缺陷追踪，代码审核。LLVM [https://reviews.llvm.org/](https://reviews.llvm.org/) 和 libssh  [https://bugs.libssh.org/](https://bugs.libssh.org/) 就是基于 Phabricator。
 
 ### 云服务级别的 Git 代码托管平台
+
+随着用户规模和存储库规模的增长，达到一定级别后，上述代码托管平台受限于自身技术的局限性，
 
 [Github](https://github.com)
 
@@ -54,14 +59,14 @@ Git 最初由 Linus Torvalds 开发用来取代 BitKeeper 作为 Linux 内核源
 [Bitbucket](https://bitbucket.org)
 [Gitee](https://gitee.com)
 
+## Git 代码托管平台服务实现
+<!--SSH/HTTP/GIT, LFS, GitVFS....-->
+
 ## Git 代码托管平台的伸缩性
 <!--存储库分片，大存储库，大文件，分布式文件系统-->
 
 ## Git 代码托管平台的附加功能
 <!--保护分支，只读目录，安全，两步验证...-->
-
-## Git 代码托管平台服务实现
-<!--SSH/HTTP/GIT, LFS, GitVFS....-->
 
 
 ## 文件服务
