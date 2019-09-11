@@ -50,6 +50,7 @@ Git 基础软件开发，服务器软件开发。
 -   Git 原生钩子支持大文件检测，存储库分析，git 只读文件功能，git 禁止推送暴露用户私有邮箱。
 -   基于 Go 开发的 Blaze， git GC, 备份，存储库体积分析后台任务服务。
 -   Gitee 存储路由架构改造。
+-   基于 Go 开发了 blaze-archive Git archive 扩展工具，支持 archive 缓存，支持 `tar.br`,`tar.zst`,`tar.xz`,`tar.sz` 等压缩格式。
 
 Git-Secure 开源地址 [https://gitee.com/oscstudio/git-secure](https://gitee.com/oscstudio/git-secure)  
 Git-Analyze 开源地址 [https://gitee.com/oscstudio/git-analyze](https://gitee.com/oscstudio/git-analyze)

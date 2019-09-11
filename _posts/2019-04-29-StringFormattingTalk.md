@@ -346,7 +346,7 @@ std::string message = fmt::sprintf("The answer is %d", 42);
 
 [Folly format](https://github.com/facebook/folly/blob/master/folly/docs/Format.md) 的风格类似于 python 的格式化风格，与 fmtlib 的第一种一致。
 
-```cpp
+```c++
 using folly::format;
 using folly::sformat;
 using folly::vformat;
@@ -361,10 +361,6 @@ std::cout << format("The answers are {} and {}", 23, 42);
 // If you just want the string, though, you're covered.
 std::string result = sformat("The answers are {} and {}", 23, 42);
 // => "The answers are 23 and 42"
-
-// To insert a literal '{' or '}', just double it.
-std::cout << format("{} {{}} {{{}}}", 23, 42);
-// => "23 {} {42}"
 
 // Arguments can be referenced out of order, even multiple times
 std::cout << format("The answers are {1}, {0}, and {1} again", 23, 42);
