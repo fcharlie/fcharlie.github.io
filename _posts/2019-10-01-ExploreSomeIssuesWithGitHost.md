@@ -35,12 +35,12 @@ Git 最初由 Linus Torvalds 开发用来取代 BitKeeper 作为 Linux 内核源
 
 ### 开箱即用的 Git 代码托管平台
 
-|名称|语言|技术概述|
-|---|---|---|
-|[Bonobo Git Server](https://github.com/jakubgarfield/Bonobo-Git-Server)|C#||
-|[Gitea](https://github.com/go-gitea/gitea)|Golang||
-|[Gogs](https://github.com/gogs/gogs)|Golang||
-|[GitBucket](https://github.com/gitbucket/gitbucket)|Scala/Java|SSH 功能使用 Apache SSHD|
+|名称|平台|语言|技术概述|
+|---|---|---|---|
+|[Bonobo Git Server](https://github.com/jakubgarfield/Bonobo-Git-Server)|Windows Only|C#|基于 .Net Famework 4.6（迁移到 .Net Core 的建议在 2017 年便被提出，但截至目前仍为迁移到 .Net Core）。使用 [LibGit2Sharp](https://github.com/libgit2/libgit2sharp/) 操作存储库，但版本较老，不支持 SSH 协议访问。|
+|[Gogs](https://github.com/gogs/gogs)|Cross Platform|Golang|基于 Golang 编写，Web 读写 Git 存储库由 [git-module](https://github.com/gogs/git-module) 封装 Git 命令实现，SSH 由 Golang [crypto/ssh](https://github.com/golang/crypto/tree/master/ssh) 提供，支持多种数据库，是一个极简的代码托管平台，可以在 Raspberry Pi 上运行|
+|[Gitea](https://github.com/go-gitea/gitea)|Cross Platform|Golang|是 Gogs 的开源分叉，Web 读写 Git 存储库使用了 [src-d/go-git](https://github.com/src-d/go-git)，使用 [gliderlabs/ssh](https://github.com/gliderlabs/ssh) 提供 SSH 接入功能，支持多种数据库，可以在 Raspberry Pi 上运行。|
+|[GitBucket](https://github.com/gitbucket/gitbucket)|Cross Platform|Scala/Java|使用 [Apache Mina SSHD](https://github.com/apache/mina-sshd) 实现 SSH 功能。Mina SSHD 还专门针对 JGit 实现了一个 [sshd-git](https://github.com/apache/mina-sshd/tree/master/sshd-git) 模块，但 GitBucket 是直接使用 JGit 的 [`transport`](https://github.com/eclipse/jgit/blob/master/org.eclipse.jgit/src/org/eclipse/jgit/transport) 相关类。Eclipse JGit 主要由 Google 开发者参与贡献。|
 
 
 ### 云服务级别的 Git 代码托管平台
