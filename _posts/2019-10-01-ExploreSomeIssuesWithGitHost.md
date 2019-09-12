@@ -48,19 +48,22 @@ Git 最初由 Linus Torvalds 开发用来取代 BitKeeper 作为 Linux 内核源
 
 ### 云服务级别的 Git 代码托管平台
 
-随着用户规模和存储库规模的增长，达到一定级别后，上述代码托管平台受限于自身技术的局限性，
+随着用户规模和存储库规模的增长，达到一定级别后，上述代码托管平台往往变得力不从心，而下面的代码托管平台却深耕于此，能够支撑巨大规模的用户量和存储库数量。
 
-[Github](https://github.com)
+[Github](https://github.com) 是全球最大的代码托管平台，目前 Github [官方数据](https://github.com/about)显示注册用户数量为 4000万，项目数量为 1亿。Github 网站主要的技术是 [Ruby on Rails](https://rubyonrails.org/) 内部进程名为 `github-unicorn`，最近他们将其升级到了 [Rails 6.0](https://github.blog/2019-09-09-running-github-on-rails-6-0/)。Github 使用 Spokes 负责文件系统上存储库的复制，同步和备份。Github 之前使用 libssh 开发 Git SSH 服务器，目前的 SSH 服务器的标识为 `babeld-*`，但不确定 babeld 是否依然基于 libssh。Git 验证服务为 `github-gitauth`。Github 的大多数服务都是闭源的，因此分析 Github 的技术内幕通常是 Github 官方的一些技术博客， 当然也可以分析 `Github Enterprise` 去窥测 Github 内幕。
 
-[Introducing DGit](https://githubengineering.com/introducing-dgit/)
-[Building resilience in Spokes](https://github.blog/2016-09-07-building-resilience-in-spokes/)
+关于 Github Spokes 的大致原理可以阅读 [Introducing DGit](https://githubengineering.com/introducing-dgit/) 和 [Building resilience in Spokes](https://github.blog/2016-09-07-building-resilience-in-spokes/)。
 
-[Gitlab](https://gitlab.com)
-[Bitbucket](https://bitbucket.org)
-[Gitee](https://gitee.com)
+在开发 [Gitaly](https://gitlab.com/gitlab-org/gitaly) 之后， [Gitlab](https://gitlab.com) 摆脱了 NFS 的禁锢，在平台的伸缩性方面得到了巨大的提升。要知道 Gitlab 使用 Gitaly 的原因可以阅读 [The road to Gitaly v1.0](https://about.gitlab.com/2018/09/12/the-road-to-gitaly-1-0/)。Gitaly 使用 RPC 将存储服务器上的 git 命令包转成前端服务机器上的 git 命令，并为 gitlab 服务提供存储库的读写。 Gitlab 的 SSH 功能仍然由 OpenSSH 提供，而一些静态资源，文件下载，附件等功能则由 Golang 编写的 [gitlab-workhorse](https://gitlab.com/gitlab-org/gitlab-workhorse) 实现，gitlab-workhorse 需要与 Gitaly 通信。
+
+[Bitbucket](https://bitbucket.org) 是 [Atlassian](https://www.atlassian.com) 开发的代码托管平台，与 Github/Gitlab 不同，Bitbucket 还提供了原生 Mercurial 支持，不过最近，Bitbucket 宣布要逐步关闭 Mercurial 的支持。Atlassian 还开发了 Jira/Sourcetree 这样著名的软件，Bitbucket 源码没有开发，推测主要使用 Java 技术栈（这个从一次 Bitbucket VFSForGit 安装包分析可得）。
+
+[Gitee](https://gitee.com) 是目前国内最大的代码托管平台之一，早在 2015 年便开始了分布式改造，并编写了一系列服务实现分布式架构，编写了 Nginx 路由模块实现动态路由，基于 libssh 开发了 Basalt v1 SSH 服务器，基于 Golang 开发了 Basalt v2 SSH 服务器，还开发了 git-srv 智能服务后端，brzox Git HTTP/Archive 服务。以及 git-diamond git 协议内部传输服务等等。Gitee 最初代码基于 Gitlab，几年之间已经与 Gitlab 有了很大的差异，现在 Gitee 已经逐步将一些功能从 gitlab 中剥离，实现云平台的微服务，比如目前的 git/svn/hook 验证服务是基于 Golang 编写的 banjo。Gitee 使用比较紧张的硬件资源支撑了大量的接入，这与财大气粗的 Github 有着很大的不同。
 
 ## Git 代码托管平台服务实现
 <!--SSH/HTTP/GIT, LFS, GitVFS....-->
+Git 代码托管平台的应该实现的基础功能应该是 git 推拉代码，然后再是网页接入。
+
 
 ## Git 代码托管平台的伸缩性
 <!--存储库分片，大存储库，大文件，分布式文件系统-->
