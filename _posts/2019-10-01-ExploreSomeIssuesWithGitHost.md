@@ -104,7 +104,7 @@ Git 代码托管平台的基本服务应该包括浏览器接入支持和 git �
 
 我们知道 git-archive 命令可以将存储库特定的 commit/branch 打包成一个 zip/tar 文件，而在 Git Over SSH（Git Over TCP） 实现中，只要我们允许 `git-upload-archive` 命令在远程服务器上运行，就打包远程服务器上的存储库的特定分支。但由于 git-upload-archive 与 git-upload-pack/git-receive-pack 存在一些不同，是的 HTTP 协议无法实现 archive 协商。提供 archive 下载则需要另辟蹊径。
 
-我们在远程服务器上运行 git-archive 将其输出作为响应体的内容返回给 HTTP Client 便可实现 archive 下载功能，由于 archive 下载实际上是将 git tree/blob 遍历然后写入到归档文件后压缩（tar.gz/tar.bz2 ...）或者是压缩后写入文件（zip），二者都需要消耗 CPU 资源，因此我们在实现 archive 下载功能的同时需要考虑到缓存问题，并且缓存还应该支持过期。gitlab-workhorse 实现的 archive 下载功能便是先尝试命中缓存，如果没有缓存则调用 git 命令然后生成写入到缓存文件。Gitee 最近实现的 blaze-archive 也采用了类似的机制，但 blaze-archive 是一个独立的命令，这个命令实际上是被 git-srv 调用，brzox 与 git-srv 通信，brzox 将 archive 返回给 HTTP Client，而缓存的删除则是 blaze 负责的。 
+我们在远程服务器上运行 git-archive 将其输出作为响应体的内容返回给 HTTP Client 便可实现 archive 下载功能，由于 archive 下载实际上是将 git tree/blob 遍历然后写入到归档文件后压缩（tar.gz/tar.bz2 ...）或者是压缩后写入文件（zip），二者都非常消耗 CPU 资源，因此我们在实现 archive 下载功能的同时应该设计 archive 的缓存功能（当然缓存应该支持过期）。gitlab-workhorse 实现的 archive 下载功能便是先尝试命中缓存，如果没有缓存则调用 git 命令然后生成写入到缓存文件。Gitee 最近实现的 blaze-archive 也采用了类似的机制，但 blaze-archive 是一个独立的命令，这个命令实际上是被 git-srv 调用，brzox 与 git-srv 通信，brzox 将 archive 返回给 HTTP Client，而缓存的删除则是 blaze 负责的。 
 
 ### 附件，Release
 
