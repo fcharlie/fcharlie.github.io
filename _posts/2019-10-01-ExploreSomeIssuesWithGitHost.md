@@ -23,9 +23,9 @@ Git 与远程存储库之间的传输协议有 HTTP, GIT(`git://`)，SSH. 在 [�
 |fetch/clone|git fetch-pack|git upload-pack|
 |push|git send-pack|git receive-pack|
 
-Git 使用文件快照记录文件变更，当对象存储到松散文件目录时，每一次大小不变的文件修改相当于存储库中增加特定文件的大小，Git 使用 [Deflate](https://en.wikipedia.org/wiki/DEFLATE) 将对象进行压缩，对象头包括对象类型，原始大小。
+Git 使用文件快照记录文件变更，当对象存储到松散文件目录时，每一次大小不变的文件修改相当于存储库中增加特定文件的大小，Git 使用 zlib [deflate](https://en.wikipedia.org/wiki/DEFLATE) 压缩对象，对象头包括对象类型，原始大小。
 
-引用来自的 [https://github.com/facebook/zstd](https://github.com/facebook/zstd/tree/2164a130f353e64a1e89c8e60f36cf2498ab1eea#benchmarks)基准测试，我们发现　zlib deflate 在接近的压缩比，无论是压缩还是解压都不如　brotli/zstd：
+引用来自的 [https://github.com/facebook/zstd](https://github.com/facebook/zstd/tree/2164a130f353e64a1e89c8e60f36cf2498ab1eea#benchmarks) 基准测试，我们发现 zlib(deflate) 在接近的压缩比，无论是压缩还是解压都不如 `brotli`/`zstd`：
 
 | Compressor name         | Ratio | Compression| Decompress.|
 | ---------------         | ------| -----------| ---------- |
@@ -79,8 +79,11 @@ Git 最初由 Linus Torvalds 开发用来取代 BitKeeper 作为 Linux 内核源
 
 ## Git 代码托管平台服务实现
 <!--SSH/HTTP/GIT, LFS, GitVFS....-->
-Git 代码托管平台的应该实现的基础功能应该是 git 推拉代码，然后再是网页接入。
+Git 代码托管平台的基本服务应该包括浏览器接入支持和 git 客户端接入支持，前者需要平台开发网页提供若干服务供用户访问。后者需要支持 git 客户端推拉代码。通过网站访问存储库意味着 HTTP 服务需要通过一定的途径读写存储库，在 GitWeb 中，这通常使用 git 命令实现，比如使用 `git tree` 查看 `tree`，使用 `git archive` 打包文件等等。在 Gogs 中，使用的 [git-module](https://github.com/gogs/git-module) 同样使用了命令读写存储库。而 Gogs 的分叉 Gitea 则使用的是 [src-d/go-git](https://github.com/src-d/go-git) 读写存储库。实际上我们常常有那种感觉，使用命令行可能会比直接调用 API 慢，并且错误难以处理，这通常是对的。比如我们查看 `HEAD` 对应的引用，使用命令我们可以运行 `git symbolic-ref HEAD`，运行这个命令我们需要 fork 出一个进程，fork 成功后马上在子进程中执行 exec git symbolic-ref，为了读取 git symbolic-ref 的输出，我们还需要创建几对 Pipe，并检测 git symbolic-ref 的退出值。而使用 libgit2 API 我们只需要调用 `git_repository_open`,`git_reference_open`,`git_reference_symbolic_target` 即可拿到对应的引用。而对于服务程序而言，fork-exec 的代价可能不小。当然你也可以直接使用 `open("/path/to/.git/HEAD")` 然后解析 HEAD 对应的引用。GitBucket 使用 JGit 读写存储库，Gitlab 曾经历了 Grit (Grit 部分命令部分 Git 纯 Ruby 实现，Github 曾经使用)。后来的 Rugged，到现在 Gitaly 的纯命令 + Ruby Repository（Gitlab 现在的架构我对其保留意见，至少 IO 复制将增加多次）。Github 目前使用 Rugged 读写存储库，当然一些更多的细节因为没有源码不得而知。Gitee 目前使用 Rugged，但一部分 libgit2 实现不佳的则直接采用 git 命令实现。
 
+实现 Git Over HTTP，Gitlab 最初采用的是 Grack, 受限于 `unicorn`，Grack 并发有限，而使用 Golang 开发的 Gogs，Gitea 则使用 Golang 原生 HTTP 库编写，这要比 Grack 好一些。目前 Gitee 的 Brzox 服务也是使用 Golang 编写。
+
+实现 Git Over SSH，Gitlab 目前依然使用的是 OpenSSH，而不像 Github/BitBucket/Gitee 直接编写 SSH 服务器，直接编写 SSH 服务器可以禁用 SSH 登录，自定义错误消息，简化验证流程，减少网络拷贝。而 Gogs/Gitea 在虽然使用 Golang SSH，但实现的 SSH 服务器并不是直接运行命令而是增加了中间命令 serv，这种做法也会增加拷贝，这可能是设计不足的妥协吧。
 
 ## Git 代码托管平台的伸缩性
 <!--存储库分片，大存储库，大文件，分布式文件系统-->
