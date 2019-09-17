@@ -23,6 +23,25 @@ Git 与远程存储库之间的传输协议有 HTTP, GIT(`git://`)，SSH. 在 [�
 |fetch/clone|git fetch-pack|git upload-pack|
 |push|git send-pack|git receive-pack|
 
+Git 使用文件快照记录文件变更，当对象存储到松散文件目录时，每一次大小不变的文件修改相当于存储库中增加特定文件的大小，Git 使用 [Deflate](https://en.wikipedia.org/wiki/DEFLATE) 将对象进行压缩，对象头包括对象类型，原始大小。
+
+Deflate (git 使用的是 zlib) 压缩算法无论是压缩还是解压都不出色，引用来自的 [github.com/lz4/lz4](https://github.com/lz4/lz4/tree/9b2b96edc4642c4a21e2485ffe9bd43ed5f3a2b2#benchmarks)基准测试：
+
+|  Compressor             | Ratio   | Compression | Decompression |
+|  ----------             | -----   | ----------- | ------------- |
+|  memcpy                 |  1.000  | 13700 MB/s  |  13700 MB/s   |
+|**LZ4 default (v1.9.0)** |**2.101**| **780 MB/s**| **4970 MB/s** |
+|  LZO 2.09               |  2.108  |   670 MB/s  |    860 MB/s   |
+|  QuickLZ 1.5.0          |  2.238  |   575 MB/s  |    780 MB/s   |
+|  Snappy 1.1.4           |  2.091  |   565 MB/s  |   1950 MB/s   |
+| [Zstandard] 1.4.0 -1    |  2.883  |   515 MB/s  |   1380 MB/s   |
+|  LZF v3.6               |  2.073  |   415 MB/s  |    910 MB/s   |
+| [zlib] deflate 1.2.11 -1|  2.730  |   100 MB/s  |    415 MB/s   |
+|**LZ4 HC -9 (v1.9.0)**   |**2.721**|    41 MB/s  | **4900 MB/s** |
+| [zlib] deflate 1.2.11 -6|  3.099  |    36 MB/s  |    445 MB/s   |
+
+无论是松散文件，文件快照还是压缩算法，都使得搭建 Git 代码托管平台需要面临几个大问题，高磁盘 IO, 高 CPU 使用率，这也是用户需要考虑的问题。
+
 ## 不同伸缩性的 Git 代码托管平台
 
 ### 基于内置工具搭建 Git 代码托管服务
@@ -31,7 +50,7 @@ Git 最初由 Linus Torvalds 开发用来取代 BitKeeper 作为 Linux 内核源
 
 使用 Git 内置的 GitWeb/git-http-backend/git-daemon，我们能够搭建一个简易的 Git 代码托管服务器，但这里没有 SSH 协议支持。而实现 SSH 协议支持也非常简单，只需要在服务器上运行 `sshd` (OpenSSH)，并允许命令 `git-upload-pack/git-receive-pack/git-upload-archive` 命令的运行，对于 SSH 协议的验证，我们则可以使用 `authorized_keys` 机制，将需要允许的用户的 SSH 公钥添加到 `authorized_keys` 文件。
 
-[https://git.kernel.org/](https://git.kernel.org/) 包括驱动，文档等项目大概有 1千个存储库，Linux 内核存储库磁盘占用大概是 2GB，属于提交较大的存储库，理想情况下，一块 2TB 磁盘的服务器便可支撑 [https://git.kernel.org/](https://git.kernel.org/)  运行（实际情况下并不会这样，由于 Linux 内核的流行，需要更优异的硬件才能支撑 git.kernel.org 的稳定运行）。基于 Git 内置功能搭建的代码托管服务，麻雀虽小五脏俱全，不过回过头来说，这样的代码托管服务功能有限，可伸缩性和扩展性不佳。
+[https://git.kernel.org/](https://git.kernel.org/) 网站托管了 Linux 内核源码，驱动，文档等大概有 1000+ 个存储库，较大的存储库如 Linux 内核源码磁盘占用大概是 2GB，因此在理想情况下，一块 2TB 磁盘的服务器便可支撑 [https://git.kernel.org/](https://git.kernel.org/)  这个网站的运行（实际情况则并不是如此，由于 Linux 内核的流行，git.kernel.org 的请求将比较多，对硬件的需求将更高一点）。基于 Git 内置功能搭建的代码托管服务，麻雀虽小五脏俱全，不过回过头来说，这样的代码托管服务功能有限，可伸缩性和扩展性不佳。
 
 ### 小型的 Git 代码托管平台
 
