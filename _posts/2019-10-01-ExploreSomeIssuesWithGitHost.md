@@ -75,15 +75,17 @@ Git 最初由 Linus Torvalds 开发用来取代 BitKeeper 作为 Linux 内核源
 
 [Bitbucket](https://bitbucket.org) 是 [Atlassian](https://www.atlassian.com) 开发的代码托管平台，与 Github/Gitlab 不同，Bitbucket 还提供了原生 Mercurial 支持，不过最近，Bitbucket 宣布要逐步关闭 Mercurial 的支持。Atlassian 还开发了 Jira/Sourcetree 这样著名的软件，Bitbucket 源码没有开发，推测主要使用 Java 技术栈（这个从一次 Bitbucket VFSForGit 安装包分析可得）。
 
-[Gitee](https://gitee.com) 是目前国内最大的代码托管平台之一，早在 2015 年便开始了分布式改造，并编写了一系列服务实现分布式架构，编写了 Nginx 路由模块实现动态路由，基于 libssh 开发了 Basalt v1 SSH 服务器，基于 Golang 开发了 Basalt v2 SSH 服务器，还开发了 git-srv 智能服务后端，brzox Git HTTP/Archive 服务。以及 git-diamond git 协议内部传输服务等等。Gitee 最初代码基于 Gitlab，几年之间已经与 Gitlab 有了很大的差异，现在 Gitee 已经逐步将一些功能从 gitlab 中剥离，实现云平台的微服务，比如目前的 git/svn/hook 验证服务是基于 Golang 编写的 banjo。Gitee 使用比较紧张的硬件资源支撑了大量的接入，这与财大气粗的 Github 有着很大的不同。
+[Gitee](https://gitee.com) 是目前国内最大的代码托管平台之一，早在 2015 年便开始了分布式改造，并编写了一系列服务实现分布式架构，编写了 Nginx 路由模块实现动态路由，基于 libssh 开发了 Basalt v1 SSH 服务器，基于 Golang 开发了 Basalt v2 SSH 服务器，还开发了 git-srv 智能服务后端，brzox Git HTTP/Archive 服务。以及 git-diamond git 协议内部传输服务等等。Gitee 最初代码基于 Gitlab，几年之间已经与 Gitlab 有了很大的差异，现在 Gitee 已经逐步将一些功能从 gitlab 中剥离，实现云平台的微服务，比如目前的 git/svn/hook 验证服务是基于 Golang 编写的 banjo。Gitee 需要以有限的硬件实现更多的用户接入，所以在服务的设计上更倾向于提供资源使用率，对一些比较容易造成计算资源紧张的服务进行降级。
 
 ## Git 代码托管平台服务实现
 <!--SSH/HTTP/GIT, LFS, GitVFS....-->
 Git 代码托管平台的基本服务应该包括浏览器接入支持和 git 客户端接入支持，前者需要平台开发网页提供若干服务供用户访问。后者需要支持 git 客户端推拉代码。通过网站访问存储库意味着 HTTP 服务需要通过一定的途径读写存储库，在 GitWeb 中，这通常使用 git 命令实现，比如使用 `git tree` 查看 `tree`，使用 `git archive` 打包文件等等。在 Gogs 中，使用的 [git-module](https://github.com/gogs/git-module) 同样使用了命令读写存储库。而 Gogs 的分叉 Gitea 则使用的是 [src-d/go-git](https://github.com/src-d/go-git) 读写存储库。实际上我们常常有那种感觉，使用命令行可能会比直接调用 API 慢，并且错误难以处理，这通常是对的。比如我们查看 `HEAD` 对应的引用，使用命令我们可以运行 `git symbolic-ref HEAD`，运行这个命令我们需要 fork 出一个进程，fork 成功后马上在子进程中执行 exec git symbolic-ref，为了读取 git symbolic-ref 的输出，我们还需要创建几对 Pipe，并检测 git symbolic-ref 的退出值。而使用 libgit2 API 我们只需要调用 `git_repository_open`,`git_reference_open`,`git_reference_symbolic_target` 即可拿到对应的引用。而对于服务程序而言，fork-exec 的代价可能不小。当然你也可以直接使用 `open("/path/to/.git/HEAD")` 然后解析 HEAD 对应的引用。GitBucket 使用 JGit 读写存储库，Gitlab 曾经历了 Grit (Grit 部分命令部分 Git 纯 Ruby 实现，Github 曾经使用)。后来的 Rugged，到现在 Gitaly 的纯命令 + Ruby Repository（Gitlab 现在的架构我对其保留意见，至少 IO 复制将增加多次）。Github 目前使用 Rugged 读写存储库，当然一些更多的细节因为没有源码不得而知。Gitee 目前使用 Rugged，但一部分 libgit2 实现不佳的则直接采用 git 命令实现。
 
-实现 Git Over HTTP，Gitlab 最初采用的是 Grack, 受限于 `unicorn`，Grack 并发有限，而使用 Golang 开发的 Gogs，Gitea 则使用 Golang 原生 HTTP 库编写，这要比 Grack 好一些。目前 Gitee 的 Brzox 服务也是使用 Golang 编写。
+实现 Git Over HTTP，Gitlab 最初采用的是 Grack, 受限于 `unicorn`，Grack 并发有限且容易影响 Web 访问（即 Git 请求较多时，Web 拒绝服务），而基于 Golang 开发的 Gogs，Gitea 使用 Golang 原生 HTTP 库编写 Git HTTP Server 功能，这要比 Grack 好要好很多，Golang HTTP 模型能够支撑更多的并发。目前 Gitee 的 Git HTTP Server Brzox 也是使用 Golang 编写。
 
-实现 Git Over SSH，Gitlab 目前依然使用的是 OpenSSH，而不像 Github/BitBucket/Gitee 直接编写 SSH 服务器，直接编写 SSH 服务器可以禁用 SSH 登录，自定义错误消息，简化验证流程，减少网络拷贝。而 Gogs/Gitea 在虽然使用 Golang SSH，但实现的 SSH 服务器并不是直接运行命令而是增加了中间命令 serv，这种做法也会增加拷贝，这可能是设计不足的妥协吧。
+实现 Git Over SSH，Gitlab 目前依然使用的是 OpenSSH，而不像 Github/BitBucket/Gitee 直接编写 SSH 服务器，直接编写 SSH 服务器可以禁用 SSH 登录，自定义错误消息，简化验证流程，减少数据拷贝。Github 早先是基于 libssh 编写的 SSH Server, 目前不得而知。BitBucket 技术上偏向 Java, 则有可能使用 Apache Mina SSHD, GitBucket 使用 Apache Mina SSHD + JGit 实现 Git Over SSH 功能。而 Gogs/Gitea 在虽然使用 Golang crypto/ssh 编写了 SSH 服务，但在实现时仍然使用了中间命令，这就导致数据拷贝次数的增加，观测 Gogs/Gitea 的各种服务实现，这可能是设计不足的妥协吧。
+
+实现 Git Over TCP （git:// 协议）也非常简单，但 Git 协议并不提供验证机制，Git 代码托管平台提不提供 Git 协议支持也无关紧要，但 Git 协议无需加密，协议简单，作为平台内部传输服务倒是可以，目前 Gitee 使用 C++ Asio 编写 git-diamond 支持内部同步，企业存储库备份等功能。
 
 ## Git 代码托管平台的伸缩性
 <!--存储库分片，大存储库，大文件，分布式文件系统-->
@@ -91,10 +93,26 @@ Git 代码托管平台的基本服务应该包括浏览器接入支持和 git �
 ## Git 代码托管平台的附加功能
 <!--保护分支，只读目录，安全，两步验证...-->
 
+对于代码托管平台的附加功能，我的观点是，应该增加持续集成方面的功能，而不是增加像 SVN 这样的兼容功能，以 Gitee 为例，虽然增加了 SVN 接入，但每日请求数不足 1%，如果刨去使用脚本自动更新的请求，那么占比将非常小，而这种附加功能却在架构设计是带来了很多难题，这就是得不偿失。
 
 ## 文件服务
 <!--附件下载，发布文件，Archive 下载-->
 
-### 附件，Release
+一个优秀的 Git 代码托管平台，应该在软件的开发整个周期都给用户提供帮助，比如下载源码，软件发布。源码下载主要指 Archive 功能，软件的发布则需要平台提供 Release/附件下载功能。
 
 ### Archive
+
+我们知道 git-archive 命令可以将存储库特定的 commit/branch 打包成一个 zip/tar 文件，而在 Git Over SSH（Git Over TCP） 实现中，只要我们允许 `git-upload-archive` 命令在远程服务器上运行，就打包远程服务器上的存储库的特定分支。但由于 git-upload-archive 与 git-upload-pack/git-receive-pack 存在一些不同，是的 HTTP 协议无法实现 archive 协商。提供 archive 下载则需要另辟蹊径。
+
+我们在远程服务器上运行 git-archive 将其输出作为响应体的内容返回给 HTTP Client 便可实现 archive 下载功能，由于 archive 下载实际上是将 git tree/blob 遍历然后写入到归档文件后压缩（tar.gz/tar.bz2 ...）或者是压缩后写入文件（zip），二者都需要消耗 CPU 资源，因此我们在实现 archive 下载功能的同时需要考虑到缓存问题，并且缓存还应该支持过期。gitlab-workhorse 实现的 archive 下载功能便是先尝试命中缓存，如果没有缓存则调用 git 命令然后生成写入到缓存文件。Gitee 最近实现的 blaze-archive 也采用了类似的机制，但 blaze-archive 是一个独立的命令，这个命令实际上是被 git-srv 调用，brzox 与 git-srv 通信，brzox 将 archive 返回给 HTTP Client，而缓存的删除则是 blaze 负责的。 
+
+### 附件，Release
+
+附件，Release 可以选择云方案，如果要将附件和 LFS 统一管理，实际上国内的阿里云，腾讯云之类的并不合适，这些平台对并不支持类似 AWS `x-amz-content-sha256` 这样的头部，而是 `Content-MD5` 因此这些云平台要支持 LFS 则要花费多一些功夫。选择国外的 AWS, Azure 则需要考虑经济，网络等问题。当然无论如何使用云平台都需要考虑经济问题。
+
+平台自建附件，Release 功能可以使用分布式文件系统，如 FastDFS, 但 FastFDS 并不是一个好的选择，历史比较久，存储机制安全机制现在来说都不是很优秀。有个更好的选择是 [Minio](https://github.com/minio/minio), minio 使用 Golang 开发，支持 AWS API。许可协议是 `Apache 2.0`，商用没有阻碍，因此是搭建附件，Release 以及 LFS 存储的不二选择。
+
+## 道路漫漫
+
+软件开发一直是一个飞速变化的领域，而代码托管也要不断面临新的挑战，道路漫漫，吾辈不休。
+
