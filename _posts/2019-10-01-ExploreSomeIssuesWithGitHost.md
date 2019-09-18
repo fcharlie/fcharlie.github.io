@@ -87,7 +87,7 @@ Git 最初由 Linus Torvalds 开发用来取代 BitKeeper 作为 Linux 内核源
 <!--SSH/HTTP/GIT, LFS, GitVFS....-->
 Git 代码托管平台的基本服务应该包括浏览器接入支持和 git 客户端接入支持，前者需要平台开发网页提供若干服务供用户访问。后者需要支持 git 客户端推拉代码。通过网站访问存储库意味着 HTTP 服务需要通过一定的途径读写存储库，在 GitWeb 中，这通常使用 git 命令实现，比如使用 `git tree` 查看 `tree`，使用 `git archive` 打包文件等等。在 Gogs 中，使用的 [git-module](https://github.com/gogs/git-module) 同样使用了命令读写存储库。而 Gogs 的分叉 Gitea 则使用的是 [src-d/go-git](https://github.com/src-d/go-git) 读写存储库。实际上我们常常有那种感觉，使用命令行可能会比直接调用 API 慢，并且错误难以处理，这通常是对的。比如我们查看 `HEAD` 对应的引用，使用命令我们可以运行 `git symbolic-ref HEAD`，运行这个命令我们需要 fork 出一个进程，fork 成功后马上在子进程中执行 exec git symbolic-ref，为了读取 git symbolic-ref 的输出，我们还需要创建几对 Pipe，并检测 git symbolic-ref 的退出值。而使用 libgit2 API 我们只需要调用 `git_repository_open`,`git_reference_open`,`git_reference_symbolic_target` 即可拿到对应的引用。而对于服务程序而言，fork-exec 的代价可能不小。当然你也可以直接使用 `open("/path/to/.git/HEAD")` 然后解析 HEAD 对应的引用。GitBucket 使用 JGit 读写存储库，Gitlab 曾经历了 Grit (Grit 部分命令部分 Git 纯 Ruby 实现，Github 曾经使用)。后来的 Rugged，到现在 Gitaly 的纯命令 + Ruby Repository（Gitlab 现在的架构我对其保留意见，至少 IO 复制将增加多次）。Github 目前使用 Rugged 读写存储库，当然一些更多的细节因为没有源码不得而知。Gitee 目前使用 Rugged，但一部分 libgit2 实现不佳的则直接采用 git 命令实现。
 
-实现 Git Over HTTP，Gitlab 最初采用的是 Grack, 受限于 `unicorn`，Grack 并发有限且容易影响 Web 访问（即 Git 请求较多时，Web 拒绝服务），而基于 Golang 开发的 Gogs，Gitea 使用 Golang 原生 HTTP 库编写 Git HTTP Server 功能，这要比 Grack 好要好很多，Golang HTTP 模型能够支撑更多的并发。目前 Gitee 的 Git HTTP Server Brzox 也是使用 Golang 编写。
+实现 Git Over HTTP，Gitlab 最初采用了 Grack, 运行在 `unicorn` 中的 Grack 并发有限且容易影响 Web 访问（即 Git 请求较多时，Web 拒绝服务），而基于 Golang 开发的 Gogs，Gitea 使用 Golang 原生 HTTP 库编写 Git HTTP Server 功能，这要比 Grack 好要好很多，Golang HTTP 模型能够支撑更多的并发。目前 Gitee 的 Git HTTP Server Brzox 也是使用 Golang 编写。
 
 实现 Git Over SSH，Gitlab 目前依然使用的是 OpenSSH，而不像 Github/BitBucket/Gitee 直接编写 SSH 服务器，直接编写 SSH 服务器可以禁用 SSH 登录，自定义错误消息，简化验证流程，减少数据拷贝。Github 早先是基于 libssh 编写的 SSH Server, 目前不得而知。BitBucket 技术上偏向 Java, 则有可能使用 Apache Mina SSHD, GitBucket 使用 Apache Mina SSHD + JGit 实现 Git Over SSH 功能。而 Gogs/Gitea 在虽然使用 Golang crypto/ssh 编写了 SSH 服务，但在实现时仍然使用了中间命令，这就导致数据拷贝次数的增加，观测 Gogs/Gitea 的各种服务实现，这可能是设计不足的妥协吧。
 
@@ -96,7 +96,7 @@ Git 代码托管平台的基本服务应该包括浏览器接入支持和 git �
 ## Git 代码托管平台的伸缩性
 <!--存储库分片，大存储库，大文件，分布式文件系统-->
 
-Github 目前的项目数量为 1亿个，我们假设 Github 上存储库平均大小为 10MB，按照 Github 目前存储库三个备份计算，大概需要的磁盘容量为 2861 TB，按照硬盘出厂的规则（1000GB=1TB）,则是需要最小 3PB。这么大的磁盘容量并不是一个标准服务器能够提供的，按照目前企业级硬盘容量较大的每个 16TB, 则需要硬盘大概 188 块。
+伸缩性是 Git 代码托管能否支撑成千上万用户/存储库的重要指标。像 Gogs/Gitea 这样的代码托管系统尽量认为自身运行在单一服务器上，因此这类 Git 代码托管平台伸缩性非常有限，当然如果使用 NFS/Ceph 这类分布式文件系统能够在单一服务器上支持更多的存储库，但 NFS/Ceph 这种分布式系统的做为 Git 代码托管系统的存储层，除了分布式文件系统带来的性能下降，还会带来更多的问题。
 
 NFS I/O 细节：
 
@@ -105,6 +105,8 @@ NFS I/O 细节：
 Gitee Basalt I/O 细节：
 
 ![Basalt](https://github.com/fcharlie/pagesimage/raw/master/images/gitee-distributed.png)
+
+Github 目前有大约 1亿个项目，我们假设 Github 上存储库大小平均为 10MB，目前 Github 存储库使用三副本机制，大概需要的磁盘容量为 2861 TB，按照硬盘出厂的规则（1000GB=1TB）,则是需要最小 3PB。这么大的磁盘容量并不是一个标准服务器能够提供的，按照目前企业级硬盘容量较大的每个 16TB, 则需要硬盘大概 188 块。
 
 ## Git 代码托管平台的附加功能
 <!--保护分支，只读目录，安全，两步验证/WebAuthn (https://github.com/duo-labs/webauthn)...-->
