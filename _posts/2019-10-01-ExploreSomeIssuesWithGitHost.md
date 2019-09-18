@@ -12,9 +12,12 @@ categories: git
 
 与 CVS/Subversion 这种集中式版本控制系统不同的是，Git 的存储库数据会被存储在本地，提交也是发生在本地，远程可以看作是本地存储库的一个镜像。而 CVS/Subversion 的提交都是在线的。这就是分布式版本控制系统的核心特征。（理解这一问题的关联在于区分工作树 `worktree` 和存储库 `repository`。）
 
-Git 的源码托管在 [https://git.kernel.org/pub/scm/git/git.git/](https://git.kernel.org/pub/scm/git/git.git/)，Github 上也有只读镜像 [https://github.com/git/git](https://github.com/git/git)。Git 主页 [https://git-scm.com](https://git-scm.com) 网页源码托管在 Github。通常给 git 提交 PR 需要注册 [public-inbox.org](https://public-inbox.org) 邮件列表然后发送补丁，但你可以在 Github 上给 [https://github.com/gitgitgadget/git](https://github.com/gitgitgadget/git) 提交 PR，这简化了给 Git 贡献的难度。[gitgitgadget](https://github.com/gitgitgadget/gitgitgadget) 是微软开发者 [Johannes Schindelin](https://github.com/dscho) 开发的机器人，用于帮助开发者更简便的向 Git 提交补丁。笔者就有一个[补丁](https://github.com/gitgitgadget/git/pull/69)使用 gitgitgadget 提交。[Johannes Schindelin](https://github.com/dscho) 此人也是 [git-for-windows](https://github.com/git-for-windows/git) 的维护者。Git 的维护者则是 Google 的开发者 [Junio C Hamano](https://github.com/gitster)。
+Git 的源码托管在 [git.kernel.org](https://git.kernel.org/pub/scm/git/git.git/) 上，Github 上也有只读镜像 [github.com/git/git](https://github.com/git/git)。Git 主页 [https://git-scm.com](https://git-scm.com) 的网页源码则托管在 Github 上。通常给 git 提交 PR 需要注册 [public-inbox.org](https://public-inbox.org) 邮件列表然后发送补丁，但你可以在 Github 上给 [gitgitgadget/git](https://github.com/gitgitgadget/git) 提交 PR，这样你就能够使用 Github 的 PR 机制，省去了注册 Inbox 的麻烦，这年头那个开发者没有 Github 帐号呢！这无形中简化了给 Git 贡献代码的难度。[gitgitgadget](https://github.com/gitgitgadget/gitgitgadget) 是微软开发者 [Johannes Schindelin](https://github.com/dscho) 使用 TypeScript 开发的机器人，用于帮助开发者更简便的向 Git 提交补丁。笔者就有一个[补丁](https://github.com/gitgitgadget/git/pull/69)使用 gitgitgadget 提交。
 
-Git 与远程存储库之间的传输协议有 HTTP, GIT(`git://`)，SSH. 在 [《Pro Git - 2nd Edition》4.1 Git on the Server - The Protocols](https://git-scm.com/book/en/v2/Git-on-the-Server-The-Protocols) 中有介绍。其中 HTTP 协议包括哑协议和智能协议，由于哑协议是只读协议，目前大多数代码托管平台均不再提供支持。HTTP 智能协议和 GIT 协议，SSH 协议类似，都是特定几组 客户端/服务端 git 命令之间的输入输出数据传输和交换。如此简单的协议使得实现基于 Git 的代码托管平台尤为容易，针对不同的用户和存储库数量规模，Git 的选择也都比 Subversion，Mercurial 有更多的选择。
+[Johannes Schindelin](https://github.com/dscho) 此人也是 [git-for-windows](https://github.com/git-for-windows/git) 的维护者。
+Git 的维护者则是 Google 的开发者 [Junio C Hamano](https://github.com/gitster)。大多数 Git 开发者来自于 Google/Microsoft（包括 Github），其他的公司参与 Git 贡献的要少一些。libgit2 的开发者主要来自 Microsoft（包括 Github）。而 JGit 的开发者则主要来自 Google。已故 JGit 的创始人 Shawn Pearce 还开发了著名的 [Gerrit Code Review](https://www.gerritcodereview.com/)。这些开发者的无私奉献才能使我们用上这么优秀的版本控制系统，感谢他们的付出。
+
+Git 与远程存储库之间的传输协议有 HTTP, GIT(`git://`)，SSH. 在 [《Pro Git - 2nd Edition》4.1 Git on the Server - The Protocols](https://git-scm.com/book/en/v2/Git-on-the-Server-The-Protocols) 中有介绍。其中 HTTP 协议包括哑协议和智能协议，由于哑协议是只读协议，目前大多数代码托管平台均不再提供支持。HTTP 智能协议和 GIT 协议，SSH 协议类似，都是特定几组 客户端/服务端 git 命令之间的输入输出数据传输和交换。Git 传输协议较为简单，以智能传输协议 v1 为例，基本的 `fetch/push` 流程如下：
 
 Git 拉取流程：
 
@@ -24,9 +27,11 @@ Git 推送流程：
 
 ![Push Flow](https://github.com/fcharlie/pagesimage/raw/master/images/git-push-flow.png)
 
-Git 使用文件快照记录文件变更，当对象存储到松散文件目录时，每一次大小不变的文件修改相当于存储库中增加特定文件的大小，Git 使用 zlib [deflate](https://en.wikipedia.org/wiki/DEFLATE) 压缩对象，对象头包括对象类型，原始大小。
+虽然在 2018 年 5 月，git 推出了 [`Wire Protocol`](https://opensource.googleblog.com/2018/05/introducing-git-protocol-version-2.html)（即 Git v2 协议），增加了 Git 协议的复杂性，但在服务器上支持 git 协议（包括 v2 协议）仍然只需要在服务器上运行 git-upload-pack/git-receive-pack。这使得开发者很容易实现对 git 协议的支持。正因为 Git 协议表征的简单，所以针对不同的用户和存储库数量规模，Git 也都比 Subversion，Mercurial 有更多的选择。
 
-引用来自的 [https://github.com/facebook/zstd](https://github.com/facebook/zstd/tree/2164a130f353e64a1e89c8e60f36cf2498ab1eea#benchmarks) 基准测试，我们发现 zlib(deflate) 在接近的压缩比，无论是压缩还是解压都不如 `brotli`/`zstd`：
+Git 使用文件快照记录文件变更，当对象存储到松散文件目录时，每一次大小不变的文件修改相当于存储库中增加特定文件的大小，Git 使用 zlib [deflate](https://en.wikipedia.org/wiki/DEFLATE) 压缩对象，对象头包括对象类型，原始大小。基于快照的方式使得 Git 在提交代码，检出文件时都比较高效，但存储库的占用缺比较高。但运行 `git gc` 时，Git 会将松散的对象打包到 pack 文件中，这个时候会使用特定的机制存储一部分文件的 `OFS_DELTA`，这样就能节省一部分空间。
+
+zlib（deflate） 压缩算法通常来说除了没有版权限制，无论是压缩比还是速度，CPU 使用率都不是一个最佳的选择，引用来自的 [https://github.com/facebook/zstd](https://github.com/facebook/zstd/tree/2164a130f353e64a1e89c8e60f36cf2498ab1eea#benchmarks) 基准测试，zlib 看起来必后起之秀 `brotli`/`zstd` 差多了：
 
 | Compressor name         | Ratio | Compression| Decompress.|
 | ---------------         | ------| -----------| ---------- |
@@ -49,7 +54,7 @@ Git 最初由 Linus Torvalds 开发用来取代 BitKeeper 作为 Linux 内核源
 
 使用 Git 内置的 GitWeb/git-http-backend/git-daemon，我们能够搭建一个简易的 Git 代码托管服务器，但这里没有 SSH 协议支持。而实现 SSH 协议支持也非常简单，只需要在服务器上运行 `sshd` (OpenSSH)，并允许命令 `git-upload-pack/git-receive-pack/git-upload-archive` 命令的运行，对于 SSH 协议的验证，我们则可以使用 `authorized_keys` 机制，将需要允许的用户的 SSH 公钥添加到 `authorized_keys` 文件。
 
-[https://git.kernel.org/](https://git.kernel.org/) 网站托管了 Linux 内核源码，驱动，文档等大概有 1000+ 个存储库，较大的存储库如 Linux 内核源码磁盘占用大概是 2GB，因此在理想情况下，一块 2TB 磁盘的服务器便可支撑 [https://git.kernel.org/](https://git.kernel.org/)  这个网站的运行（实际情况则并不是如此，由于 Linux 内核的流行，git.kernel.org 的请求将比较多，对硬件的需求将更高一点）。基于 Git 内置功能搭建的代码托管服务，麻雀虽小五脏俱全，不过回过头来说，这样的代码托管服务功能有限，可伸缩性和扩展性不佳。
+[https://git.kernel.org/](https://git.kernel.org/) 网站托管了 Linux 内核源码，驱动，文档等大概有 1000 多个存储库，较大的存储库比如 Linux 内核源码磁盘占用大概是 2GB，因此在理想情况下，一块 2TB 磁盘的服务器便可支撑 [https://git.kernel.org/](https://git.kernel.org/)  这个网站的运行（实际情况则并不是如此，由于 Linux 内核的流行，git.kernel.org 的请求将比较多，对硬件的需求将更高一点）。基于 Git 内置功能搭建的代码托管服务，麻雀虽小五脏俱全，不过回过头来说，这样的代码托管服务功能有限，可伸缩性和扩展性不佳。
 
 ### 小型的 Git 代码托管平台
 
@@ -90,6 +95,16 @@ Git 代码托管平台的基本服务应该包括浏览器接入支持和 git �
 
 ## Git 代码托管平台的伸缩性
 <!--存储库分片，大存储库，大文件，分布式文件系统-->
+
+Github 目前的项目数量为 1亿个，我们假设 Github 上存储库平均大小为 10MB，按照 Github 目前存储库三个备份计算，大概需要的磁盘容量为 2861 TB，按照硬盘出厂的规则（1000GB=1TB）,则是需要最小 3PB。这么大的磁盘容量并不是一个标准服务器能够提供的，按照目前企业级硬盘容量较大的每个 16TB, 则需要硬盘大概 188 块。
+
+NFS I/O 细节：
+
+![NFS](https://github.com/fcharlie/pagesimage/raw/master/images/git-on-nfs.png)
+
+Gitee Basalt I/O 细节：
+
+![Basalt](https://github.com/fcharlie/pagesimage/raw/master/images/gitee-distributed.png)
 
 ## Git 代码托管平台的附加功能
 <!--保护分支，只读目录，安全，两步验证/WebAuthn (https://github.com/duo-labs/webauthn)...-->
