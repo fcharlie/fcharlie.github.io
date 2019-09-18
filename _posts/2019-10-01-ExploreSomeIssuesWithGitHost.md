@@ -18,11 +18,11 @@ Git 与远程存储库之间的传输协议有 HTTP, GIT(`git://`)，SSH. 在 [�
 
 Git 拉取流程：
 
-![](https://raw.githubusercontent.com/fcharlie/pagesimage/master/svgs/git-fetch-flow.svg)
+![Fetch Flow](https://github.com/fcharlie/pagesimage/raw/master/images/git-fetch-flow.png)
 
 Git 推送流程：
 
-![](https://raw.githubusercontent.com/fcharlie/pagesimage/master/svgs/git-push-flow.svg)
+![Push Flow](https://github.com/fcharlie/pagesimage/raw/master/images/git-push-flow.png)
 
 Git 使用文件快照记录文件变更，当对象存储到松散文件目录时，每一次大小不变的文件修改相当于存储库中增加特定文件的大小，Git 使用 zlib [deflate](https://en.wikipedia.org/wiki/DEFLATE) 压缩对象，对象头包括对象类型，原始大小。
 
