@@ -135,7 +135,7 @@ Github 目前有大约 1亿个项目，我们假设 Github 上存储库大小平
 
 ### 持续集成
 
-Github 目前提供了 Github Action
+在微软收购 Github之后，Github 有了更充足的财力在给用户提供持续集成功能，今年以来 Github 推出了 [GitHub Package Registry](https://github.com/features/package-registry) 和 [Github Actions](https://github.com/features/actions) （相关文章：[GitHub Actions now supports CI/CD, free for public repositories](https://github.blog/2019-08-08-github-actions-now-supports-ci-cd/)，[Introducing GitHub Package Registry](https://github.blog/2019-05-10-introducing-github-package-registry/)），在推出 Github Actions 之前，开发者在 Github 上大多是通过第三方软件实现 CI/CD 功能，比如我的 [M2Team/Privexec](https://github.com/M2Team/Privexec) 就使用 Appveroy。Windows Terminal 则使用 Azure Pipeline。
 
 ### 保护分支和只读目录
 
