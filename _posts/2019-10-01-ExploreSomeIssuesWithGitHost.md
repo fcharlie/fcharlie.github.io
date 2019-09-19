@@ -118,11 +118,13 @@ Github 目前有大约 1亿个项目，我们假设 Github 上存储库大小平
 
 资源的分片和请求的路由相伴而生，将存储库存储到不同服务器上后，则需要在这些服务器上实现对应的服务支持前端的请求，而前端也需要实现特定的路由机制，关于 Gitee 的路由机制架构，可以参考相关演讲或者博客。Gitee 存储服务器上使用了 git-srv 作为 Git 传输协议后端服务，而 Github 则使用了 DGit/Spokes，Gitlab 使用了 Gitaly。不同平台的技术各有侧重，比如 Gitlab Gitaly 侧重兼容旧的 OpenSSH，而 Gitee 的 Basalt-GitSrv 针对实际情况优化，与 Gitaly 相比要少一次 I/O 拷贝。 Gitee 目前不足之处是存没有完全剥离 Web(基于早期 Gitlab 发展而来)，而 Gitaly 也有 Ruby 代码实现存储库读写（这块代码用 Golang 封装 I/O 多了一次拷贝）。与 Gitee 类似，Gitea 还有另一种方案，即将 Gitea 部署到多个服务器上共用 DB 支持分片，比如 [gitea.com](https://gitea.com) 便是这样的平台，但 gitea.com 似乎并不支持 SSH，因此并不能算有效的分片。
 
-前端服务器的扩展性实际上要比存储库分片到不同存储服务器上简单一些，在 Gitee 里，增加前端服务器非常简单，还不需要迁移，目前 Gitee 有两个生产前端服务器和两个预上线前端服务器。
+前端服务器的扩展性实际上要比存储服务器好，前端服务器的迁移一般不需要像存储服务器那样转移存储库，服务也一般更简单。
 
 存储库分片之后还是无法避免特定存储库请求过多的问题，Github 的解决方案是使用三副本读写分离的 Spokes 机制，这一方案最多能够提供 3倍于单一服务器的并发读取能力，但不支持并发写入存储库。当然引入并发写入存储库并不是好的选择，这可能会带来更多的数据冲突，破坏一致性。而 Gitlab 没有实施，BitBucket 技术细节不太清晰，Gitee 受限与硬件限制和开发资源限制，也没有实施。
 
-## Git 代码托管平台的附加功能
+除了存储库的分片，代码托管平台还需要考虑数据库 SQL/NoSQL 能否支撑大规模并发，数据库的分布式集群是一个比较成熟的方案，而 Redis 最新的版本也支持集群，因此数据库的伸缩性一般不会存在太大问题，增加机器搭建集群即可。选择关系性数据库时还需要考虑许可证，数据库自身的功能等，比如 Gitlab 目前已经放弃对 MySQL 的支持，而是选择了 PostgreSQL，不过 Gitlab 的选择对于其他代码托管平台来说，也只能算作**仅作参考**。MariaDB 是 MySQL 的分支版本，随着 MySQL 被 Oracle 收购，开源社区渐渐丧失了对 MySQL 的兴趣，虽然 MySQL 8.0 发布已经很久，但采用 MySQL 8.0 的发行版本寥寥无几，很多还停留在 MySQL 5.X，有些发行版还使用 [mariadb-connector-c](https://github.com/MariaDB/mariadb-connector-c) 替代 `libmysqlclient` 作为数据库连接器，使用 MySQL 的平台很容易迁移到 MariaDB 而不用修改客户端数据库连接代码 。Gogs/Gitea 还支持使用 SQLite，但其使用 SQLite 时，基本上是放弃了伸缩性，不过目前有一个使用 Raft+libuv 实现的分布式 SQLite [canonical/dqlite](https://github.com/canonical/dqlite)，可以尝试一下。Redis 一般可以作为 Web 缓存或者任务队列的中间件，目前 Redis 虽然支持集群，但就单机 Redis 而言，由于它是单线程的服务，在将内存数据持久化到磁盘是还是可能出现超时，并且单线程服务性能终究有限，在 Github 上，[KeyDB](https://github.com/JohnSully/KeyDB) 或许是替代 Redis 的一个选择，KeyDB 专注于多线程，内存效率和高吞吐量。
+
+## Git 代码托管平台的增强功能
 <!--大存储库，大文件，保护分支，只读目录，安全，两步验证/WebAuthn (https://github.com/duo-labs/webauthn)...-->
 
 ### 大文件大存储库
