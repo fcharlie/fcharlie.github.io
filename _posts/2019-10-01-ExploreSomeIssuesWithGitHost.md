@@ -122,18 +122,28 @@ Github 目前有大约 1亿个项目，我们假设 Github 上存储库大小平
 
 存储库分片之后还是无法避免特定存储库请求过多的问题，Github 的解决方案是使用三副本读写分离的 Spokes 机制，这一方案最多能够提供 3倍于单一服务器的并发读取能力，但不支持并发写入存储库。当然引入并发写入存储库并不是好的选择，这可能会带来更多的数据冲突，破坏一致性。而 Gitlab 没有实施，BitBucket 技术细节不太清晰，Gitee 受限与硬件限制和开发资源限制，也没有实施。
 
-除了存储库的分片，代码托管平台还需要考虑数据库 SQL/NoSQL 能否支撑大规模并发，数据库的分布式集群是一个比较成熟的方案，而 Redis 最新的版本也支持集群，因此数据库的伸缩性一般不会存在太大问题，增加机器搭建集群即可。选择关系性数据库时还需要考虑许可证，数据库自身的功能等，比如 Gitlab 目前已经放弃对 MySQL 的支持，而是选择了 PostgreSQL，不过 Gitlab 的选择对于其他代码托管平台来说，也只能算作**仅作参考**。MariaDB 是 MySQL 的分支版本，随着 MySQL 被 Oracle 收购，开源社区渐渐丧失了对 MySQL 的兴趣，虽然 MySQL 8.0 发布已经很久，但采用 MySQL 8.0 的发行版本寥寥无几，很多还停留在 MySQL 5.X，有些发行版还使用 [mariadb-connector-c](https://github.com/MariaDB/mariadb-connector-c) 替代 `libmysqlclient` 作为数据库连接器，使用 MySQL 的平台很容易迁移到 MariaDB 而不用修改客户端数据库连接代码 ，MariaDB 支持线程池，而 MySQL 仅在企业版中支持线程池。一些 MariaDB 与 MySQL 的对比这里不赘述了。Gogs/Gitea 还支持使用 SQLite，但其使用 SQLite 时，基本上是放弃了伸缩性，不过目前有一个使用 Raft+libuv 实现的分布式 SQLite [canonical/dqlite](https://github.com/canonical/dqlite)，可以尝试一下。Redis 一般可以作为 Web 缓存或者任务队列的中间件，目前 Redis 虽然支持集群，但就单机 Redis 而言，由于它是单线程的服务，在将内存数据持久化到磁盘是还是可能出现超时，并且单线程服务性能终究有限，在 Github 上，[KeyDB](https://github.com/JohnSully/KeyDB) 或许是替代 Redis 的一个选择，KeyDB 专注于多线程，内存效率和高吞吐量。
+除了存储库的分片，代码托管平台还需要考虑数据库 SQL/NoSQL 能否支撑大规模并发，数据库的分布式集群是一个比较成熟的方案，而 Redis 最新的版本也支持集群，因此数据库的伸缩性一般不会存在太大问题，增加机器搭建集群即可。选择关系性数据库时还需要考虑许可证，数据库自身的功能等，比如 Gitlab 目前已经放弃对 MySQL 的支持，而是选择了 PostgreSQL，不过 Gitlab 的选择对于其他代码托管平台来说，也只能算作**仅作参考**。MariaDB 是 MySQL 的分支版本，随着 MySQL 被 Oracle 收购，开源社区渐渐丧失了对 MySQL 的兴趣，虽然 MySQL 8.0 发布已经很久，但采用 MySQL 8.0 的发行版本寥寥无几，很多还停留在 MySQL 5.X，有些发行版还使用 [mariadb-connector-c](https://github.com/MariaDB/mariadb-connector-c) 替代 `libmysqlclient` 作为数据库连接器，使用 MySQL 的平台很容易迁移到 MariaDB 而不用修改客户端数据库连接代码 ，MariaDB 支持线程池，而 MySQL 仅在企业版中支持线程池。一些 MariaDB 与 MySQL 的对比这里不赘述了。Gogs/Gitea 还支持使用 SQLite，但其使用 SQLite 时，基本上是放弃了伸缩性，不过目前有一个使用 Raft+libuv 实现的分布式 SQLite [canonical/dqlite](https://github.com/canonical/dqlite)，可以尝试一下。Redis 一般可以作为 Web 缓存或者任务队列的中间件，目前 Redis 虽然支持集群，但就单机 Redis 而言，由于它是单线程的服务，在将内存数据持久化到磁盘是还是可能出现超时，并且单线程服务性能终究有限，在 Github 上，[KeyDB](https://github.com/JohnSully/KeyDB) 是官方 Redis 的另一个选择，KeyDB 是 Redis 的分支，完全兼容 Redis 协议，KeyDB 支持多线程，有更好的内存效率和高吞吐量。
 
 ## Git 代码托管平台的增强功能
 <!--大存储库，大文件，保护分支，只读目录，安全，两步验证/WebAuthn (https://github.com/duo-labs/webauthn)...-->
 
-### 大文件大存储库
+除了支持用户通过 Git 协议或者通过网页方式读写远程存储库，代码托管平台一般还需要提供一些与开发相关的功能增强用户体验，这些功能在不同平台之间的对比时显得非常重要。
+
+### 缺陷追踪
+
+[SQLite3](https://www.sqlite.org) 使用 2007 年诞生的版本控制系统 [Fossil](https://fossil-scm.org) 托管其源码，与前辈 Git 相比，它集成了 Bug 追踪，Wiki，论坛和技术报告。而对于 Git 来说，这些则需要 Git 代码托管平台自己实现，当然现在无论是 Github/Gitee/Gitlab/BitBucket 还是 Gogs/Gitea 都提供了 `Issues`这样的机制方便开发者第一时间报告软件缺陷或者提出功能建议。`Issues` 这样的功能实现主要在于让用户参与其中，也就是用的人多了，才有人气。而 Github 的 `Issues` 相比其他平台是最活跃的。
+
+### 持续集成
+
+Github 目前提供了 Github Action
 
 ### 保护分支和只读目录
 
 ### 其他版本控制系统接入
 
 对于代码托管平台的附加功能，我的观点是，应该增加持续集成方面的功能，而不是增加像 SVN 这样的兼容功能，以 Gitee 为例，虽然增加了 SVN 接入，但每日请求数不足 1%，如果刨去使用脚本自动更新的请求，那么占比将非常小，而这种附加功能却在架构设计是带来了很多难题，增加 SVN 支持则是得不偿失的。
+
+### 大文件大存储库
 
 ### 高级安全性
 
