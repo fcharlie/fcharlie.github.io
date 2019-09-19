@@ -131,13 +131,17 @@ Github 目前有大约 1亿个项目，我们假设 Github 上存储库大小平
 
 ### 缺陷追踪
 
-[SQLite3](https://www.sqlite.org) 使用 2007 年诞生的版本控制系统 [Fossil](https://fossil-scm.org) 托管其源码，与前辈 Git 相比，它集成了 Bug 追踪，Wiki，论坛和技术报告。而对于 Git 来说，这些则需要 Git 代码托管平台自己实现，当然现在无论是 Github/Gitee/Gitlab/BitBucket 还是 Gogs/Gitea 都提供了 `Issues`这样的机制方便开发者第一时间报告软件缺陷或者提出功能建议。`Issues` 这样的功能实现主要在于让用户参与其中，也就是用的人多了，才有人气。而 Github 的 `Issues` 相比其他平台是最活跃的。
+[SQLite3](https://www.sqlite.org) 使用 2007 年诞生的版本控制系统 [Fossil](https://fossil-scm.org) 托管其源码，与前辈 Git 相比，它集成了 Bug 追踪，Wiki，论坛和技术报告。而对于 Git 来说，这些则需要 Git 代码托管平台自己实现，当然现在无论是 Github/Gitee/Gitlab/BitBucket 还是 Gogs/Gitea 都提供了 `Issues`这样的机制方便开发者第一时间报告软件缺陷或者提出功能建议。`Issues` 这样的功能实现主要在于让用户参与其中，也就是用的人多了，才有人气。而 Github 的 `Issues` 相比其他平台是最活跃的。另外 Github 还提供依赖警报功能（详情可以阅读 [Introducing security alerts on GitHub](https://github.blog/2017-11-16-introducing-security-alerts-on-github/)），这也是其他 Git 代码托管平台可以借鉴的功能。
 
 ### 持续集成
 
-在微软收购 Github之后，Github 有了更充足的财力在给用户提供持续集成功能，今年以来 Github 推出了 [GitHub Package Registry](https://github.com/features/package-registry) 和 [Github Actions](https://github.com/features/actions) （相关文章：[GitHub Actions now supports CI/CD, free for public repositories](https://github.blog/2019-08-08-github-actions-now-supports-ci-cd/)，[Introducing GitHub Package Registry](https://github.blog/2019-05-10-introducing-github-package-registry/)），在推出 Github Actions 之前，开发者在 Github 上大多是通过第三方软件实现 CI/CD 功能，比如我的 [M2Team/Privexec](https://github.com/M2Team/Privexec) 就使用 Appveroy。Windows Terminal 则使用 Azure Pipeline。
+在微软收购 Github之后，Github 有了更充足的财力在给用户提供持续集成功能，今年以来 Github 推出了 [GitHub Package Registry](https://github.com/features/package-registry) 和 [Github Actions](https://github.com/features/actions) （相关文章：[GitHub Actions now supports CI/CD, free for public repositories](https://github.blog/2019-08-08-github-actions-now-supports-ci-cd/)，[Introducing GitHub Package Registry](https://github.blog/2019-05-10-introducing-github-package-registry/)），在推出 Github Actions 之前，开发者在 Github 上大多是通过第三方软件实现 CI/CD 功能，比如我的 [M2Team/Privexec](https://github.com/M2Team/Privexec) 就使用 Appveroy。Windows Terminal 则使用 Azure Pipeline。平台的生态繁荣得益于第三方的支持，而对于其他平台，这些 CI/CD 支持就没有这么大的力度了，这也促使其他代码托管平台的 API 趋向 Github 化，WebHook 也逐步趋同，Github 形成了事实上的标准。比如 Gitee 的 APIv5 就保持了对 Github 的兼容。
 
 ### 保护分支和只读目录
+
+Gitee 很早就实现了类似 SVN 的保护分支功能，而 Github 目前也同样支持保护分支。实现保护分支的途径很很多条，通常通过服务端 Git 钩子实现，我曾写过 [《服务端 Git 钩子的妙用》](https://forcemz.net/git/2019/07/31/GNKServerSide/) 介绍了如何通过钩子实现保护分支功能。
+
+只读目录功能同样可以通过钩子实现，如果不通过钩子，而是在 git 命令中实现，则要面临修改 git 源码，需要投入大量人力维护的情况。《服务端 Git 钩子的妙用》和 [《实现 Git 目录权限控制》](https://forcemz.net/git/2019/04/01/ImplementGitDirPermissionControl/)对实现目录权限控制有详细介绍。
 
 ### 其他版本控制系统接入
 
@@ -145,7 +149,13 @@ Github 目前有大约 1亿个项目，我们假设 Github 上存储库大小平
 
 ### 大文件大存储库
 
-### 高级安全性
+公共 Git 代码托管平台很多时候实际上是给用户提供免费服务，为了过多避免大文件大存储库占用平台资源，对其作出限制必不可少，通常是大文件限制 100MB, 存储库限制 1GB. 存储库的检测简单的遍历存储库 objects 目录即可，而大文件的检测则复杂一些。Gitee 最初使用 Grit 检测 commit 是否引入了 blob 原始大小大于限制的文件，但这种机制需要解析 Git 对象，检测容易坍塌（一是检测超时，二是检测逃逸，三是存储库体积膨胀），后开使用原生钩子，改变了检测机制，则避免了这些问题。详细情况可以阅读[《服务端 Git 钩子的妙用》](https://forcemz.net/git/2019/07/31/GNKServerSide/)。
+
+禁止大文件推送这只是堵，那么大文件应该如何存放呢？Github 推出了 LFS 方案，目前 LFS 功能已经被大多数平台支持，Github 将 LFS 存储到 AWS 上，而 Gitee/Gitlab/Gogs/Gitea 大多使用自建的 LFS 服务器，存储在特定服务器上。
+
+### 安全性增强
+
+Github 最近宣布了支持 WebAuthn: [GitHub supports Web Authentication (WebAuthn) for security keys](https://github.blog/2019-08-21-github-supports-webauthn-for-security-keys/)，这种机制可以使用生物识别从而避免输入用户密码，随着信息技术的不断发展，一方面，安全机制不断晚上，另一方面，用户面临的风险也会多样化，复杂化。代码托管平台管理了开发者的核心资产，因此在安全上绝不能掉以轻心。当然需要做的不仅仅是及时跟进新的安全机制，还需要对整个系统及时进行安全升级，淘汰旧的协议（比如 SSL3/TLS1.1），旧的加密算法（DSA/MD5/SHA1），及时采用新的协议（TLS1.3）,新的加密，哈希算法（ED25519，SHA3）等等。
 
 
 ## 文件服务
@@ -163,7 +173,7 @@ Github 目前有大约 1亿个项目，我们假设 Github 上存储库大小平
 
 附件，Release 可以选择云方案，如果要将附件和 LFS 统一管理，实际上国内的阿里云，腾讯云之类的并不合适，这些平台对并不支持类似 AWS `x-amz-content-sha256` 这样的头部，而是 `Content-MD5` 因此这些云平台要支持 LFS 则要花费多一些功夫。选择国外的 AWS, Azure 则需要考虑经济，网络等问题。当然无论如何使用云平台都需要考虑经济问题。
 
-平台自建附件，Release 功能可以使用分布式文件系统，如 FastDFS, 但 FastFDS 并不是一个好的选择，历史比较久，存储机制安全机制现在来说都不是很优秀。有个更好的选择是 [Minio](https://github.com/minio/minio), minio 使用 Golang 开发，支持 AWS API。许可协议是 `Apache 2.0`，商用没有阻碍，因此是搭建附件，Release 以及 LFS 存储的不二选择。
+平台自建附件，Release 功能可以使用分布式文件系统，如 FastDFS, 但 FastFDS 并不是一个好的选择，历史比较久，存储机制安全机制现在来说都不是很优秀。有个更好的选择是 [Minio](https://github.com/minio/minio), minio 使用 Golang 开发，支持 AWS API。许可协议是 `Apache 2.0`，商用没有阻碍，因此是用来搭建附件，Release 以及 LFS 存储服务器的不二选择。
 
 ## 道路漫漫
 
