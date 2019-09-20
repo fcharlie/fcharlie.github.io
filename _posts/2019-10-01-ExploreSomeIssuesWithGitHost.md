@@ -157,13 +157,21 @@ Gitee 很早就实现了类似 SVN 的保护分支功能，而 Github 目前也�
 
 ### 其他版本控制系统接入
 
-对于代码托管平台的附加功能，我的观点是，应该增加持续集成方面的功能，而不是增加像 SVN 这样的兼容功能，以 Gitee 为例，虽然增加了 SVN 接入，但每日请求数不足 1%，如果刨去使用脚本自动更新的请求，那么占比将非常小，而这种附加功能却在架构设计是带来了很多难题，增加 SVN 支持则是得不偿失的。
+将使用其他版本控制系统的存储库转为 Git 非常简单，git 自身提供了 `git svn` 命令，可以将远程 svn 存储库一个个版本递归的转变为 Git 存储库，详细的操作可以参考 [《Pro Git 2nd Edition》9.2 Git and Other Systems - Migrating to Git](https://git-scm.com/book/en/v2/Git-and-Other-Systems-Migrating-to-Git)，这种方案的缺点比较是比较耗时，Gitee 开发者曾经帮助国内某汽车制造企业将 Subversion 存储库迁移到 Git，一开始使用 `git svn`，发现耗费时间太长，于是我找到了一个开源工具： [git-svn-fast-import](https://github.com/satori/git-svn-fast-import)，将其编译好并修复特定 BUG 交给相关同事，后来该企业的迁移工作顺利完成。这个工具直接解析存储库将其转换为 git 存储库，省去了网络传输的消耗。
+
+除了支持从其他版本控制系统导入外，一些代码 Git 代码托管平台也支持其他协议接入，Github/Gitee 都支持 Subversion 接入，也就是同一个存储库同时支持 git 客户端和 svn 客户端接入（像 BitBucket 支持 Mercurial 的实现实际上是单独搭建 Mercurial 存储库，不属于此类情况）。Github 实现的是 svn HTTP 协议，将 git 存储库的 commit 映射到 svn 的 revs。Github 的实现不是完美的，由于需要通过 commit 计算 svn 版本信息，第一次访问通过 svn 协议访问存储库时会比较慢，并且当存储库较大时，检出很容易失败，并且一次检出需要发送的 HTTP 请求可能非常多。 Gitee 使用了 [git-as-svn](https://github.com/bozaro/git-as-svn) 实现对 svn 的支持，支持的协议有 `svn://` 和 `svn+ssh://`，`svn+ssh://` 实际上是通过 Basalt 将请求转发到后端存储服务器上的 git-as-svn 服务实现的，而 git-as-svn 在 Gitea 开发者的贡献下支持 `svn+ssh://` 则是实现了一个 `svnserve` 的命令行，也就是说每来一个 svn 请求，Gitea 的方案则需要启动一个进程，Gitee 的方案则不需要。另外 git-as-svn 的基于 Java 开发，开发者似乎对 git 的理念研究不够透彻，git-as-svn 的内部实现细节变动非常大，早前的实现机制不太理想，性能不佳。在 Gitee 中，我们为了避免存储库较大时开启 svn 支持带来的性能下降，额外增加了对通过 svn 协议访问存储库的限制，目前是通过 svn 协议访问存储库时，存储库的大小限制为 400MB。
+
+Git 代码托管平台支持其他版本控制系统的接入实际上就是鸡肋，“食之无肉，弃之可惜”，比如说支持 svn 接入虽然在与其他平台对比时，能够视为亮点，但 svn 访问的还是极少数，而支持 svn 则需要花费一些人力物力，并且在系统架构设计时增加了复杂度。所以一个好的 Git 代码托管平台实际上没有必要支持这些。Gitee 虽然支持 svn，但 svn 每日的请求数不足 1%，在这 1% 中，又有 50% 以上的请求是特定的用户使用定时命令发送的。
 
 ### 大文件大存储库
 
 公共 Git 代码托管平台很多时候实际上是给用户提供免费服务，为了过多避免大文件大存储库占用平台资源，对其作出限制必不可少，通常是大文件限制 100MB, 存储库限制 1GB. 存储库的检测简单的遍历存储库 objects 目录即可，而大文件的检测则复杂一些。Gitee 最初使用 Grit 检测 commit 是否引入了 blob 原始大小大于限制的文件，但这种机制需要解析 Git 对象，检测容易坍塌（一是检测超时，二是检测逃逸，三是存储库体积膨胀），后开使用原生钩子，改变了检测机制，则避免了这些问题。详细情况可以阅读[《服务端 Git 钩子的妙用》](https://forcemz.net/git/2019/07/31/GNKServerSide/)。
 
 禁止大文件推送这只是堵，那么大文件应该如何存放呢？Github 推出了 LFS 方案，目前 LFS 功能已经被大多数平台支持，Github 将 LFS 存储到 AWS 上，而 Gitee/Gitlab/Gogs/Gitea 大多使用自建的 LFS 服务器，存储在特定服务器上。
+
+如果一个存储库自身就已经非常大了，如何去解决用户的访问难题呢？比如 Windows 源码超过 `300GB`，如果用户克隆存储库，按照每秒 1MB/s 的速度，需要 85 小时，这在任何代码托管平台都是不太现实的，好在微软 2017 年发布了 GVFS（现在叫 [VFSforGit](https://github.com/microsoft/VFSForGit)）,在使用 VFSforGit 获取远程存储库时，可以只获得目录结构，并在本地创建占位文件，但用户操作这些占位文件时，VFSforGit 客户端才会去请求服务器下载对应的对象，这大大改善了巨型存储库的操作体验。VFSforGit 本地涉及到的主要技术是 [ProjFS](https://docs.microsoft.com/en-us/windows/win32/projfs/projected-file-system)，在 Windows 上，VFSforGit 会创建 `IO_REPARSE_TAG_PROJFS` 类型的 ReparsePoint（NTFS 重解析点），读写到这些重解析点时，ProjFS 驱动会转发到 VFSForGit 客户端下载相应的对象。微软很多开发者在 macOS 上开发，所以官方增加了对 macOS 的支持，而 [Github 的 VFSForGit fork](https://github.com/github/VFSForGit) 则增加了对 Linux 的支持，不过离实用还有一些时日，Github ProjFS 实现库是 [libprojfs](https://github.com/github/libprojfs)。
+
+Git 代码托管平台支持 VFSforGit 客户端比较容易，目前除了 Visual Studio Online，还有 BitBucket 也增加了对 VFSforGit 的支持。我曾用 libgit2 开发了一个 `git-vfs-serve` 命令，用户访问 brzox 时，brzox 请求 git-srv，git-srv 执行 git-vfs-serve 便可以支持 VFSforGit 客户端的访问，不过并未上线。
 
 ### 安全性增强
 
