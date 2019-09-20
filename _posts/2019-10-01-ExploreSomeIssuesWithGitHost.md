@@ -12,10 +12,10 @@ categories: git
 
 与 CVS/Subversion 这种集中式版本控制系统不同的是，Git 的存储库数据会被存储在本地，提交也是发生在本地，远程可以看作是本地存储库的一个镜像。而 CVS/Subversion 的提交都是在线的。这就是分布式版本控制系统的核心特征。（理解这一问题的关联在于区分工作树 `worktree` 和存储库 `repository`。）
 
-Git 的源码托管在 [git.kernel.org](https://git.kernel.org/pub/scm/git/git.git/) 上，Github 上也有只读镜像 [github.com/git/git](https://github.com/git/git)。Git 主页 [https://git-scm.com](https://git-scm.com) 的网页源码则托管在 Github 上。通常给 git 提交 PR 需要注册 [public-inbox.org](https://public-inbox.org) 邮件列表然后发送补丁，但你可以在 Github 上给 [gitgitgadget/git](https://github.com/gitgitgadget/git) 提交 PR，这样你就能够使用 Github 的 PR 机制，省去了注册 Inbox 的麻烦，这年头那个开发者没有 Github 帐号呢！这无形中简化了给 Git 贡献代码的难度。[gitgitgadget](https://github.com/gitgitgadget/gitgitgadget) 是微软开发者 [Johannes Schindelin](https://github.com/dscho) 使用 TypeScript 开发的机器人，用于帮助开发者更简便的向 Git 提交补丁。笔者就有一个[补丁](https://github.com/gitgitgadget/git/pull/69)使用 gitgitgadget 提交。
+Git 的源码托管在 [git.kernel.org](https://git.kernel.org/pub/scm/git/git.git/) 上，Github 上也有只读镜像 [github.com/git/git](https://github.com/git/git)。Git 主页 [https://git-scm.com](https://git-scm.com) 的网页源码则托管在 Github 上。通常给 git 提交 PR 需要注册 [public-inbox.org](https://public-inbox.org) 邮件列表，然后发送补丁。者通常比较麻烦，好在有微软开发者[Johannes Schindelin](https://github.com/dscho) 使用 TypeScript 开发 [gitgitgadget](https://github.com/gitgitgadget/gitgitgadget) ，当你在 Github 上像 [gitgitgadget/git](https://github.com/gitgitgadget/git)  提交 PR 时，gitgitgadget 会将你的 PR 发送到 public-inbox，一旦补丁被 git 维护者接受，gitgitgadget 则会关闭那个 PR。gitgitgadget 简化了给 git 贡献代码的难度，省去了注册 Inbox 的麻烦，这年头开发者大多都有 Github 帐号。我就使用 gitgitgadget 给 git 提交了一个[补丁](https://github.com/gitgitgadget/git/pull/69)用于支持 HTTP/2。
 
 [Johannes Schindelin](https://github.com/dscho) 此人也是 [git-for-windows](https://github.com/git-for-windows/git) 的维护者。
-Git 的维护者则是 Google 的开发者 [Junio C Hamano](https://github.com/gitster)。大多数 Git 开发者来自于 Google/Microsoft（包括 Github），其他的公司参与 Git 贡献的要少一些。libgit2 的开发者主要来自 Microsoft（包括 Github）。而 JGit 的开发者则主要来自 Google。已故 JGit 的创始人 Shawn Pearce 还开发了著名的 [Gerrit Code Review](https://www.gerritcodereview.com/)。这些开发者的无私奉献才能使我们用上这么优秀的版本控制系统，感谢他们的付出。
+Git 的维护者则是 Google 的开发者 [Junio C Hamano](https://github.com/gitster)。大多数 Git 开发者来自于 Google/Microsoft（包括 Github）。libgit2 的开发者主要来自 Microsoft（包括 Github）。而 JGit 的开发者则主要来自 Google。已故 JGit 的创始人 Shawn Pearce 还开发了著名的 [Gerrit Code Review](https://www.gerritcodereview.com/)。这些开发者的无私奉献才能使我们用上这么优秀的版本控制系统，感谢他们的付出。
 
 Git 与远程存储库之间的传输协议有 HTTP, GIT(`git://`)，SSH. 在 [《Pro Git - 2nd Edition》4.1 Git on the Server - The Protocols](https://git-scm.com/book/en/v2/Git-on-the-Server-The-Protocols) 中有介绍。其中 HTTP 协议包括哑协议和智能协议，由于哑协议是只读协议，目前大多数代码托管平台均不再提供支持。HTTP 智能协议和 GIT 协议，SSH 协议类似，都是特定几组 客户端/服务端 git 命令之间的输入输出数据传输和交换。Git 传输协议较为简单，以智能传输协议 v1 为例，基本的 `fetch/push` 流程如下：
 
@@ -44,7 +44,15 @@ zlib（deflate） 压缩算法通常来说除了没有版权限制，无论是�
 | snappy 1.1.4            | 2.073 |   580 MB/s |  2020 MB/s |
 | lzf 3.6 -1              | 2.077 |   440 MB/s |   930 MB/s |
 
+当开发者要将 git 集成到其他软件或者系统中时，可以通过命令行调用 git 命令捕获输出，也可以使用 libgit2/JGit 等库。
 
+libgit2 最初是由 Shawn Pearce 创建了[初始 commit](https://github.com/libgit2/libgit2/tree/c15648cbd059b92c177586ab1701a167222c7681)。目前主要维护者来自微软。libgit2 提供一些基础的 API，功能基本上是完整的，除了一部分实现性能没有 git 那么好，其他方面令人满意，并且有多种语言绑定，包括 C++/D/Golang/Ruby/.NET/Node.js/Perl/Perl6/Ruby/Rust 等等。Gitee 原生钩子就使用了 libgit2，Gitee-gitlab 项目使用了 rugged。
+
+JGit 也是有 Shawn Pearce 创建的，目前属于 Eclipse 基金会，运行在 JVM 上，国内腾讯的工峰的 TGit 也是使用的 JGit。
+
+在 [Git Rev News 第48期](https://git.github.io/rev_news/2019/02/27/edition-48/)，编辑推荐了 [gitbase](https://github.com/src-d/gitbase) 通过 SQL 的方式查询 git 存储库，这个工具基于 [src-d/go-git](https://github.com/src-d/go-git)，go-git 是纯 Golang 实现的，如果基于 Golang 的项目需要简单的读写存储库，可以使用 go-git。与 libgit2 的 Golang 绑定 git2go 相比，不需要使用 CGO。 
+
+当然还有一些其他的 git 实现，大多是实验性的，不建议用于生产环境，比如基于 Rust 的 [git-rs](https://github.com/chrisdickinson/git-rs)。
 
 ## 不同伸缩性的 Git 代码托管平台
 
@@ -135,7 +143,7 @@ github-dfs：
 
 ### 缺陷追踪
 
-[SQLite3](https://www.sqlite.org) 使用 2007 年诞生的版本控制系统 [Fossil](https://fossil-scm.org) 托管其源码，与前辈 Git 相比，它集成了 Bug 追踪，Wiki，论坛和技术报告。而对于 Git 来说，这些则需要 Git 代码托管平台自己实现，当然现在无论是 Github/Gitee/Gitlab/BitBucket 还是 Gogs/Gitea 都提供了 `Issues`这样的机制方便开发者第一时间报告软件缺陷或者提出功能建议。`Issues` 这样的功能实现主要在于让用户参与其中，也就是用的人多了，才有人气。而 Github 的 `Issues` 相比其他平台是最活跃的。另外 Github 还提供依赖警报功能（详情可以阅读 [Introducing security alerts on GitHub](https://github.blog/2017-11-16-introducing-security-alerts-on-github/)），这也是其他 Git 代码托管平台可以借鉴的功能。
+[SQLite3](https://www.sqlite.org) 使用 2007 年诞生的版本控制系统 [Fossil](https://fossil-scm.org) 托管其源码，与前辈 Git 相比，它集成了 Bug 追踪，Wiki，论坛和技术报告。而对于 Git 来说，这些则需要 Git 代码托管平台自己实现，当然现在无论是 Github/Gitee/Gitlab/BitBucket 还是 Gogs/Gitea 都提供了 `Issues`这样的机制方便开发者第一时间报告软件缺陷或者提出功能建议。`Issues` 这样的功能实现主要在于让用户参与其中，也就是用的人多了，才有人气。而 Github 的 `Issues` 相比其他平台是最活跃的。另外 Github 还提供依赖警报功能（详情可以阅读 [Introducing security alerts on GitHub](https://github.blog/2017-11-16-introducing-security-alerts-on-github/)），另外 Github 还收购了 Semmle 代码分析用于连续漏洞检测 (参考：[Securing software, together](https://github.blog/2019-09-18-securing-software-together/)），这也是其他 Git 代码托管平台可以借鉴的功能。
 
 ### 持续集成
 
@@ -159,7 +167,7 @@ Gitee 很早就实现了类似 SVN 的保护分支功能，而 Github 目前也�
 
 ### 安全性增强
 
-Github 最近宣布了支持 WebAuthn: [GitHub supports Web Authentication (WebAuthn) for security keys](https://github.blog/2019-08-21-github-supports-webauthn-for-security-keys/)，这种机制可以使用生物识别从而避免输入用户密码，随着信息技术的不断发展，一方面，安全机制不断晚上，另一方面，用户面临的风险也会多样化，复杂化。代码托管平台管理了开发者的核心资产，因此在安全上绝不能掉以轻心。当然需要做的不仅仅是及时跟进新的安全机制，还需要对整个系统及时进行安全升级，淘汰旧的协议（比如 SSL3/TLS1.1），旧的加密算法（DSA/MD5/SHA1），及时采用新的协议（TLS1.3）,新的加密，哈希算法（ED25519，SHA3）等等。
+Github 最近宣布了支持 WebAuthn: [GitHub supports Web Authentication (WebAuthn) for security keys](https://github.blog/2019-08-21-github-supports-webauthn-for-security-keys/)，这种机制可以使用生物识别从而避免输入用户密码，随着信息技术的不断发展，一方面，安全机制不断完善，另一方面，用户面临的风险也会多样化，复杂化。代码托管平台管理了开发者的核心资产，因此在安全上绝不能掉以轻心。当然需要做的不仅仅是及时跟进新的安全机制，还需要对整个系统及时进行安全升级，淘汰旧的协议（比如 SSL3/TLS1.1），旧的加密，哈希算法（DSA，MD5/SHA1），及时采用新的协议（TLS1.3）,新的加密，哈希算法（ED25519，SHA3）等等。
 
 
 ## 文件服务
