@@ -195,6 +195,14 @@ Github 最近宣布了支持 WebAuthn: [GitHub supports Web Authentication (WebA
 
 平台自建附件，Release 功能可以使用分布式文件系统，如 FastDFS, 但 FastFDS 并不是一个好的选择，历史比较久，存储机制安全机制现在来说都不是很优秀。有个更好的选择是 [Minio](https://github.com/minio/minio), minio 使用 Golang 开发，支持 AWS API。许可协议是 `Apache 2.0`，商用没有阻碍，因此是用来搭建附件，Release 以及 LFS 存储服务器的不二选择。
 
+## Git 的未来
+
+Git 虽然是当前最受欢迎的代码托管系统，但 Git 也面临了一些难题，一类是如何支持大文件大存储库，这些问题有 Git LFS, VFSforGit 这样的第三方解决方案，也有微软，Google 开发者参与的官方 [Partial Clone](https://git-scm.com/docs/partial-clone/en)，部分克隆需要 Wire 协议支持，离可用还为时尚早。
+
+2017年2月，Google 开发者宣布攻破 SHA1，这曾经给一些 git 用户带来了担忧，因为 git 使用 SHA1 计算对象 ID，但 git 使用的实际上是一种特殊的 SHA1，将对象类型对象长度以及对象内容合并在一起计算 SHA1，由于有长度校验，这使得 SHA1 的冲突可能被降低了，但无论如何，SHA1 也不再是安全的，Git 在源码中增加了 [sha1collisiondetection](https://github.com/cr-marcstevens/sha1collisiondetection) 来避免 SHA1 冲突，并且增加了计划迁移到 SHA-256，并且将一些涉及到 Hash 的代码从单一的 SHA1 转变成 `object_id`。 关于 Hash 转换，可以查看文档 [Git hash function transition](https://github.com/git/git/blob/master/Documentation/technical/hash-function-transition.txt)。
+
+Git 从 SHA1 迁移到 SHA-256 困难重重，从[首次增加文档](https://github.com/git/git/commit/752414ae4310cd304f5e31649aaab2dcf307057c)距今已经有两年时间，而 SHA-256 的实现还不见全貌。与 Hash 迁移相比，压缩算法的演进不重要更难实施，时至今日，zlib 压缩已经不再优秀，但 Git 可能还要负重前行。
+
 ## 道路漫漫
 
 软件开发一直是一个飞速变化的领域，而代码托管也要不断面临新的挑战，道路漫漫，吾辈不休。
