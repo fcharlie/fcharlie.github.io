@@ -62,6 +62,8 @@ Git 最初由 Linus Torvalds 开发用来取代 BitKeeper 作为 Linux 内核源
 
 使用 Git 内置的 GitWeb/git-http-backend/git-daemon，我们能够搭建一个简易的 Git 代码托管服务器，但这里没有 SSH 协议支持。而实现 SSH 协议支持也非常简单，只需要在服务器上运行 `sshd` (OpenSSH)，并允许命令 `git-upload-pack/git-receive-pack/git-upload-archive` 命令的运行，对于 SSH 协议的验证，我们则可以使用 `authorized_keys` 机制，将需要允许的用户的 SSH 公钥添加到 `authorized_keys` 文件。
 
+这种方案通常使用 [Gitolite](https://gitolite.com/gitolite/) 增强访问控制，Gitolite 主要使用 Perl 编写，这和 GitWeb 一致，ssh 的验证是将 [gitolite-shell](https://github.com/sitaramc/gitolite/blob/master/src/gitolite-shell) 添加到 ` ~/.ssh/authorized_keys` 中被 sshd 调用实现的。git.kernenl.org 正是使用 Gitolite 实现 Git Over SSH 访问控制。
+
 [https://git.kernel.org/](https://git.kernel.org/) 网站托管了 Linux 内核源码，驱动，文档等大概有 1000 多个存储库，较大的存储库比如 Linux 内核源码磁盘占用大概是 2GB，因此在理想情况下，一块 2TB 磁盘的服务器便可支撑 [https://git.kernel.org/](https://git.kernel.org/)  这个网站的运行（实际情况则并不是如此，由于 Linux 内核的流行，git.kernel.org 的请求将比较多，对硬件的需求将更高一点）。基于 Git 内置功能搭建的代码托管服务，麻雀虽小五脏俱全，不过回过头来说，这样的代码托管服务功能有限，可伸缩性和扩展性不佳。
 
 ### 小型的 Git 代码托管平台
@@ -159,9 +161,13 @@ Gitee 很早就实现了类似 SVN 的保护分支功能，而 Github 目前也�
 
 将使用其他版本控制系统的存储库转为 Git 非常简单，git 自身提供了 `git svn` 命令，可以将远程 svn 存储库一个个版本递归的转变为 Git 存储库，详细的操作可以参考 [《Pro Git 2nd Edition》9.2 Git and Other Systems - Migrating to Git](https://git-scm.com/book/en/v2/Git-and-Other-Systems-Migrating-to-Git)，这种方案的缺点比较是比较耗时，Gitee 开发者曾经帮助国内某汽车制造企业将 Subversion 存储库迁移到 Git，一开始使用 `git svn`，发现耗费时间太长，于是我找到了一个开源工具： [git-svn-fast-import](https://github.com/satori/git-svn-fast-import)，将其编译好并修复特定 BUG 交给相关同事，后来该企业的迁移工作顺利完成。这个工具直接解析存储库将其转换为 git 存储库，省去了网络传输的消耗。
 
-除了支持从其他版本控制系统导入外，一些代码 Git 代码托管平台也支持其他协议接入，Github/Gitee 都支持 Subversion 接入，也就是同一个存储库同时支持 git 客户端和 svn 客户端接入（像 BitBucket 支持 Mercurial 的实现实际上是单独搭建 Mercurial 存储库，不属于此类情况）。Github 实现的是 svn HTTP 协议，将 git 存储库的 commit 映射到 svn 的 revs。Github 的实现不是完美的，由于需要通过 commit 计算 svn 版本信息，第一次访问通过 svn 协议访问存储库时会比较慢，并且当存储库较大时，检出很容易失败，并且一次检出需要发送的 HTTP 请求可能非常多。 Gitee 使用了 [git-as-svn](https://github.com/bozaro/git-as-svn) 实现对 svn 的支持，支持的协议有 `svn://` 和 `svn+ssh://`，`svn+ssh://` 实际上是通过 Basalt 将请求转发到后端存储服务器上的 git-as-svn 服务实现的，而 git-as-svn 在 Gitea 开发者的贡献下支持 `svn+ssh://` 则是实现了一个 `svnserve` 的命令行，也就是说每来一个 svn 请求，Gitea 的方案则需要启动一个进程，Gitee 的方案则不需要。另外 git-as-svn 的基于 Java 开发，开发者似乎对 git 的理念研究不够透彻，git-as-svn 的内部实现细节变动非常大，早前的实现机制不太理想，性能不佳。在 Gitee 中，我们为了避免存储库较大时开启 svn 支持带来的性能下降，额外增加了对通过 svn 协议访问存储库的限制，目前是通过 svn 协议访问存储库时，存储库的大小限制为 400MB。
+除了支持从其他版本控制系统导入外，一些代码 Git 代码托管平台也支持其他协议接入，Github/Gitee 都支持 Subversion 接入，也就是同一个存储库同时支持 git 客户端和 svn 客户端接入（像 BitBucket 支持 Mercurial 的实现实际上是单独搭建 Mercurial 存储库，不属于此类情况）。实现 Subversion 的接入几个难点，一是 Subversion 各种传输协议细节完全不同，HTTP 基于 WebDAV，而 SVN 协议又是一种自定义的 [ABNF 格式协议](https://github.com/apache/subversion/blob/trunk/subversion/libsvn_ra_svn/protocol)，如果在考虑支持 Subversion 接入时还需要考虑选择哪种协议，两类协议都支持通常是不现实的，费时费力。二是 Subversion 自身也在不断发展，但实际上在愿意在 Git 代码托管平台使用 svn 的毕竟还是少数，实现 Subversion 接入通常是费力不讨好，投入与产出不成正比。
 
-Git 代码托管平台支持其他版本控制系统的接入实际上就是鸡肋，“食之无肉，弃之可惜”，比如说支持 svn 接入虽然在与其他平台对比时，能够视为亮点，但 svn 访问的还是极少数，而支持 svn 则需要花费一些人力物力，并且在系统架构设计时增加了复杂度。所以一个好的 Git 代码托管平台实际上没有必要支持这些。Gitee 虽然支持 svn，但 svn 每日的请求数不足 1%，在这 1% 中，又有 50% 以上的请求是特定的用户使用定时命令发送的。
+Github 实现的是 svn HTTP 协议，将 git 存储库的 commit 映射到 svn 的 revs。Github 的实现并不完美，由于需要通过 commit 计算 svn 版本信息，第一次通过 svn 协议访问存储库时会比较慢，如果当存储库较大时，检出还很容易失败，并且一次检出操作可能需要发送的非常多的请求，大概是所有目录所有文件数目之和。
+
+ Gitee 使用了 [git-as-svn](https://github.com/bozaro/git-as-svn) 实现对 svn 的支持，支持的协议有 `svn://` 和 `svn+ssh://`，`svn+ssh://` 实际上是 `svn://` 协议通过 SSH 隧道传输，在 Gitee 中，当 Basalt 接收到客户端请求在远程服务器上运行 `svnserve -t` 命令，则会将请求转发到 git-as-svn。在 Gitea 开发者的贡献下，git-as-svn 增加了 `svnserve` 命令包装，即当 Gitea 接收到 `svn+ssh://` 协议请求时，则是启动包装的命令，进行一些列授权后然后在 shell 中与使用命令 `exec 3<>/dev/tcp/localhost/3690` 与 git-as-svn 通信，Gitee 的设计简化了验证流程，能够支持分布式架构，Gitea 目前还不能做到。git-as-svn 的基于 Java 开发，早期，开发者似乎对 git 的理念研究不够透彻，git-as-svn 的内部实现细节变动非常大，早前的实现机制不太理想，性能不佳。在 Gitee 中，我们为了避免存储库较大时开启 svn 支持带来的性能下降，额外增加了对通过 svn 协议访问存储库的限制，目前是通过 svn 协议访问存储库时，存储库的大小限制为 400MB。
+
+在早期，兼容其他版本控制系统可能是吸引用户的一大法宝，但随着 Git 的越来越流行，支持其他版本控制系统接入逐渐成了鸡肋，前人有言：“食之无肉，弃之可惜”，正是如此。像 Github/Gitee 这样的平台虽然支持 svn，但 svn 访问的还是极少数，而支持 svn 则需要花费一些人力物力，并且在系统架构设计时增加了复杂度。如果现在开发一个 Git 代码托管平台则没有必要支持 svn。Gitee 虽然支持 svn，但 svn 每日的请求数不足 1%，在这 1% 中，又有 50% 以上的请求是特定的用户使用定时命令发送的。
 
 ### 大文件大存储库
 
