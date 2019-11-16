@@ -26,12 +26,11 @@ Git 基础软件开发，服务器软件开发。
 
 -   实现码云（GITEE）代码托管平台的 Subversion（SVN）接入，国内第一家。
 -   从事 GIT 基础服务开发，包括不限于分布式架构，实用工具等。
--   开发了 svnsbz, 即 svn:// 协议动态代理服务器,支持智能感知黑名单功能（黑名单文件修改无需重启，或重新加载服务器）。
--   开发了 Git 分布式前端，NGINX 模块，核心路由模块，核心路由库实现了 O1 高效路由缓存，支持 Hostname，内部 DNS 缓存以及实时 DNS。
+-   开发了 svnsbz, 即 svn:// 协议动态代理服务器,支持实时监测并加载黑名单（基于 Linux iNotify）。
+-   开发了 Git 分布式前端，NGINX 模块，核心路由模块，核心路由库实现了 O1 高效路由缓存，支持域名解析，内部 DNS 缓存以及实时 DNS。
 -   开发了 Git 分布式核心服务 git-srv,并实现了 分布式版本的 git-upload-pack git-receive-pack git-upload-pack。
 -   开发了 Git 协议服务器 git-daemon 基于 Boost.Asio，分布式版本后端与 git-srv 通信。
 -   开发了 Aton API 服务器，支持 git 同步，创建存储库，分布式基础服务状态检查。
--   开发了 Git Native Hook 实现 git 分支检测，大文件大仓库扫描，以及同步触发，最新版使用了 Git 的环境隔离机制。
 -   开发了 Git 同步服务 git-diamond，即 git-daemon 内部版本。
 -   开发了 Aquila Git HTTP Server 基于 .Net Core，HTTP 服务使用 Asp.Net Core 的 Kestrel。
 -   开发了 Git HTTP 服务器 - Brzo，基于 Boost.Asio 实现,速度超过一般的 Git HTTP 服务器实现，支持平滑重启。
@@ -47,9 +46,9 @@ Git 基础软件开发，服务器软件开发。
 -   基于 Go 开发了本地存储的 LFS 服务器，目前 Gitee 使用的是这种。
 -   负责码云分布式存储架构变更设计和编码实现。
 -   基于 libgit2 开发了基于 git namespace 快照的企业存储库快照备份方案。
--   Git 原生钩子支持大文件检测，存储库分析，git 只读文件功能，git 禁止推送暴露用户私有邮箱。
+-   Git 原生钩子支持大文件检测，存储库分析，分支权限管理，git 只读文件功能，git 禁止推送暴露用户私有邮箱，以及存储库响应式同步机制。
 -   基于 Go 开发的 Blaze， git GC, 备份，存储库体积分析后台任务服务。
--   Gitee 存储路由架构改造。
+-   Gitee 存储路由架构改造。并基于 Golang 编写了验证服务 Banjo 将基础服务验证 API 独立出来。
 -   基于 Go 开发了 blaze-archive Git archive 扩展工具，支持 archive 缓存，支持 `tar.br`,`tar.zst`,`tar.xz`,`tar.sz` 等压缩格式。
 
 Git-Secure 开源地址 [https://gitee.com/oscstudio/git-secure](https://gitee.com/oscstudio/git-secure)  
@@ -124,6 +123,7 @@ Git-Analyze 开源地址 [https://gitee.com/oscstudio/git-analyze](https://gitee
 |WiFiAssistant|[github.com/fcharlie/WiFiAssistant](https://github.com/fcharlie/WiFiAssistant)|Windows 平台 WiFi 无线承载网络开启助手|
 |Planck|[github.com/fcharlie/Planck](https://github.com/fcharlie/Planck)|基于魔数和文件头的文件分析工具（库）|
 |Bela|[github.com/fcharlie/bela](https://github.com/fcharlie/bela)|基于 C++17/20 开发的 Windows 系统功能库|
+|BelaUtils|[github.com/fcharlie/BelaUtils](https://github.com/fcharlie/BelaUtils)|基于 Bela 重写的 PEAnalyzer/Krycekium 等|
 |Angelo|[github.com/fcharlie/Angelo](https://github.com/fcharlie/Angelo)|基于 AspNet Core 编写的跨平台 git http 服务|
 
 
@@ -145,6 +145,4 @@ Git-Analyze 开源地址 [https://gitee.com/oscstudio/git-analyze](https://gitee
 1.   2016 年作为讲师参与 Ubuntu Kyin 16.04 发布活动。
 2.   2018 年作为讲师参与 Ubuntu Kyin 18.04 发布活动。
 
-# 其他
 
-- bmake 移植到 Windows，还原参与：[https://github.com/fstudio/bmake](https://github.com/fstudio/bmake)   
