@@ -12,7 +12,7 @@ permalink: /about/
 个人博客： [https://forcemz.net](https://forcemz.net)  
 Github 主页：[https://github.com/fcharlie](https://github.com/fcharlie)  
 Gitee 主页：[https://gitee.com/ipvb](https://gitee.com/ipvb)  
-Gitee 核心开发者，Git 专栏[《Git 的反思》](https://gitee.com/Git-uses/rethinkgit) 作者。 
+Gitee 核心开发者，Git 专栏[《Git 的反思》](https://gitee.com/Git-uses/rethinkgit) 作者。
 
 # 教育
 
@@ -34,9 +34,9 @@ Git 基础软件开发，服务器软件开发。
 -   开发了 Git 同步服务 git-diamond，即 git-daemon 内部版本。
 -   开发了 Aquila Git HTTP Server 基于 .Net Core，HTTP 服务使用 Asp.Net Core 的 Kestrel。
 -   开发了 Git HTTP 服务器 - Brzo，基于 Boost.Asio 实现,速度超过一般的 Git HTTP 服务器实现，支持平滑重启。
--   开发了 Git Analyze 工具，git-analyze 可以从提交历史中发现超出限制的文件，git-rollback 支持回退到指定的 commit 或者版本。还有一些工具支持裸分支创建，提交填充等。
+-   开发了 Git Analyze 工具，这些工具能够检测大文件回滚历史，嫁接分支等。
 -   开发了 Moseo Git LFS 服务器，支持 SSH 验证，基于 cpprestsdk。
--   基于 PowerShell­™ Core 开发了 Git 存储库加密工具， git-secure，使用 AES 256 加密。 
+-   基于 PowerShell™ Core 开发了 Git 存储库加密工具， git-secure，使用 AES 256 加密。
 -   基于 Go 开发了 Git SSH 服务器分布式版，Git HTTP/SSH/Git 服务器私有化部署版。其中 HTTP 服务器整合了 Git VFS 功能。
 -   开发了 基于 libgit2 的 Git VFS (VFSforGit) 服务器支持程序。
 -   基于 Nginx round robin 模块重新实现了 Nginx 路由模块。
@@ -50,6 +50,7 @@ Git 基础软件开发，服务器软件开发。
 -   基于 Go 开发的 Blaze， git GC, 备份，存储库体积分析后台任务服务。
 -   Gitee 存储路由架构改造。并基于 Golang 编写了验证服务 Banjo 将基础服务验证 API 独立出来。
 -   基于 Go 开发了 blaze-archive Git archive 扩展工具，支持 archive 缓存，支持 `tar.br`,`tar.zst`,`tar.xz`,`tar.sz` 等压缩格式。
+-   设计和开发 Gitee 存储库读写分离方案 RONE/RIME。
 
 Git-Secure 开源地址 [https://gitee.com/oscstudio/git-secure](https://gitee.com/oscstudio/git-secure)  
 Git-Analyze 开源地址 [https://gitee.com/oscstudio/git-analyze](https://gitee.com/oscstudio/git-analyze)
@@ -60,43 +61,44 @@ Git-Analyze 开源地址 [https://gitee.com/oscstudio/git-analyze](https://gitee
 包括但不限于以下语言和框架：  
 语言:
 
-- C/C++
-- C#
-- PowerShell
-- Go
-- Java
-- D
-- Perl
-- Shell
-- Python
-- Makefile
-- Ruby
+-   C
+-   C++
+-   C#
+-   PowerShell
+-   Go
+-   Java
+-   D
+-   Perl
+-   Shell
+-   Python
+-   Makefile
+-   Ruby
 
 
 
 框架:
 
-- Boost Boost.Asio
-- Qt  
-- WTL
-- Win32  
-- ASP.NET
-- WPF
-- webpy
-- nginx Perl
-- Vibe.d
-- Rails  
-- Puma  
+-   Boost Boost.Asio
+-   Qt  
+-   WTL
+-   Win32  
+-   ASP.NET
+-   WPF
+-   webpy
+-   nginx Perl
+-   Vibe.d
+-   Rails  
+-   Puma  
 
- 操作系统：
+操作系统：
 
-- Linux ,多线程，多进程，网络编程。
-- Windows Win32 程序开发，主要是 GUI 程序。  
-- FreeBSD
-- ReactOS 内核研究
-- Minix  
-- Hurd  
-- Haiku  
+-   Linux ,多线程，多进程，网络编程。
+-   Windows Win32 程序开发，主要是 GUI 程序。  
+-   FreeBSD
+-   ReactOS 内核研究
+-   Minix  
+-   Hurd  
+-   Haiku  
 
 
 通常来说，本人精通 git 和 svn。  
@@ -142,7 +144,5 @@ Git-Analyze 开源地址 [https://gitee.com/oscstudio/git-analyze](https://gitee
 
 ## 活动
 
-1.   2016 年作为讲师参与 Ubuntu Kyin 16.04 发布活动。
-2.   2018 年作为讲师参与 Ubuntu Kyin 18.04 发布活动。
-
-
+1.  2016 年作为讲师参与 Ubuntu Kyin 16.04 发布活动。
+2.  2018 年作为讲师参与 Ubuntu Kyin 18.04 发布活动。
