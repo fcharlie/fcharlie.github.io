@@ -213,3 +213,7 @@ Git 从 SHA1 迁移到 SHA-256 困难重重，从[首次增加文档](https://gi
 
 软件开发一直是一个飞速变化的领域，而代码托管也要不断面临新的挑战，道路漫漫，吾辈不休。
 
+
+## 更新
+
+1.  2020-03-17 由于 src-d 已经破产，目前 go-git 已经 Hard fork 到 [https://github.com/go-git/go-git]
