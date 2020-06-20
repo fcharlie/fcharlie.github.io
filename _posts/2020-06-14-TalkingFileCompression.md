@@ -44,6 +44,20 @@ ZIP 压缩文件格式在文件头中会使用魔数标明压缩文件条目的�
 
 ZIP 的规范控制在 PKWARE 手中，但 WinZip 的影响力也非常大，[WinZip 使用了 93 作为 ZIP-ZSTD 的魔数](https://github.com/mcmilk/7-Zip-zstd/issues/132)，这实际上会造成困扰。
 
+**2020-06-20 更新** PKWARE 已经更新了 Zip 规则，魔数 20 已经被废弃，93 作为 ZIP-ZSTD 魔数。
+
+|压缩算法|魔数|备注|
+|---|---|---|
+|Store|0|存储目录|
+|8|deflate|默认格式|
+|9|deflate64|与 deflate 类似，但字典要大一些，开源 ZIP 基本不支持|
+|12|bzip2||
+|14|lzma||
+|93|zstd||
+|96|JPEG variant||
+|97|WavPack||
+|98|PPMd verson I, Rev 1||
+|99|AE-x encryption marker||
 
 ## ZIP 的 ZSTD 算法支持
 
