@@ -16,6 +16,7 @@ $darker:         #21211E;
 $dark:           #2D2D29;
 $medium:         #3B3B35;
 $light-medium:   #969696;
+$dark-blue:      #215A6D;
 $light-blue:     #3CA2A2;
 $dark-green:     #3f602b;
 $green:          #84be6a;
@@ -58,12 +59,12 @@ body {
 }
 
 a, a:active {
-	color: $green;
+	color: $light-blue;
 	text-decoration: none;
 }
 
 a:hover {
-	color: $dark-green;
+	color: $dark-blue;
 	text-decoration: none;
 }
 
@@ -72,7 +73,7 @@ ul {
 }
 
 .navbar, .nav {
-	background-color: $dark-green;
+	background-color: $dark-blue;
 
 	.navbar-toggle {
 		margin-top: 10px;
@@ -87,7 +88,7 @@ ul {
 		}
 
 		a:hover {
-			color: $dark-green;
+			color: $dark-blue;
 			text-decoration: none;
 		}
 	}
@@ -122,7 +123,7 @@ ul {
 	padding-right: 30px;
 	margin-top: 20px;
 	box-shadow: 0px 0px 0px 0px, 0px 6px 12px rgba(0, 0, 0, 0.2);
-	border-bottom: 5px solid $green;
+	border-bottom: 5px solid $light-blue;
 }
 
 .links {
@@ -201,12 +202,12 @@ ul {
 	}
 
 	.content-panel:nth-of-type(1) {
-		border-bottom: 10px solid $green;
+		border-bottom: 10px solid $light-blue;
 	}
 
 	.author-header {
 		font-family: 'Montserrat', sans-serif;
-		color: $green;
+		color: $light-blue;
 		margin-top: 0px;
 		padding-top: 15px;
 		font-size: 30px;
@@ -256,7 +257,7 @@ ul {
 	    h2 {
                 text-align: center;
 		margin-bottom: 30px;
-		color: $green;
+		color: $light-blue;
 		font-size: 26px;
 	    }
 
@@ -273,7 +274,7 @@ ul {
 
 		h2 {
 			margin-bottom: 30px;
-			color: $green;
+			color: $light-blue;
 			font-size: 26px;
 		}
 
@@ -313,7 +314,7 @@ ul {
 		}
 
 		a:hover {
-			color: $green;
+			color: $light-blue;
 		}
 	}
 
@@ -340,7 +341,7 @@ ul {
 		}
 
 		a:hover {
-			color: $green;
+			color: $light-blue;
 		}
 
 		ul {
@@ -436,14 +437,14 @@ ul {
 
 	.menu {
 
-		background-color: $dark-green;
+		background-color: $dark-blue;
 
 		a, a:active {
 			color: $white;
 		}
 
 		a:hover {
-			color: $green;
+			color: $light-blue;
 		}
 
 		h4 {
@@ -685,7 +686,7 @@ ul {
 				}
 
 				a:hover {
-					color: $green;
+					color: $light-blue;
 				}
 
 			}
@@ -732,7 +733,7 @@ ul {
 		}
 
 		a:hover {
-			color: $dark-green;
+			color: $dark-blue;
 		}
 	}
 
@@ -795,7 +796,7 @@ ul {
 		margin-top: 30px;
 
 		a {
-			color: $green;
+			color: $light-blue;
 		}
 	}
 
@@ -836,34 +837,34 @@ ul {
 }
 
 .btn-categories {
-	background-color: $green;
-	border-color: $green;
+	background-color: $light-blue;
+	border-color: $light-blue;
 	color: $white;
 	&:hover {
-		background-color: $dark-green;
-		border-color: $dark-green;
+		background-color: $dark-blue;
+		border-color: $dark-blue;
 		color: $white;
 	}
 	&:active {
-		background-color: $dark-green;
-		border-color: $dark-green;
+		background-color: $dark-blue;
+		border-color: $dark-blue;
 		color: $white;
 	}
 	&:focus {
-		background-color: $dark-green;
-		border-color: $dark-green;
+		background-color: $dark-blue;
+		border-color: $dark-blue;
 		color: $white;
 	}
 }
 
 .dropdown-menu {
-	background-color: $green;
+	background-color: $light-blue;
 	color: $white;
 	> li > a {
-		background-color: $green;
+		background-color: $light-blue;
 		color: $white;
 		&:hover {
-			background-color: $dark-green;
+			background-color: $dark-blue;
 			color: $white;
 		}
 	}
@@ -886,7 +887,7 @@ blockquote::before {
 
 blockquote.standards::before {
     font-family: "Times New Roman";
-    color: $green;
+    color: $light-blue;
     content: attr(para) ":";
     position: relative;
     top: 7px;
