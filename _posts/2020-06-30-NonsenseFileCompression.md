@@ -65,7 +65,16 @@ Zstandard 是 Facebook 开发的一个新的压缩算法，无论在压缩率还
 |tar.br|brotli|
 |tar.zst|zstd|
 
+### 7z 极致的黑客
+
+我的编辑器 Visual Studio Code 和公司电脑上的 Windows Terminal 使用了国内字体界大牛，微软开发者 [be5invis](https://github.com/be5invis) 的[更纱黑体](https://github.com/be5invis/Sarasa-Gothic)，在 Github 下载页面，字体文件使用 7z 压缩，ttf 字体压缩包大小通常为 200 多 MB。解压后至少 1GB（sarasa-gothic-ttf-0.12.10 解压后 10.2 GB），二进制文件 7z 压缩率非常可观。
+
+
+
 ### ZIP vs Tar vs 7z 人生的分歧
+
+## 理想中的压缩格式
+
 
 ## 最后
 
