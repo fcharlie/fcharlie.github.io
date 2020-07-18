@@ -51,7 +51,8 @@ Zstandard 是 Facebook 开发的一个新的压缩算法，无论在压缩率还
 
 在 [bali](https://github.com/balibuild/bali) [baulk](https://github.com/baulk/baulk) 这些我自己开发的软件中，我都在其压缩（解压）ZIP 时增加了 ZSTD 压缩算法的支持。回顾给 [minizip](https://github.com/nmoinvaz/minizip/pulls?q=is%3Apr+author%3Afcharlie+is%3Aclosed)，[libzip](https://github.com/nih-at/libzip/pull/181)，[7-zip-zstd](https://github.com/mcmilk/7-Zip-zstd/pull/140)，[archiver](https://github.com/mholt/archiver/pulls?q=is%3Apr+is%3Aclosed+author%3Afcharlie)，这些 ZIP 压缩库（压缩软件）的维护都十分有限，PR/Issue 解决较慢，或者根本不理，有一种劝退感，开发软件的基础设施维护和演进确实不那么美好。
 
-## Tar 和它的伙伴们
+### Tar 和它的伙伴们
+
 
 `tar.*` 格式文件通常是 tar 文件使用特定的压缩算法压缩而成，相应的表格如下：
 
@@ -64,6 +65,7 @@ Zstandard 是 Facebook 开发的一个新的压缩算法，无论在压缩率还
 |tar.br|brotli|
 |tar.zst|zstd|
 
+### ZIP vs Tar vs 7z 人生的分歧
 
 ## 最后
 
