@@ -19,7 +19,7 @@ categories: file
 如果我们使用 VIM 自带的十六进制查看工具 xxd（或者 [hexyl](https://github.com/sharkdp/hexyl)，你也就可以使用 baulk 安装 belautils，然后使用 hastyhex），我们可以发现，[ZIP](https://en.wikipedia.org/wiki/Zip_(file_format)) 压缩文件以 `PK` 开头。`PK`
 是已故著名程序员 *Phil Katz* 的英文缩写。值得一说的是，虽然 Phil Katz 创造了 ZIP 格式，但他却贫困潦倒，死在了汽车旅馆（[Phil Katz 的故事](http://www.bbsdocumentary.com/library/CONTROVERSY/LAWSUITS/SEA/katzbio.txt)）。目前 ZIP 的规范由 PKWARE 发布，PKWARE 是 Phil Katz 创立，Phil Katz 死后，其家人将 PKWARE 卖出，目前 ZIP 的格式规范版本为 [APPNOTE-6.3.9.TXT](https://pkware.cachefly.net/webdocs/APPNOTE/APPNOTE-6.3.9.TXT)，规范可以阅读但不可分发。
 
-ZIP 的格式可以大致描述为：*文件头+文件压缩内容+文件头+文件压缩内容...*，这种布局的好处是，不需要解压缩就可以直到压缩文件的原始大小，可以获得压缩包中所有的文件信息，所以我们可以在使用 7z 快速打开压缩包后，只解压特定的文件。
+ZIP 的格式可以大致描述为：*文件头+文件压缩内容+文件头+文件压缩内容...*，这种布局的好处是，不需要解压缩就可以直到压缩文件的原始大小，可以获得压缩包中所有的文件信息，所以我们可以在使用 7z 快速打开压缩包后，只解压特定的文件。(下图来源于 [wikipedia](https://en.wikipedia.org/wiki/Zip_(file_format)#/media/File:ZIP-64_Internal_Layout.svg))
 
 ![](https://s1.ax1x.com/2020/07/18/U28wXn.png)
 
@@ -51,20 +51,51 @@ Zstandard 是 Facebook 开发的一个新的压缩算法，无论在压缩率还
 
 在 [bali](https://github.com/balibuild/bali) [baulk](https://github.com/baulk/baulk) 这些我自己开发的软件中，我都在其压缩（解压）ZIP 时增加了 ZSTD 压缩算法的支持。回顾给 [minizip](https://github.com/nmoinvaz/minizip/pulls?q=is%3Apr+author%3Afcharlie+is%3Aclosed)，[libzip](https://github.com/nih-at/libzip/pull/181)，[7-zip-zstd](https://github.com/mcmilk/7-Zip-zstd/pull/140)，[archiver](https://github.com/mholt/archiver/pulls?q=is%3Apr+is%3Aclosed+author%3Afcharlie)，这些 ZIP 压缩库（压缩软件）的维护都十分有限，PR/Issue 解决较慢，或者根本不理，有一种劝退感，开发软件的基础设施维护和演进确实不那么美好。
 
-### Tar 和它的伙伴们
+说到 ZIP 不得不说一下 WinZip，最初，WinZip 使用 PKZIP 提供 ZIP 压缩解压能力，1993 年，WinZip 使用了 Info-ZIP 压缩代码，不再使用 PKZIP，Info-ZIP 是被移植最多的软件之一，至今在 POSIX 平台使用的 zip/unzip 就是 Info-ZIP。WinZip 在 ZIP 格式中的修改通常时增加压缩算法，WinZip 称之为 `zipx`，WinZip 在 ZIP 格式中具有较大的影响力，以至于 PKWARE 为了兼容 WinZip 多次修改 ZIP 规范。另外 PKZIP 自 2014 年也未见后更新（我使用的是评估版本，是否有更新不得而知）。
 
-[`tar`](https://en.wikipedia.org/wiki/Tar_(computing)) 通常称为 `tarball`，是 POSIX 世界使用最广泛的归档文件格式，
+### Tar 需要压缩算法
 
-`tar.*` 格式文件通常是 tar 文件使用特定的压缩算法压缩而成，相应的表格如下：
+[`tar`](https://en.wikipedia.org/wiki/Tar_(computing)) 通常称为 `tarball`，是 POSIX 世界使用最广泛的归档文件格式，但我们需要注意，TAR 本身并不提供压缩功能，而需要 GZIP/BZIP2/LZMA/ZSTD 这样的压缩算法组合制作压缩软件，GNU Tar 通常需要其他 xz, gzip 这样的命令提供创建相关压缩软件的能力，而基于 libarchive 的 bsdtar 则要好一些，可以将压缩能力集成到内置的 filter 中，这样不用调用外部命令就可以支持多种格式。
+
+tar 与常见压缩算法组合如下：
 
 |后缀名|压缩算法|
 |---|---|
-|tgz,tar.gz|GZIP (deflate)|
-|tar.bz2|bzip2|
-|tar.xz|lzma|
+|tgz, tar.gz|GZIP (deflate)|
+|tbz, tar.bz2|bzip2|
+|txz, tar.xz|lzma|
 |tar.sz|snappy|
 |tar.br|brotli|
 |tar.zst|zstd|
+
+不同的压缩算法提供了不同的压缩比，压缩解压的速度也不一样，下图是 [zstd](https://github.com/facebook/zstd) Benchmark 获得的一个结果：
+
+| Compressor name         | Ratio | Compression| Decompress.|
+| ---------------         | ------| -----------| ---------- |
+| **zstd 1.4.5 -1**       | 2.884 |   500 MB/s |  1660 MB/s |
+| zlib 1.2.11 -1          | 2.743 |    90 MB/s |   400 MB/s |
+| brotli 1.0.7 -0         | 2.703 |   400 MB/s |   450 MB/s |
+| **zstd 1.4.5 --fast=1** | 2.434 |   570 MB/s |  2200 MB/s |
+| **zstd 1.4.5 --fast=3** | 2.312 |   640 MB/s |  2300 MB/s |
+| quicklz 1.5.0 -1        | 2.238 |   560 MB/s |   710 MB/s |
+| **zstd 1.4.5 --fast=5** | 2.178 |   700 MB/s |  2420 MB/s |
+| lzo1x 2.10 -1           | 2.106 |   690 MB/s |   820 MB/s |
+| lz4 1.9.2               | 2.101 |   740 MB/s |  4530 MB/s |
+| **zstd 1.4.5 --fast=7** | 2.096 |   750 MB/s |  2480 MB/s |
+| lzf 3.6 -1              | 2.077 |   410 MB/s |   860 MB/s |
+| snappy 1.1.8            | 2.073 |   560 MB/s |  1790 MB/s |
+
+ZSTD vs Deflate 压缩：
+
+![](https://s1.ax1x.com/2020/07/19/URKpg1.png)
+
+ZSTD vs Deflate 解压缩：
+
+![](https://s1.ax1x.com/2020/07/19/URKiDK.png)
+
+在使用 tar 时，我们创建 tar 归档文件后，再选择合适的压缩算法，就可以制作一个合适的压缩文件，比如 XZ 的压缩比很好高，所以现在很多开源软件使用 `tar.xz` 分发压缩包，但 `xz` 的速度非常慢，这就需要取舍。
+
+于 ZIP 不同的是，`tar.*` 是先归档再压缩，因此如果需要读取 tar 家族压缩包，则需要先解压 tar 包才能读取相关信息，这就带来一个问题，无法随机读写 `tar.*` 压缩包。而于 ZIP 不同的是，在 `tar.*` 压缩包中，所有的文件头部信息先被归档了，和文件内容一起被压缩，这样的好处是有序的数据转变为无序的数据，信息量高，压缩比高。 
 
 ### 7z 极致的黑客
 
@@ -99,10 +130,9 @@ SignatureHeader
 RAR/RAR5 格式属于专有格式，虽然 RAR5 的技术规格开放了，但是并不意味着人们可以按照规范实现兼容的 RAR 压缩软件，根据协议，只能提供 RAR 解压功能，rarlab 可以直接下载 [unrar](https://www.rarlab.com/rar_add.htm) 源码或者命令行，用于解压 RAR 文件。
 
 
-### ZIP vs Tar vs 7z 人生的分歧
+### ZIP vs Tar vs 7z 技术的殊途
 
-## 理想中的压缩格式
-
+ZIP 的机制有利于其他格式采用，比如 Office（2007+） 文档格式，Android APK，Windows APPX，Java Jar，iOS ipa 等等，都是使用了 ZIP 格式。在 Linux 等 POSIX 系统，除了 `tar.*`，其他格式似乎都不是最常规的选择，当然也可以选择 ZIP，但系统默认都安装了 tar，不一定安装了 Info-ZIP。在 Windows 系统中，而为了提供更高的压缩率，Chrome 安装包则会将文件打包成 chrome.7z，并内置一个 7Z 解压它，实际上这个思路在一些安装包制作软件中也有使用。三种格式代表着三种不同的方向，实际上也是计算机技术的分歧，不同的人有不同的看法。
 
 ## 最后
 
