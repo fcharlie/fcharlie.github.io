@@ -53,6 +53,7 @@ Zstandard 是 Facebook 开发的一个新的压缩算法，无论在压缩率还
 
 ### Tar 和它的伙伴们
 
+[`tar`](https://en.wikipedia.org/wiki/Tar_(computing)) 通常称为 `tarball`，是 POSIX 世界使用最广泛的归档文件格式，
 
 `tar.*` 格式文件通常是 tar 文件使用特定的压缩算法压缩而成，相应的表格如下：
 
@@ -69,6 +70,33 @@ Zstandard 是 Facebook 开发的一个新的压缩算法，无论在压缩率还
 
 我的编辑器 Visual Studio Code 和公司电脑上的 Windows Terminal 使用了国内字体界大牛，微软开发者 [be5invis](https://github.com/be5invis) 的[更纱黑体](https://github.com/be5invis/Sarasa-Gothic)，在 Github 下载页面，字体文件使用 7z 压缩，ttf 字体压缩包大小通常为 200 多 MB。解压后至少 1GB（sarasa-gothic-ttf-0.12.10 解压后 10.2 GB），二进制文件 7z 压缩率非常可观。
 
+[`7z`](https://en.wikipedia.org/wiki/7z) 是 [7-Zip](https://en.wikipedia.org/wiki/7-Zip) 自带的压缩文件格式，由俄罗斯开发者 Igor Pavlov 创建。7z 格式是一种高压缩比的压缩文件格式，在 7z 格式中需要建立流的概念，不如 ZIP/TAR 格式清晰，实现起来有点复杂，除了 7-zip 的官方实现外，[libarchive](https://github.com/libarchive) 也支持 7z 的压缩和解压。
+
+```txt
+Archive structure
+~~~~~~~~~~~~~~~~~  
+SignatureHeader
+[PackedStreams]
+[PackedStreamsForHeaders]
+[
+  Header 
+  or 
+  {
+    Packed Header
+    HeaderInfo
+  }
+]
+```
+
+7z 支持 Unicode 编码，支持加密标头，这就是说可以连文件名也加密，ZIP 则只做到文件内容加密。7z 不支持存储文件系统权限信息，这基本上限制了它在 POSIX 系统中的使用，7z 不支持提取损坏的文件，不支持随机读取。
+
+7z 的特性做到了极致也限制了它在其他领域的使用。
+
+### RAR 互联网分享而兴起
+
+虽然 WinRAR 是专业软件，但盗版的门槛非常低，早期互联网上，很多人使用 `RAR` 格式分享文件，RAR 格式一度非常流行，RAR 支持分卷压缩，支持按照 Unicode(UTF-16) 存储文件名，2014 年，RAR5 格式推出，查看技术规范 [RAR5 technode.html](https://www.rarlab.com/technote.htm) ，通过分析 RAR5 格式，我们可以发现与 ZIP 格式有一定的相似之处，RAR5 是不是借鉴了 ZIP 格式不得而知。RAR5 支持存储 UTF-8 文件名，强度更高的 AES 加密，支持 NTFS 符号链接和硬链接等等。
+
+RAR/RAR5 格式属于专有格式，虽然 RAR5 的技术规格开放了，但是并不意味着人们可以按照规范实现兼容的 RAR 压缩软件，根据协议，只能提供 RAR 解压功能，rarlab 可以直接下载 [unrar](https://www.rarlab.com/rar_add.htm) 源码或者命令行，用于解压 RAR 文件。
 
 
 ### ZIP vs Tar vs 7z 人生的分歧
