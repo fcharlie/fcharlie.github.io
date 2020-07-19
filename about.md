@@ -112,6 +112,8 @@ Git-Analyze 开源地址 [https://gitee.com/oscstudio/git-analyze](https://gitee
 |作品|源码地址|描述|
 |---|---|---|
 |Baulk|[github.com/baulk/baulk](https://github.com/baulk/baulk)|基于 C++17 的极简 Windows 绿色包管理器|
+|Bela|[github.com/fcharlie/bela](https://github.com/fcharlie/bela)|基于 C++17/20 开发的 Windows 系统功能库|
+|BelaUtils|[github.com/fcharlie/BelaUtils](https://github.com/fcharlie/BelaUtils)|基于 Bela 重写的 PEAnalyzer/Krycekium 等|
 |Bali|[github.com/balibuild/bali](https://github.com/balibuild/bali)|基于 Golang 的 Golang 构建打包工具，能够创建 STGZ 安装包和嵌入 Windows 应用程序清单，图标版本等|
 |Clangbuilder|[github.com/fstudio/clangbuilder](https://github.com/fstudio/clangbuilder)|基于 PowerShell 的 LLVM 自动构建工具集|
 |TunnelSSH|[github.com/balibuild/tunnelssh](https://github.com/balibuild/tunnelssh)|一个机智的 SSH 客户端|
@@ -126,8 +128,6 @@ Git-Analyze 开源地址 [https://gitee.com/oscstudio/git-analyze](https://gitee
 |MsysLauncher|[github.com/fcharlie/msys2-launcher](https://github.com/fcharlie/msys2-launcher)|MSYS2 运行环境启动器|
 |WiFiAssistant|[github.com/fcharlie/WiFiAssistant](https://github.com/fcharlie/WiFiAssistant)|Windows 平台 WiFi 无线承载网络开启助手|
 |Planck|[github.com/fcharlie/Planck](https://github.com/fcharlie/Planck)|基于魔数和文件头的文件分析工具（库）|
-|Bela|[github.com/fcharlie/bela](https://github.com/fcharlie/bela)|基于 C++17/20 开发的 Windows 系统功能库|
-|BelaUtils|[github.com/fcharlie/BelaUtils](https://github.com/fcharlie/BelaUtils)|基于 Bela 重写的 PEAnalyzer/Krycekium 等|
 |Angelo|[github.com/fcharlie/Angelo](https://github.com/fcharlie/Angelo)|基于 AspNet Core 编写的跨平台 git http 服务|
 
 
@@ -143,6 +143,8 @@ Git-Analyze 开源地址 [https://gitee.com/oscstudio/git-analyze](https://gitee
 +   [cpptoml](https://github.com/skystrife/cpptoml/commits?author=fcharlie)
 +   [git-http-backend(golang)](https://github.com/asim/git-http-backend/commits?author=fcharlie)
 +   [git-for-windows](https://github.com/git-for-windows/MINGW-packages/commits?author=fcharlie)
++   [archiver](https://github.com/mholt/archiver/commits?author=fcharlie)
++   [minizip](https://github.com/nmoinvaz/minizip/commits?author=fcharlie)
 
 ## 活动
 
