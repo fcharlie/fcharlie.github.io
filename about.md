@@ -21,7 +21,7 @@ Gitee 核心开发者，Git 专栏[《Git 的反思》](https://gitee.com/Git-us
 
 # 工作经验
 
-2014.06 ~ 2020.04 深圳市奥思网络科技有限公司（开源中国），码云团队核心工程师，主要负责码云基础架构设计和开发，
+2014.06 ~ 2020.04 深圳市奥思网络科技有限公司（开源中国），码云团队核心工程师，主要负责码云（Gitee）基础架构设计和开发，
 Git 基础软件开发，服务器软件开发。
 
 -   实现码云（GITEE）代码托管平台的 Subversion（SVN）接入，国内第一家。
@@ -50,7 +50,7 @@ Git 基础软件开发，服务器软件开发。
 -   基于 Go 开发的 Blaze， git GC, 备份，存储库体积分析后台任务服务。
 -   Gitee 存储路由架构改造。并基于 Golang 编写了验证服务 Banjo 将基础服务验证 API 独立出来。
 -   基于 Go 开发了 blaze-archive Git archive 扩展工具，支持 archive 缓存，支持 `tar.br`,`tar.zst`,`tar.xz`,`tar.sz` 等压缩格式。
--   设计和开发 Gitee 存储库读写分离方案 RONE/RIME。
+-   设计和实现了 Gitee 存储库读写分离方案 RONE/RIME。
 
 Git-Secure 开源地址 [https://gitee.com/oscstudio/git-secure](https://gitee.com/oscstudio/git-secure)  
 Git-Analyze 开源地址 [https://gitee.com/oscstudio/git-analyze](https://gitee.com/oscstudio/git-analyze)
@@ -70,9 +70,9 @@ Git-Analyze 开源地址 [https://gitee.com/oscstudio/git-analyze](https://gitee
 -   D
 -   Perl
 -   Shell
--   Python
+-   Python（不太喜欢）
 -   Makefile
--   Ruby
+-   Ruby（不太喜欢）
 
 
 
