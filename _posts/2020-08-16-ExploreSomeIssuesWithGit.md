@@ -131,7 +131,7 @@ Git 存储文件的对象叫做 Blob，Blob 格式的设计比较简单，格式
 
 今年以来，我曾参与 minizip，libzip，archiver 的 ZIP 格式对 Zstd 压缩算法的支持，了解到 ZIP 中的 Store 存储机制，ZIP 可以将其他 ZIP 文件按照 Store 的方式原样存储到新的 ZIP 文件中，这无疑可以避免重复的压缩文件，浪费 CPU。因此，理想中的 Git 对象存储变成了下图下侧，文件的哈希不包含文件的长度，类型和压缩算法，仅与文件的原始内容相关。
 
-![](https://s1.ax1x.com/2020/08/16/dVS3ut.png)
+![](https://s1.ax1x.com/2020/08/16/dVwjE9.png)
 
 Git 选择的 Deflate 并不是一个优异的压缩算法，无论是压缩率还是压缩速度都不是最佳的，如果在重新设计 Git 的时候，Zstd 应该是一个更好的选择。下表是 Zstd 与 Zlib(Deflate) 压缩比和速度的一个对比。
 
