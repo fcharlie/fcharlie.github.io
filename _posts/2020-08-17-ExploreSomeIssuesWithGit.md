@@ -123,10 +123,53 @@ Git 虽然强大，但有一些功能也是不容易做到，比如完整的目�
 
 ## Git 的重新思考
 
+Git 虽然强大，但并不完美，比如哈希算法选择的是不安全的 SHA1，压缩算法选择的是 Deflate，如果创建个新的版本控制系统确实可以好好思考了。
+
 ### 对象存储的重新思考
+
+Git 存储文件的对象叫做 Blob，Blob 格式的设计比较简单，格式如下图上侧，Type 的类型用户标识是 Blob 还是 Commit 还是 Tree。数据按图所示拼接计算出哈希值后，将哈希值作为对象的 ID，然后使用 Deflate 压缩，这种机制并不是很完美的，比如不能按原样存储，文件不能无限压缩，因此，git 并不适合存储压缩文件，二进制文件。
+
+今年以来，我曾参与 minizip，libzip，archiver 的 ZIP 格式对 Zstd 压缩算法的支持，了解到 ZIP 中的 Store 存储机制，ZIP 可以将其他 ZIP 文件按照 Store 的方式原样存储到新的 ZIP 文件中，这无疑可以避免重复的压缩文件，浪费 CPU。因此，理想中的 Git 对象存储变成了下图下侧，文件的哈希不包含文件的长度，类型和压缩算法，仅与文件的原始内容相关。
+
+![](https://s1.ax1x.com/2020/08/16/dVS3ut.png)
+
+Git 选择的 Deflate 并不是一个优异的压缩算法，无论是压缩率还是压缩速度都不是最佳的，如果在重新设计 Git 的时候，Zstd 应该是一个更好的选择。下表是 Zstd 与 Zlib(Deflate) 压缩比和速度的一个对比。
+
+| Compressor name         | Ratio | Compression| Decompress.|
+| ---------------         | ------| -----------| ---------- |
+| zstd 1.4.0 -1       | 2.884 |   530 MB/s |  1360 MB/s |
+| **zlib 1.2.11 -1**          | 2.743 |   110 MB/s |   440 MB/s |
+| brotli 1.0.7 -0         | 2.701 |   430 MB/s |   470 MB/s |
+| quicklz 1.5.0 -1        | 2.238 |   600 MB/s |   800 MB/s |
+| lzo1x 2.09 -1           | 2.106 |   680 MB/s |   950 MB/s |
+| lz4 1.8.3               | 2.101 |   800 MB/s |  4220 MB/s |
+| snappy 1.1.4            | 2.073 |   580 MB/s |  2020 MB/s |
+| lzf 3.6 -1              | 2.077 |   440 MB/s |   930 MB/s |
+
+下图是压缩解压的对比（来源于 [Zstandard](https://github.com/facebook/zstd)）：
+
+Compression Speed vs Ratio | Decompression Speed
+---------------------------|--------------------
+![Compression Speed vs Ratio](https://s1.ax1x.com/2020/08/16/dVpadK.png "Compression Speed vs Ratio") | ![Decompression Speed](https://s1.ax1x.com/2020/08/16/dVp0iD.png "Decompression Speed")
 
 ### 哈希算法的选择
 
-自从 SHA1 被破解以来，Git 选择新的哈希算法便提上了日程，经过多次讨论，Git 开发者最终选择了不是最佳的 SHA256。
+自从 SHA1 被破解以来，Git 选择新的哈希算法便提上了日程，经过多次讨论，Git 开发者最终选择了不是最佳的 SHA256。SHA256 是最佳选择吗？不见得，我写过一个 Kisasum 的压缩工具，比较了 SHA256，BLAKE3，KangarooTwelve，SHA3，SM3 等压缩算法，SHA256 的速度位于下游，BLAKE3 官方有个测评，如下：
 
-### 版本控制系统的伸缩性
+![](https://s1.ax1x.com/2020/08/16/dVPRdx.png)
+
+使用 `Measure-Command` 命令测评 SHA256 和 BLAKE3 计算 224MB 的 `sarasa-gothic-ttf-0.12.14.7z` ，实测速度差距如下：
+
+![](https://s1.ax1x.com/2020/08/16/dVFM8S.png)
+
+SHA256 耗费了 1884ms，BLAKE3 耗费了 331ms，差距已经有 5 倍了，而且这里 Kisasum 的 BLAKE3 没有使用多线程，差距还可能更大。如果让我选择哈希算法，我可能选择 BLAKE3 或者 KangarooTwelve。
+
+### 版本控制系统的下一步
+
+优秀的版本控制系统是 DevOps 生态中重要的一环，除了提供版本控制的功能之外，还要有利于 DevOps 功能整合，下图是我对版本控制系统下一步增强的期许，而现实情况下，Git 实现下面的功能比较复杂，并不是那么方便，从业人员也经常不得不曲线救国。
+
+![](https://s1.ax1x.com/2020/08/16/dVE8DH.png)
+
+## 最后
+
+Git 已经诞生十五年了，Git 的取代者是谁？
