@@ -1,8 +1,8 @@
 ---
 layout: post
 title:  "探讨 Git 版本控制系统的若干问题 - 2020 版"
-date:   2020-08-17 20:00:00 +0800
-published: false
+date:   2020-08-16 20:00:00 +0800
+published: true
 categories: git
 ---
 
