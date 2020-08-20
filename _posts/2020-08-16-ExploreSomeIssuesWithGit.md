@@ -90,6 +90,122 @@ target
 
 ![](https://s1.ax1x.com/2020/08/16/dEOQc6.png)
 
+这里分享一个基于 Golang 编写的 Blob 细节查看演示程序（[Gist](https://gist.github.com/fcharlie/2dde5a491d08dbc45c866cb370b9fa07)）：
+
+```go
+package main
+
+import (
+	"compress/zlib"
+	"crypto/sha1"
+	"encoding/hex"
+	"errors"
+	"fmt"
+	"hash"
+	"io"
+	"os"
+	"strconv"
+)
+
+// git blob view
+
+// BlobViewer todo
+type BlobViewer struct {
+	w  io.Writer
+	zr io.ReadCloser
+	fd *os.File
+	h  hash.Hash
+}
+
+// NewBlobViewer new blob viewer
+func NewBlobViewer(p string, w io.Writer) (*BlobViewer, error) {
+	fd, err := os.Open(p)
+	if err != nil {
+		return nil, err
+	}
+	return &BlobViewer{fd: fd, w: w, h: sha1.New()}, nil
+}
+
+func (bv *BlobViewer) readUntil(delim byte) ([]byte, error) {
+	var buf [1]byte
+	value := make([]byte, 0, 16)
+	for {
+		if n, err := bv.zr.Read(buf[:]); err != nil && (err != io.EOF || n == 0) {
+			if err == io.EOF {
+				return nil, errors.New("invalid header")
+			}
+			return nil, err
+		}
+		bv.h.Write(buf[:])
+		if buf[0] == delim {
+			return value, nil
+		}
+
+		value = append(value, buf[0])
+	}
+}
+
+// Header Lookup header
+func (bv *BlobViewer) Header() error {
+	raw, err := bv.readUntil(' ')
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(os.Stderr, "object type is: \x1b[34m%s\x1b[0m\n", raw)
+	if raw, err = bv.readUntil(0); err != nil {
+		return err
+	}
+	size, err := strconv.ParseInt(string(raw), 10, 64)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(os.Stderr, "object size: \x1b[34m%d\x1b[0m\n", size)
+	return nil
+}
+
+//Lookup blob details
+func (bv *BlobViewer) Lookup() error {
+	zr, err := zlib.NewReader(bv.fd)
+	if err != nil {
+		return err
+	}
+	bv.zr = zr
+	bv.Header()
+	mw := io.MultiWriter(bv.w, bv.h)
+	_, _ = io.Copy(mw, bv.zr)
+	return nil
+}
+
+// Close close blob viewer
+func (bv *BlobViewer) Close() error {
+	if bv.zr != nil {
+		bv.zr.Close()
+	}
+	fmt.Fprintf(os.Stderr, "Hash: %s\n", hex.EncodeToString(bv.h.Sum(nil)))
+	if bv.fd != nil {
+		return bv.fd.Close()
+	}
+	return nil
+}
+
+func main() {
+	if len(os.Args) < 2 {
+		fmt.Fprintf(os.Stderr, "usage: %s blob-id\n", os.Args[0])
+		os.Exit(1)
+	}
+	bv, err := NewBlobViewer(os.Args[1], os.Stdout)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "open: %s error %v\n", os.Args[1], err)
+		os.Exit(1)
+	}
+	defer bv.Close()
+	if err := bv.Lookup(); err != nil {
+		fmt.Fprintf(os.Stderr, "lookup: %s error %v\n", os.Args[1], err)
+		os.Exit(1)
+	}
+}
+```
+
 git 的内里还是十分简单的，无论分支名怎样变，内部的组织结构并没有显著差别，是一种简单的轻量的分支形式，因此，我们在选择 Git Workflow 时，或许应该解放思想，实事求是，遵循自己的业务模型。
 
 像操作系统，比如 Windows，Linux 内核，FreeBSD，以及 LLVM，GCC 这样的大型软件，需要定期发布新版本，然后给新版本执行一个生命周期，开发流程类似于 `Trunk-Release-Tag` 在 Git 语义下，我们认为是 `Master-Release-Tag`，即在主干分支上不断演进，定期从主干创建特定的 Release 分支，然后 Release 不添加新的功能，只修复 BUG，按照发布路线图和实际测试情况发布新的 Release (也就是 Tag)。一般的大型软件均会采取这种演进模型。
