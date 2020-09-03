@@ -12,7 +12,8 @@ permalink: /about/
 个人博客： [https://forcemz.net](https://forcemz.net)  
 Github 主页：[https://github.com/fcharlie](https://github.com/fcharlie)  
 Gitee 主页：[https://gitee.com/ipvb](https://gitee.com/ipvb)  
-Gitee 核心开发者，Git 专栏[《Git 的反思》](https://gitee.com/Git-uses/rethinkgit) 作者。
+开源极客，几个冷门开源项目作者。  
+前 Gitee 核心开发者，分布式、读写分离架构设计和实施者；Git 专栏[《Git 的反思》](https://gitee.com/Git-uses/rethinkgit) 作者。
 
 # 教育
 
