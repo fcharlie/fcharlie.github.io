@@ -151,6 +151,8 @@ github-dfs：
 
 在微软收购 Github之后，Github 有了更充足的财力在给用户提供持续集成功能，今年以来 Github 推出了 [GitHub Package Registry](https://github.com/features/package-registry) 和 [Github Actions](https://github.com/features/actions) （相关文章：[GitHub Actions now supports CI/CD, free for public repositories](https://github.blog/2019-08-08-github-actions-now-supports-ci-cd/)，[Introducing GitHub Package Registry](https://github.blog/2019-05-10-introducing-github-package-registry/)），在推出 Github Actions 之前，开发者在 Github 上大多是通过第三方软件实现 CI/CD 功能，比如我的 [M2Team/Privexec](https://github.com/M2Team/Privexec) 就使用 Appveroy。Windows Terminal 则使用 Azure Pipeline。平台的生态繁荣得益于第三方的支持，而对于其他平台，这些 CI/CD 支持就没有这么大的力度了，这也促使其他代码托管平台的 API 趋向 Github 化，WebHook 也逐步趋同，Github 形成了事实上的标准。比如 Gitee 的 APIv5 就保持了对 Github 的兼容。
 
+**2020-09-20 更新** Github 的 Actions 已经是一个成熟的持续集成流水线，目前 [M2Team/Privexec](https://github.com/M2Team/Privexec) 已经迁移到 Github Actions，另外我开发的 Windows 包管理工具 [baulk](https://github.com/baulk/baulk) 也使用了 Github Actions。通过编写 Github Actions 插件，可以完成编译测试部署等工作，不能认为其是单一的持续集成工具。
+
 ### 保护分支和只读目录
 
 Gitee 很早就实现了类似 SVN 的保护分支功能，而 Github 目前也同样支持保护分支。实现保护分支的途径很很多条，通常通过服务端 Git 钩子实现，我曾写过 [《服务端 Git 钩子的妙用》](https://forcemz.net/git/2019/07/31/GNKServerSide/) 介绍了如何通过钩子实现保护分支功能。
