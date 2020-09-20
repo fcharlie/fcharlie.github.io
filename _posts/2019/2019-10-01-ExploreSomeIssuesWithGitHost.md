@@ -21,11 +21,11 @@ Git 与远程存储库之间的传输协议有 HTTP, GIT(`git://`)，SSH. 在 [�
 
 Git 拉取流程：
 
-![Fetch Flow](https://github.com/fcharlie/pagesimage/raw/master/images/git-fetch-flow.png)
+![Fetch Flow](https://s1.ax1x.com/2020/09/20/w7i84e.png)
 
 Git 推送流程：
 
-![Push Flow](https://github.com/fcharlie/pagesimage/raw/master/images/git-push-flow.png)
+![Push Flow](https://s1.ax1x.com/2020/09/20/w7iaut.png)
 
 虽然在 2018 年 5 月，git 推出了 [`Wire Protocol`](https://opensource.googleblog.com/2018/05/introducing-git-protocol-version-2.html)（即 Git v2 协议），增加了 Git 协议的复杂性，但在服务器上支持 git 协议（包括 v2 协议）仍然只需要在服务器上运行 git-upload-pack/git-receive-pack。这使得开发者很容易实现对 git 协议的支持。正因为 Git 协议表征的简单，所以针对不同的用户和存储库数量规模，Git 也都比 Subversion，Mercurial 有更多的选择。
 
@@ -112,11 +112,11 @@ Git 代码托管平台的基本服务应该包括浏览器接入支持和 git �
 
 NFS I/O 细节：
 
-![NFS](https://github.com/fcharlie/pagesimage/raw/master/images/git-on-nfs.png)
+![NFS](https://s1.ax1x.com/2020/09/20/w7idDP.png)
 
 Gitee Basalt I/O 细节：
 
-![Basalt](https://github.com/fcharlie/pagesimage/raw/master/images/gitee-distributed.png)
+![Basalt](https://s1.ax1x.com/2020/09/20/w7iDUS.png)
 
 计算机是质朴的，流程的增加往往需要更多的计算资源，与 Basalt-GitSrv 相比，NFS 的 I/O 拷贝要多一些，排除 Git 协议影响我们可能会认为 Basalt 的机制要比 NFS 更节省 I/O。如果考虑到 Git 协议的影响，我们应该确信如此，git 推送或者拉取都需要耗费大量的 CPU 计算资源，而在 NFS 模型中，计算全部都是发生在前端服务器，当请求数量较多时，前端服务器则容易出现 CPU 竞争的局面，这将非常影响服务器性能，另外，对于 NFS 这样的文件系统，读写 Git 松散对象都是不得力的。另外，由于 NFS 的缓存机制，负载较高时会出现 `master.lock` 这样的锁定情况，导致用户使用异常。而对于 Basalt，git 则是在存储服务器上直接操作存储库，打包压缩，解压等对 CPU 需求较高的活动也在存储服务器上，这样意味着，CPU 计算被摊薄到存储服务器上了，另外 basalt-gitsrv 中间传输的是打包后的数据，这与 NFS 读写多个文件相比，网络数据量实际上是下降的。
 
@@ -134,7 +134,7 @@ Github 目前有大约 1亿个项目，我们假设 Github 上存储库大小平
 
 github-dfs：
 
-![DGIT](https://github.blog/wp-content/uploads/2016/04/architecture.png)
+![DGIT](https://s1.ax1x.com/2020/09/20/w7i63j.png)
 
 除了存储库的分片，代码托管平台还需要考虑数据库 SQL/NoSQL 能否支撑大规模并发，数据库的分布式集群是一个比较成熟的方案，而 Redis 最新的版本也支持集群，因此数据库的伸缩性一般不会存在太大问题，增加机器搭建集群即可。选择关系性数据库时还需要考虑许可证，数据库自身的功能等，比如 Gitlab 目前已经放弃对 MySQL 的支持，而是选择了 PostgreSQL，不过 Gitlab 的选择对于其他代码托管平台来说，也只能算作**仅作参考**。MariaDB 是 MySQL 的分支版本，随着 MySQL 被 Oracle 收购，开源社区渐渐丧失了对 MySQL 的兴趣，虽然 MySQL 8.0 发布已经很久，但采用 MySQL 8.0 的发行版本寥寥无几，很多还停留在 MySQL 5.X，有些发行版还使用 [mariadb-connector-c](https://github.com/MariaDB/mariadb-connector-c) 替代 `libmysqlclient` 作为数据库连接器，使用 MySQL 的平台很容易迁移到 MariaDB 而不用修改客户端数据库连接代码 ，MariaDB 支持线程池，而 MySQL 仅在企业版中支持线程池。一些 MariaDB 与 MySQL 的对比这里不赘述了。Gogs/Gitea 还支持使用 SQLite，但其使用 SQLite 时，基本上是放弃了伸缩性，不过目前有一个使用 Raft+libuv 实现的分布式 SQLite [canonical/dqlite](https://github.com/canonical/dqlite)，可以尝试一下。Redis 一般可以作为 Web 缓存或者任务队列的中间件，目前 Redis 虽然支持集群，但就单机 Redis 而言，由于它是单线程的服务，在将内存数据持久化到磁盘是还是可能出现超时，并且单线程服务性能终究有限，在 Github 上，[KeyDB](https://github.com/JohnSully/KeyDB) 是官方 Redis 的另一个选择，KeyDB 是 Redis 的分支，完全兼容 Redis 协议，KeyDB 支持多线程，有更好的内存效率和高吞吐量。
 
