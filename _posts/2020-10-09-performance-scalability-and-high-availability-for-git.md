@@ -12,7 +12,7 @@ categories: git
 
 ## 关键问题的定义
 
-对于分布式系统而言，**可扩展性**（也可称之为 **伸缩性**），**高可用**，**性能** 是老生常谈的关键问题。
+对于分布式系统而言，**可扩展性**（也可称之为 **伸缩性**），**高可用**，**性能** 是制约平台发展的关键性问题，也就是说解决这些问题才能够支撑更大的用户规模，对于代码托管平台而言，这也是一个普适的道理。**可扩展性**意味着系统可以横向扩展，注册的用户能够更多，存储的数据能够更多，**高可用**则意味着用户的数据较为安全，系统在软硬件故障时依然能够给用户提供完整的或者有限的服务能力。而**性能**则有助于加快数据处理，改善用户体验。
 
 ## Git 的关键性能
 
@@ -26,51 +26,48 @@ categories: git
 
 ```patch
 diff --git a/builtin/receive-pack.c b/builtin/receive-pack.c
-index 439f29d6c7..a5fe76ed33 100644
+index bb9909c52e..bca3843f00 100644
 --- a/builtin/receive-pack.c
 +++ b/builtin/receive-pack.c
-@@ -53,6 +53,7 @@ static struct strbuf fsck_msg_types = STRBUF_INIT;
- static int receive_unpack_limit = -1;
- static int transfer_unpack_limit = -1;
- static int advertise_atomic_push = 1;
-+static int balanced_atomic;
- static int advertise_push_options;
- static int unpack_limit = 100;
- static off_t max_input_size;
-@@ -214,6 +215,11 @@ static int receive_pack_config(const char *var, const char *value, void *cb)
+@@ -60,6 +60,7 @@ static int report_status;
+ static int report_status_v2;
+ static int use_sideband;
+ static int use_atomic;
++static int use_balanced_atomic;
+ static int use_push_options;
+ static int quiet;
+ static int prefer_ofs_delta = 1;
+@@ -226,6 +227,11 @@ static int receive_pack_config(const char *var, const char *value, void *cb)
  		return 0;
  	}
  
-+	if (strcmp(var,"receive.balancedatomic") == 0) {
-+		balanced_atomic = git_config_bool(var, value);
++	if (strcmp(var, "receive.balancedatomic") == 0) {
++		use_balanced_atomic = git_config_bool(var, value);
 +		return 0;
 +	}
 +
  	if (strcmp(var, "receive.advertisepushoptions") == 0) {
  		advertise_push_options = git_config_bool(var, value);
  		return 0;
-@@ -1463,7 +1469,11 @@ static void execute_commands_atomic(struct command *commands,
- 		if (cmd->error_string)
+@@ -1844,6 +1850,8 @@ static void execute_commands_atomic(struct command *commands,
  			goto failure;
  	}
--
-+	if (balanced_atomic) {
-+		/// TODO Add a new hook
-+		// balanced_update update hash
-+		// rollback
-+	}
+ 
++	// TODO: check balance-update hook
++
  	if (ref_transaction_commit(transaction, &err)) {
  		rp_error("%s", err.buf);
  		reported_error = "atomic transaction failed";
-@@ -1546,7 +1556,7 @@ static void execute_commands(struct command *commands,
- 	free(head_name_to_free);
- 	head_name = head_name_to_free = resolve_refdup("HEAD", 0, NULL, NULL);
+@@ -1951,7 +1959,7 @@ static void execute_commands(struct command *commands,
+ 			    (cmd->run_proc_receive || use_atomic))
+ 				cmd->error_string = "fail to run proc-receive hook";
  
 -	if (use_atomic)
-+	if (use_atomic || balanced_atomic )
++	if (use_atomic || use_balanced_atomic)
  		execute_commands_atomic(commands, si);
  	else
  		execute_commands_non_atomic(commands, si);
+
 
 ```
 
