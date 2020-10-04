@@ -18,7 +18,9 @@ categories: git
 
 Git 代码托管平台与常规的 Web 服务有着很大的不同，Git 对内存，CPU，磁盘 IO 的需求都非常大，一般而言其他的 Web 服务或许只有其中一项或者两项有较高的需求。另一方面，程序员善于利用各种软件自动化工具，Git 代码托管平台除了需要为自然用户提供服务之外还需要为这些*机器人*提供服务。如何在这么多的请求背景下改善用户体验，解决性能问题也就成了吾辈的责任。
 
+提高 Git 代码托管平台的性能途径不是唯一的，大多可以通过降低 IO 读写，缩短 CPU 时间，优化内存使用等方面实现。
 
+为了缩短 CPU 执行时间，我们可以优化 Git 的压缩解压过程。目前 Git 使用的是标准的 [zlib](https://github.com/madler/zlib)，如果熟悉 zlib 的开发者可以知道 zlib 是一个较为中庸的实现，并未针对 CPU 架构进行深度优化，在 [dotnet](https://github.com/dotnet/runtime/tree/master/src/libraries/Native/Windows/clrcompression) 中就有专门针对 [Intel CPU SIMD 指令集优化版本](https://github.com/dotnet/runtime/tree/master/src/libraries/Native/Windows/clrcompression/zlib-intel)。另外还有 zlib 衍生项目 [zlib-ng](https://github.com/zlib-ng/zlib-ng) 也针对不同的 CPU 利用 SIMD 指令集优化。如果我们在构建 git 的时候能够使用到这些衍生版本，那么 Git 在执行压缩解压计算时，很大的程度上能够缩短 CPU 计算时长，从而达到提高性能的目的。
 
 ## 解决平台的扩展性
 
