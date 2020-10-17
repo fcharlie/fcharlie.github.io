@@ -22,7 +22,16 @@ categories: git
 
 Git 代码托管平台与常规的 Web 服务有着很大的不同，这也是我经常给一些客户，开发人员传递的信息。Git 代码托管平台与一般的 Web 服务不同的是，Git 需要非常多的计算资源和 IO 读写，一般而言其他的 Web 服务或许只有其中一项或者两项有较高的需求。另一方面，程序员善于利用各种软件自动化工具，Git 代码托管平台除了需要为自然用户提供服务之外还需要为这些*机器人*提供服务。如何在这么多的请求背景下改善用户体验，解决性能问题也成了重要问题。
 
-要分析 Git 的性能问题，我们应当从 Git 的原理着手，首先我们知道 Git 通过快照的方式将用户的源代码，文本，图片等等文件纳入到版本控制当中，使用 deflate 压缩存储，用户需要读取文件时从磁盘中读取后通过 inflate（deflate）解压缩然后返回给用户读取（这里我们应该知道 git 使用标准的 [zlib](https://github.com/madler/zlib) 提供的 deflate 算法）。在这个前提下，我们可以确定一台配置确定的机器，解压文件的速度是有上限的， [zstd](https://github.com/facebook/zstd/) 压缩算法做出过对比，不考虑到磁盘 IO，Core i9-9900K CPU @ 5.0GHz 提供的数据是：压缩 90 MB/s 解压	400 MB/s。当然如果磁盘的 IO 达不到这个速度，那么这一数据会更小。这一点会不会会不会影响代码托管平台？当然是会的，比如我们在页面上查看存储库的目录，文件，下载 raw，这就需要从存储库中读取压缩后的对象，然后解压，解压后通过网络返回给用户。另外，用户如果在线提交代码，压缩过程通常也会在服务器上发生，这必然会占用服务器较高的资源。这一问题如何优化？对于 raw 下载功能，我们可以引入缓存文件服务器，我们知道文件存在一个唯一的 SHA1 值，我们为每个项目创建一个缓存目录，在缓存目录中，通过文件的 SHA1 值即可获得已经解压的文件，很多一部分请求省去了解压，服务器的压力自然就小了。另外，我们还可以利用 SIMD 指令优化文件的压缩解压过程，而标准的 zlib 并未做到这一点，在 [dotnet](https://github.com/dotnet/runtime/tree/master/src/libraries/Native/Windows/clrcompression) 中就有专门针对 [Intel CPU SIMD 指令集优化版本](https://github.com/dotnet/runtime/tree/master/src/libraries/Native/Windows/clrcompression/zlib-intel)。另外还有 zlib 衍生项目 [zlib-ng](https://github.com/zlib-ng/zlib-ng) 也针对不同的 CPU 利用 SIMD 指令集优化，实际上这只需要我们重新构建 git 二进制即可。
+要分析 Git 的性能问题，我们应当从 Git 的原理着手，首先我们知道 Git 通过快照的方式将用户的源代码，文本，图片等等文件纳入到版本控制当中，使用 deflate 压缩存储，用户需要读取文件时从磁盘中读取后通过 inflate（deflate）解压缩然后返回给用户读取（这里我们应该知道 git 使用标准的 [zlib](https://github.com/madler/zlib) 提供的 deflate 算法）。在这个前提下，我们可以确定一台配置确定的机器，解压文件的速度是有上限的， [zstd](https://github.com/facebook/zstd/) 项目做出过一个对比，不考虑到磁盘 IO，Core i9-9900K CPU @ 5.0GHz 提供的数据是：压缩 90 MB/s 解压	400 MB/s。当然如果磁盘的 IO 达不到这个速度，那么这一数据会更小。这一点会不会会不会影响代码托管平台？当然是会的，比如我们在页面上查看存储库的目录，文件，下载 raw，这就需要从存储库中读取压缩后的对象，然后解压，解压后通过网络返回给用户。另外，用户如果在线提交代码，压缩过程通常也会在服务器上发生，这必然会占用服务器较高的资源。这一问题如何优化？对于 raw 下载功能，我们可以引入缓存文件服务器，我们知道文件存在一个唯一的 SHA1 值，我们为每个项目创建一个缓存目录，在缓存目录中，通过文件的 SHA1 值即可获得已经解压的文件，很多一部分请求省去了解压，服务器的压力自然就小了。另外，我们还可以利用 SIMD 指令优化文件的压缩解压过程，而标准的 zlib 并未做到这一点，在 [dotnet](https://github.com/dotnet/runtime/tree/master/src/libraries/Native/Windows/clrcompression) 中就有专门针对 [Intel CPU SIMD 指令集优化版本](https://github.com/dotnet/runtime/tree/master/src/libraries/Native/Windows/clrcompression/zlib-intel)。另外还有 zlib 衍生项目 [zlib-ng](https://github.com/zlib-ng/zlib-ng) 也针对不同的 CPU 利用 SIMD 指令集优化，实际上这只需要我们重新构建 git 二进制即可。
+
+Git 代码托管平台需要提供的核心能力至少包括推送和拉取，拉取代码包括 `git fetch` 和 `git clone`，我们只讨论简单的 Smart 协议，不讨论 Wire（v2） 协议，以 git fetch（HTTP） 为例：
+
+1.   客户端请求 `GET /path/repo.git/info/refs?service=git-upload-pack`
+2.   服务端返回引用列表
+3.   客户端按引用发送已存在的、需要的 commit 信息
+4.   服务端按照所需、已存在的 commit 清点对象，打包返回给客户端
+
+我们逐一分析，在这个过程中会存在哪些性能问题，当客户端需要服务端的引用列表时，服务端上的 git 要将存储库中的引用及其 commit 一一返回给客户端，我们知道，git 的引用存储在存储库的 `refs`目录下按文件存储，每一个引用对应一个文件，也可以打包存储到 `packed-refs` 中，如果存储库引用较少，分支较少，那么这通常不是问题，但是，如果存在一个像 Windows/Chrome 这样的项目，几万个分支，如果这些分支都未打包到 packed-refs，在服务发现的过程我们就会发现，[open()](https://linux.die.net/man/3/open) 系统调用就有几万个，几十上百个请求过来都是几百万的系统调用了，这还能不影响性能吗？解决这个问题的方法 git 早已经提供了，**packed-refs**，将引用打包存储到一个文件中，作为代码托管平台而言该怎么做呢？定期 GC，使引用被打包。 
 
 Git 实际上还面临着其他的性能问题，Git 是一个分布式的版本控制系统，这意味着我们需要获取存储库时要将整个存储库下载到本地，
 
