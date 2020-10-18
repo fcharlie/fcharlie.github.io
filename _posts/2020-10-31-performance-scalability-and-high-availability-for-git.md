@@ -22,9 +22,13 @@ categories: git
 
 Git 代码托管平台与常规的 Web 服务有着很大的不同，这也是我经常给一些客户，开发人员传递的信息。Git 代码托管平台与一般的 Web 服务不同的是，Git 需要非常多的计算资源和 IO 读写，一般而言其他的 Web 服务或许只有其中一项或者两项有较高的需求。另一方面，程序员善于利用各种软件自动化工具，Git 代码托管平台除了需要为自然用户提供服务之外还需要为这些*机器人*提供服务。如何在这么多的请求背景下改善用户体验，解决性能问题也成了重要问题。
 
+### 优化压缩解压
+
 要分析 Git 的性能问题，我们应当从 Git 的原理着手，首先我们知道 Git 通过快照的方式将用户的源代码，文本，图片等等文件纳入到版本控制当中，使用 deflate 压缩存储，用户需要读取文件时从磁盘中读取后通过 inflate（deflate）解压缩然后返回给用户读取（这里我们应该知道 git 使用标准的 [zlib](https://github.com/madler/zlib) 提供的 deflate 算法）。在这个前提下，我们可以确定一台配置确定的机器，解压文件的速度是有上限的， [zstd](https://github.com/facebook/zstd/) 项目做出过一个对比，不考虑到磁盘 IO，Core i9-9900K CPU @ 5.0GHz 提供的数据是：压缩 90 MB/s 解压	400 MB/s。当然如果磁盘的 IO 达不到这个速度，那么这一数据会更小。这一点会不会会不会影响代码托管平台？当然是会的，比如我们在页面上查看存储库的目录，文件，下载 raw，这就需要从存储库中读取压缩后的对象，然后解压，解压后通过网络返回给用户。另外，用户如果在线提交代码，压缩过程通常也会在服务器上发生，这必然会占用服务器较高的资源。这一问题如何优化？对于 raw 下载功能，我们可以引入缓存文件服务器，我们知道文件存在一个唯一的 SHA1 值，我们为每个项目创建一个缓存目录，在缓存目录中，通过文件的 SHA1 值即可获得已经解压的文件，很多一部分请求省去了解压，服务器的压力自然就小了。另外，我们还可以利用 SIMD 指令优化文件的压缩解压过程，而标准的 zlib 并未做到这一点，在 [dotnet](https://github.com/dotnet/runtime/tree/master/src/libraries/Native/Windows/clrcompression) 中就有专门针对 [Intel CPU SIMD 指令集优化版本](https://github.com/dotnet/runtime/tree/master/src/libraries/Native/Windows/clrcompression/zlib-intel)。另外还有 zlib 衍生项目 [zlib-ng](https://github.com/zlib-ng/zlib-ng) 也针对不同的 CPU 利用 SIMD 指令集优化，实际上这只需要我们重新构建 git 二进制即可。
 
-Git 代码托管平台需要提供的核心能力至少包括推送和拉取，拉取代码包括 `git fetch` 和 `git clone`，我们只讨论简单的 Smart 协议，不讨论 Wire（v2） 协议，以 git fetch（HTTP） 为例：
+### 解决拉取时的性能问题
+
+Git 代码托管平台需要提供的核心能力至少包括推送和拉取，拉取代码包括 `git fetch` 和 `git clone`，我们只讨论简单的智能传输（smart）协议，不讨论 Wire（v2） 协议，以 git fetch（HTTP） 为例：
 
 1.   客户端请求 `GET /path/repo.git/info/refs?service=git-upload-pack`
 2.   服务端返回引用列表
@@ -44,22 +48,28 @@ Git 代码托管平台需要提供的核心能力至少包括推送和拉取，�
 5.   追溯到当前commit的父节点，重复第四步，直至本地与远程的历史一致为止
 6.   加总所有需要变动的对象
 
-早期清点 Linux 内核源码这样的仓库需要 8 分钟，这太慢了能解决吗？ Github 贡献了 [Git Bitmap](https://github.blog/2015-09-22-counting-objects/) 通过空间换时间解决了这个问题，具体细节可以阅读相关规范。
+早期清点 Linux 内核源码这样的仓库需要 8 分钟，这太慢了能解决吗？ Github 贡献了 [Git Bitmap](https://github.blog/2015-09-22-counting-objects/) 通过空间换时间解决了这个问题，具体的实现细节可以阅读相关博客和规范。对于代码托管平台而言，及时更新 Git，配置好 bitmap 配置 `repack.writeBitmaps=true` 通常能获得更好的体验。
 
+### 缩短推送耗时
 
-Git 钩子大文件。
+对于 Git 推送，目前依然使用的是智能传输协议，其流程如下：
 
-Git 快照。
+1.   客户端请求 `GET /path/repo.git/info/refs?service=git-receive-pack`
+2.   服务端返回引用列表及其他能力信息（包括原子更新等等）
+3.   客户端清点打包需要上传的对象
+4.   服务端接受对象包，解包，更新引用，返回更新结果。
 
-Git 的性能优化路阻且长，不是一蹴而就。
+随着用户需求的多样化，平台提供的特性越来越多，为了实现这类功能（比如针对 Git 做细粒度的权限控制，开发规范检查），我们通常是非侵入式的通过钩子实现，而通过钩子实现必然有一定的逻辑，这也会带来一定的时间消耗，比如，平台限制用户推送较大的文件，那么在钩子中就需要找出此次推送是否包含大文件，在之前的博客中，我就分享过如何优化钩子使其能够更快的找到大文件 [《Git 原生钩子的深度优化》](https://forcemz.net/git/2017/11/22/GitNativeHookDepthOptimization/)，这篇文章中还包含了钩子的其他场景优化。
 
-Git 实际上还面临着其他的性能问题，Git 是一个分布式的版本控制系统，这意味着我们需要获取存储库时要将整个存储库下载到本地，
+### 其他场景的优化
 
-<!-- 提高 Git 代码托管平台的性能途径不是唯一的，大多可以通过降低 IO 读写，缩短 CPU 时间，优化内存使用等方面实现。
+有些平台，比如 Gitee 为企业级用户提供了存储库的快照功能，望文生义，快照就是每一次都做一次备份，那这么做会不会存在什么性能问题？如果每次都是全量的拉取存储库，大量数据带来的不仅仅是网络流量还有磁盘空间，CPU 时间消耗，因此在 2018 年，我就分享了 [《基于 Git Namespace 的存储库快照方案》](https://forcemz.net/git/2018/11/18/GitNamespaceSnapshot/)，通过名称空间变换实现 Git 存储库快照功能，通过优化极大的减少数据的传输。
 
-为了缩短 CPU 执行时间，我们可以优化 Git 的压缩解压过程。目前 Git 使用的是标准的 [zlib](https://github.com/madler/zlib)，如果熟悉 zlib 的开发者可以知道 zlib 是一个较为中庸的实现，并未针对 CPU 架构进行深度优化，在 [dotnet](https://github.com/dotnet/runtime/tree/master/src/libraries/Native/Windows/clrcompression) 中就有专门针对 [Intel CPU SIMD 指令集优化版本](https://github.com/dotnet/runtime/tree/master/src/libraries/Native/Windows/clrcompression/zlib-intel)。另外还有 zlib 衍生项目 [zlib-ng](https://github.com/zlib-ng/zlib-ng) 也针对不同的 CPU 利用 SIMD 指令集优化。如果我们在构建 git 的时候能够使用到这些衍生版本，那么 Git 在执行压缩解压计算时，很大的程度上能够缩短 CPU 计算时长，从而达到提高性能的目的。 -->
+比较两个存储库的数据是否一致，意味着它们拥有共同的对象，同样的引用，同样的 HEAD，但这种指标过于绝对，应当排除存储库中已经脱离版本控制的对象，如果存储库完整，我们只要一一比较存储库的引用是否一一对应且对象 ID 一致即可，如果我们需要跨机器比较，那么比较的市场一定和引用发现的时间和传输引用的时间相关，引用发现的时间不能缩短，那么我们可以优化引用传输的时间，我们通过在存储库中按照引用排序计算 BLAKE3 的哈希值，计算完毕后通过传输 BLAKE3 的哈希值比较两个存储库是否一致，这样就能优化存储库的比较。
 
+### 性能优化的总结
 
+针对 Git 代码托管平台的性能提升不是一蹴而就的，一定是一个一个的点啃出来的，只有一步一步，一点一点的进步，才能积累成巨大的进步。
 
 ## 解决平台的扩展性
 
