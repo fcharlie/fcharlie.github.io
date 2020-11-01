@@ -147,6 +147,7 @@ Git-Analyze 开源地址 [https://gitee.com/oscstudio/git-analyze](https://gitee
 +   [archiver](https://github.com/mholt/archiver/commits?author=fcharlie)
 +   [minizip](https://github.com/nmoinvaz/minizip/commits?author=fcharlie)
 +   [libzip](https://github.com/nih-at/libzip/commits?author=fcharlie)
++   [7-Zip-zstd](https://github.com/mcmilk/7-Zip-zstd/commits?author=fcharlie)
 
 ## 活动
 
