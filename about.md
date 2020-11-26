@@ -116,6 +116,7 @@ Git-Analyze 开源地址 [https://gitee.com/oscstudio/git-analyze](https://gitee
 |Bela|[github.com/fcharlie/bela](https://github.com/fcharlie/bela)|基于 C++17/20 开发的 Windows 系统功能库|
 |BelaUtils|[github.com/fcharlie/BelaUtils](https://github.com/fcharlie/BelaUtils)|基于 Bela 重写的 PEAnalyzer/Krycekium 等|
 |Bali|[github.com/balibuild/bali](https://github.com/balibuild/bali)|基于 Golang 的 Golang 构建打包工具，能够创建 STGZ 安装包和嵌入 Windows 应用程序清单，图标版本等|
+|Buna|[github.com/fcharlie/buna](https://github.com/fcharlie/buna)|从 Golang debug 模块 fork 过来的增强的可执行文件格式分析库|
 |Clangbuilder|[github.com/fstudio/clangbuilder](https://github.com/fstudio/clangbuilder)|基于 PowerShell 的 LLVM 自动构建工具集|
 |TunnelSSH|[github.com/balibuild/tunnelssh](https://github.com/balibuild/tunnelssh)|一个机智的 SSH 客户端|
 |svnsrv|[gitee.com/oschina/svnsrv](https://gitee.com/oschina/svnsrv)|开源跨平台的 svn 协议动态代理服务器。|
