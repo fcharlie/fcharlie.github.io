@@ -10,6 +10,10 @@ categories: thought
 
 庄子云：“人生天地之间；若白驹之过隙；忽然而已”，我常常觉得自己还是个青春少年，可是忽然之间，身边的朋友一个个成双成对，膝下孩童绕走。父母鬓角生了许多白发，祖父常忆往事却忘今时。恍然间，时间已过许久，白驹过隙，飞速而逝。然而有的时候，时间却是难熬的，焦急的。
 
+维基百科上对[时间](https://en.wikipedia.org/wiki/Time)是这样定义的：
+
+>Time is the indefinite continued progress of existence and events that occur in an apparently irreversible succession from the past, through the present, into the future. It is a component quantity of various measurements used to sequence events, to compare the duration of events or the intervals between them, and to quantify rates of change of quantities in material reality or in the conscious experience. Time is often referred to as a fourth dimension, along with three spatial dimensions.
+
 
 ## Unix Epoch
 
