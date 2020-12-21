@@ -56,6 +56,12 @@ Git 基础软件开发，服务器软件开发。
 Git-Secure 开源地址 [https://gitee.com/oscstudio/git-secure](https://gitee.com/oscstudio/git-secure)  
 Git-Analyze 开源地址 [https://gitee.com/oscstudio/git-analyze](https://gitee.com/oscstudio/git-analyze)
 
+2020-05 ~ 至今 腾云扣钉
+
+- 代码扫描功能
+- Subversion 目录权限修复
+- 代码托管高可用方案设计和实现
+- 代码托管功能补全和调优
 
 # 技能
 
