@@ -41,7 +41,7 @@ Git 代码托管平台与常规的 Web 服务有着很大的不同，Git 要比�
 | modules |D| 子模块的 git 目录 |
 | worktrees| D | 工作目录，更新后的文档与 git 多个工作目录有关 |
 
-Git 在未打包的时候，把引用按照引用文件的方式存储在 `refs` 目录下，比如分支 `dev` 对应的引用文件名就是 `refs/heads/dev`，分支的 CommitID 16 进制值就时 `refs/heads/dev` 的文件内容。打包后，分支文件名和文件内容就会被经过字典排序后存储到 `packed-refs` 中，文件格式如下：
+Git 在未打包的时候，把引用按照引用文件的方式存储在 `refs` 目录下，比如分支 `dev` 对应的引用文件名就是 `refs/heads/dev`，分支的 CommitID 16 进制值就是 `refs/heads/dev` 的文件内容。打包后，分支文件名和文件内容就会在使用字典排序后存储到 `packed-refs` 文件中，文件格式如下：
 
 ```txt
 # pack-refs with: peeled fully-peeled sorted
