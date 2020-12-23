@@ -58,7 +58,41 @@ Git 真正的对象存储在 `objects` 目录，当使用 `git add` 命令添加
 
 ### 优化压缩解压
 
-要分析 Git 的性能问题，我们应当从 Git 的原理着手，首先我们知道 Git 通过快照的方式将用户的源代码，文本，图片等等文件纳入到版本控制当中，使用 deflate 压缩存储，用户需要读取文件时从磁盘中读取后通过 inflate（deflate）解压缩然后返回给用户读取（这里我们应该知道 git 使用标准的 [zlib](https://github.com/madler/zlib) 提供的 deflate 算法）。在这个前提下，我们可以确定一台配置确定的机器，解压文件的速度是有上限的， [zstd](https://github.com/facebook/zstd/) 项目做出过一个对比，不考虑到磁盘 IO，Core i9-9900K CPU @ 5.0GHz 提供的数据是：压缩 90 MB/s 解压	400 MB/s。当然如果磁盘的 IO 达不到这个速度，那么这一数据会更小。这一点会不会会不会影响代码托管平台？当然是会的，比如我们在页面上查看存储库的目录，文件，下载 raw，这就需要从存储库中读取压缩后的对象，然后解压，解压后通过网络返回给用户。另外，用户如果在线提交代码，压缩过程通常也会在服务器上发生，这必然会占用服务器较高的资源。这一问题如何优化？对于 raw 下载功能，我们可以引入缓存文件服务器，我们知道文件存在一个唯一的 SHA1 值，我们为每个项目创建一个缓存目录，在缓存目录中，通过文件的 SHA1 值即可获得已经解压的文件，很多一部分请求省去了解压，服务器的压力自然就小了。另外，我们还可以利用 SIMD 指令优化文件的压缩解压过程，而标准的 zlib 并未做到这一点，在 [dotnet](https://github.com/dotnet/runtime/tree/master/src/libraries/Native/Windows/clrcompression) 中就有专门针对 [Intel CPU SIMD 指令集优化版本](https://github.com/dotnet/runtime/tree/master/src/libraries/Native/Windows/clrcompression/zlib-intel)。另外还有 zlib 衍生项目 [zlib-ng](https://github.com/zlib-ng/zlib-ng) 也针对不同的 CPU 利用 SIMD 指令集优化，实际上这只需要我们重新构建 git 二进制即可。
+前文我们知道，Git 使用了 zlib 库将文件按照 deflate 算法压缩。压缩算法的效率实际上很影响存储库的操作性能，我们将文件纳入版本管理需要使用 deflate 压缩，检出查看存储库文件需要使用 deflate 的解压缩方法 `inflate` 解压对象。这种负载伴随者开发的每一天环节，在服务器上，用户推送代码到远程服务器，计算用户的贡献度也需要解压对象然后按行比较，用户通过网页查看文件，下载压缩包，在线提交，都有 deflate 算法的痕迹。因此我们如果能优化 Git 的压缩解压可能提高 git 操作性能。
+
+与其他压缩库相比，zstd 除开许可证的宽松，使用广泛有非常大的优势，压缩算法 deflate 本身并不具备很大的优势，deflate 的压缩比和压缩速度都不是最优。目前压缩率压缩比综合较好的压缩库（算法）是 facebook 开源的 [zstd](https://github.com/facebook/zstd)，zstd 开发者给 zstd/zlib 做过一些基准测试如下：
+
+>For reference, several fast compression algorithms were tested and compared
+>on a server running Arch Linux (`Linux version 5.5.11-arch1-1`),
+>with a Core i9-9900K CPU @ 5.0GHz,
+>using [lzbench], an open-source in-memory benchmark by @inikep
+>compiled with [gcc] 9.3.0,
+>on the [Silesia compression corpus].
+
+[lzbench]: https://github.com/inikep/lzbench
+[Silesia compression corpus]: http://sun.aei.polsl.pl/~sdeor/index.php?page=silesia
+[gcc]: https://gcc.gnu.org/
+
+| Compressor name         | Ratio | Compression| Decompress.|
+| ---------------         | ------| -----------| ---------- |
+| **zstd 1.4.5 -1**       | 2.884 |   500 MB/s |  1660 MB/s |
+| zlib 1.2.11 -1          | 2.743 |    90 MB/s |   400 MB/s |
+| brotli 1.0.7 -0         | 2.703 |   400 MB/s |   450 MB/s |
+| **zstd 1.4.5 --fast=1** | 2.434 |   570 MB/s |  2200 MB/s |
+| **zstd 1.4.5 --fast=3** | 2.312 |   640 MB/s |  2300 MB/s |
+| quicklz 1.5.0 -1        | 2.238 |   560 MB/s |   710 MB/s |
+| **zstd 1.4.5 --fast=5** | 2.178 |   700 MB/s |  2420 MB/s |
+| lzo1x 2.10 -1           | 2.106 |   690 MB/s |   820 MB/s |
+| lz4 1.9.2               | 2.101 |   740 MB/s |  4530 MB/s |
+| **zstd 1.4.5 --fast=7** | 2.096 |   750 MB/s |  2480 MB/s |
+| lzf 3.6 -1              | 2.077 |   410 MB/s |   860 MB/s |
+| snappy 1.1.8            | 2.073 |   560 MB/s |  1790 MB/s |
+
+Compression Speed vs Ratio | Decompression Speed
+---------------------------|--------------------
+![Compression Speed vs Ratio](https://s1.ax1x.com/2020/08/16/dVpadK.png "Compression Speed vs Ratio") | ![Decompression Speed](https://s1.ax1x.com/2020/08/16/dVp0iD.png "Decompression Speed")
+
+如果能换一种现代的压缩算法，Git 或者能够给人眼前一亮，但是切换压缩算法会破坏 Git 的兼容，很多时候可能是得不偿失的，因此不可行。除了切换压缩算法，我们还可以改进 zlib 自身，zlib 作为一个历史悠久的开源算法压缩库，需要支持各种平台，具备很好的通用性，但是却没有利用好平台的特性进行优化，缺少注册 SIMD 这样的指令优化，因此，开源界则有一些优化方案，比如 Intel 提供了一个针对 Intel CPU 优化的 [zlib 版本](https://github.com/jtkukunas/zlib)，也有一群人维护了 [zlib-ng](https://github.com/zlib-ng/zlib-ng) 项目，该项目为 zlib 添加了 x86/arm/s390/power SIMD 指令支持。
 
 ### 解决拉取时的性能问题
 
