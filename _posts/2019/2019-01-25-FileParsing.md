@@ -36,7 +36,7 @@ categories: toolset
 
 网络字节序为 `Big Endian`，目前 Windows x86, AMD64, ARM, ARM64 均为 `Little Endian`。
 
-Planck 中字节序转换代码在：[https://github.com/fcharlie/Planck/blob/master/include/endian.hpp](https://github.com/fcharlie/Planck/blob/master/include/endian.hpp)。
+Planck 中字节序转换代码在：[https://github.com/fcharlie/Planck/blob/c6f677dda9a894de97f1f55639b90ff722c04a0d/include/endian.hpp](https://github.com/fcharlie/Planck/blob/c6f677dda9a894de97f1f55639b90ff722c04a0d/include/endian.hpp)。
 
 ### 文件十六进制查看工具
 
@@ -48,7 +48,7 @@ Planck 中字节序转换代码在：[https://github.com/fcharlie/Planck/blob/ma
 Hastyhex 基于 C 编写，但不支持指定长度，对 Windows 10 控制台支持不太好，于是我 fork Hastyhex，对其改进，使其支持特定长度和从指定位置开始读取。在 Windows 上改进了控制台颜色输出。
 
 Unix 版本：[HastyHex : a faster hex dumper](https://github.com/fcharlie/hastyhex)   
-针对 Windows 10 控制台改进的版本：[https://github.com/fcharlie/Planck/tree/master/utils/hastyhex](https://github.com/fcharlie/Planck/tree/master/utils/hastyhex)
+针对 Windows 10 控制台改进的版本：[https://github.com/fcharlie/Planck/tree/c6f677dda9a894de97f1f55639b90ff722c04a0d/utils/hastyhex](https://github.com/fcharlie/Planck/tree/c6f677dda9a894de97f1f55639b90ff722c04a0d/utils/hastyhex)
 
 ## 文件，硬链接，软连接，快捷方式
 
@@ -83,7 +83,7 @@ NTFS 系统还支持一些其他的重解析点，包括 `MountPoint`, 与 UWP �
 
 ### 快捷方式和桌面文件
 
-在 Windows 系统中，桌面快捷方式文件的后缀名为 `.lnk`，用户只需要点击桌面上的快捷方式就可以很方便的打开应用程序，网站或者文件。快捷方式的格式名称叫做 `Shell Link`，是一种二进制格式文件，相应的规范在 [[MS-SHLLINK]: Shell Link (.LNK) Binary File Format](https://msdn.microsoft.com/en-us/library/dd871305.aspx)。在 Planck 中，ShellLink 的定义和实现分别是 [lib/inquisitive/shl.hpp](https://github.com/fcharlie/Planck/blob/master/lib/inquisitive/shl.hpp) 和 [lib/inquisitive/shl.cc](https://github.com/fcharlie/Planck/blob/master/lib/inquisitive/shl.cc)，目前只支持解析 `HasLinkInfo` 以及 `HasRelativePath` 标志的快捷方式。
+在 Windows 系统中，桌面快捷方式文件的后缀名为 `.lnk`，用户只需要点击桌面上的快捷方式就可以很方便的打开应用程序，网站或者文件。快捷方式的格式名称叫做 `Shell Link`，是一种二进制格式文件，相应的规范在 [[MS-SHLLINK]: Shell Link (.LNK) Binary File Format](https://msdn.microsoft.com/en-us/library/dd871305.aspx)。在 Planck 中，ShellLink 的定义和实现分别是 [lib/inquisitive/shl.hpp](https://github.com/fcharlie/Planck/blob/a400828e62804b9c38c4e164e9f3efe559245e50/lib/inquisitive/shl.hpp) 和 [lib/inquisitive/shl.cc](https://github.com/fcharlie/Planck/blob/a400828e62804b9c38c4e164e9f3efe559245e50/lib/inquisitive/shl.cc)，目前只支持解析 `HasLinkInfo` 以及 `HasRelativePath` 标志的快捷方式。
 
 在 X-Window 系统上，也存在一种类似桌面快捷方式的文件，后缀名为 `.desktop` ，当文件属性为可执行时，文件管理器会解析 `Icon`，`Name` 然后读取设置的图标，名称显示出来。下面是我使用的 Ubuntu 系统上的 `wireshark.desktop` 文件内容。
 
@@ -174,7 +174,7 @@ Windows 系统是一个国际化做的非常棒的操作系统，对于各国的
 
 另外，对于 ANSI 而言，不同字符集的都重复使用着 0x80 ~ 0xFFFF 编码区间，这进一步加大了文本字符检测的难度。
 
-文本编码的检测有两个比较流行的实现，一个是 IE 的 [IMultiLanguage](https://docs.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/platform-apis/aa741022(v=vs.85))，另一个是 Firefox 的 [UniversalCharsetDetection](https://github.com/mozilla/gecko/tree/central/extensions/universalchardet/src/base)，后者的准确性更高，使用更加广泛，比如 `Notepad++` 就是使用了 `universalchardet`。
+文本编码的检测有两个比较流行的实现，一个是 IE 的 [IMultiLanguage](https://docs.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/platform-apis/aa741022(v=vs.85))，另一个是 Firefox 的 [UniversalCharsetDetection](https://github.com/mozilla/gecko-dev/tree/52568d10660dfb0ce950f6983b20228374602efe/extensions/universalchardet/src/base)，后者的准确性更高，使用更加广泛，比如 `Notepad++` 就是使用了 `universalchardet`。
 
 用户通常不应直接使用 Mozilla 目录中的 `Universalchardet`，`Universalchardet` 与 Firefox 整合较为紧密，剥离稍微有点麻烦，最近的版本只有很少的几个 `LangModels` 实现。如果要使用 `Universalchardet`，可以使用 Freedesktop 维护的：[uchardet](https://www.freedesktop.org/wiki/Software/uchardet/)，这个库基于 `Universalchardet` 发展起来的，能编译成动态库或者静态库供开发者整合到自己的程序之中。
 
