@@ -158,5 +158,5 @@ Git-Analyze 开源地址 [https://gitee.com/oscstudio/git-analyze](https://gitee
 
 ## 活动
 
-1.  2016 年作为讲师参与 Ubuntu Kyin 16.04 发布活动。
-2.  2018 年作为讲师参与 Ubuntu Kyin 18.04 发布活动。
+1.  2016 年作为讲师参与 Ubuntu Kylin 16.04 发布活动。
+2.  2018 年作为讲师参与 Ubuntu Kylin 18.04 发布活动。
