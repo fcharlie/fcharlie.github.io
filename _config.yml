@@ -13,7 +13,7 @@ timezone: Asia/Shanghai
 
 footer_left: "<a href=\"https://github.com/jacobtomlinson/carte-noire\">Carte Noir</a> theme by <a href=\"https://twitter.com/_JacobTomlinson\">Jacob Tomlinson</a>"
 footer_center: "&lt;/&gt; on <a href=\"https://github.com/fcharlie/fcharlie.github.io\">Github</a> &nbsp;<i class=\"fa fa-github-alt\"></i>"
-footer_right: "<a href=\"/links/\">友情链接</a>"
+footer_right: "<a href=\"/links/\">Links</a>"
 
 # Build settings
 markdown: kramdown
