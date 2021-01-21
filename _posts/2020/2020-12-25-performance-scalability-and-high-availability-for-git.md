@@ -58,7 +58,7 @@ Git 真正的对象存储在 `objects` 目录，当使用 `git add` 命令添加
 
 ### 优化压缩解压
 
-前文我们知道，Git 使用了 zlib 库将文件按照 deflate 算法压缩。压缩算法的效率对存储库的操作性能影响很大，我们将文件纳入版本管理需要使用 deflate 压缩，检出查看存储库文件需要使用 deflate 的解压缩方法 `inflate` 解压对象，在服务器上，用户推送代码到远程服务器，计算用户的贡献度也需要 `inflate` 解压对象然后按行比较，用户通常不会注意到通过网页查看文件之前也需要 `inflate` 对象，下载压缩包需要 inflate 然后 deflate （或者 GZ），在线提交需要 deflate。我们如果能优化 Git 的压缩解压效率则很有可能提高 git 操作性能。
+前文我们知道，Git 使用了 zlib 库将文件按照 deflate 算法压缩的变体 zlib。压缩算法的效率对存储库的操作性能影响很大，我们将文件纳入版本管理需要使用 deflate 压缩，检出查看存储库文件需要使用 deflate 的解压缩方法 `inflate` 解压对象，在服务器上，用户推送代码到远程服务器，计算用户的贡献度也需要 `inflate` 解压对象然后按行比较，用户通常不会注意到通过网页查看文件之前也需要 `inflate` 对象，下载压缩包需要 inflate 然后 deflate （或者 GZ），在线提交需要 deflate。我们如果能优化 Git 的压缩解压效率则很有可能提高 git 操作性能。
 
 与其他压缩库相比，zstd 除开许可证的宽松，使用广泛有非常大的优势，压缩算法 deflate 本身并不具备很大的优势，deflate 的压缩比和压缩速度都不是最优。目前压缩率压缩比综合较好的压缩库（算法）是 facebook 开源的 [zstd](https://github.com/facebook/zstd)，zstd 开发者给 zstd/zlib 做过一些基准测试如下：
 
@@ -92,7 +92,7 @@ Compression Speed vs Ratio | Decompression Speed
 ---------------------------|--------------------
 ![Compression Speed vs Ratio](https://s1.ax1x.com/2020/08/16/dVpadK.png "Compression Speed vs Ratio") | ![Decompression Speed](https://s1.ax1x.com/2020/08/16/dVp0iD.png "Decompression Speed")
 
-如果能换一种现代的压缩算法，Git 或者能够给人眼前一亮，但是切换压缩算法会破坏 Git 的兼容，很多时候可能是得不偿失的，因此不可行。除了切换压缩算法，我们还可以改进 zlib 自身，zlib 作为一个历史悠久的开源算法压缩库，需要支持各种平台，具备很好的通用性，但是却没有利用好平台的特性进行优化，缺少注册 SIMD 这样的指令优化，因此，开源界则有一些优化方案，比如 Intel 提供了一个针对 Intel CPU 优化的 [zlib 版本](https://github.com/jtkukunas/zlib)，也有一群人维护了 [zlib-ng](https://github.com/zlib-ng/zlib-ng) 项目，该项目为 zlib 添加了 x86/arm/s390/power SIMD 指令支持。
+如果能换一种现代的压缩算法，Git 或者能够给人眼前一亮，但是切换压缩算法会破坏 Git 的兼容，很多时候可能是得不偿失的，因此不可行。除了切换压缩算法，我们还可以改进 zlib 自身，zlib 作为一个历史悠久的开源算法压缩库，需要支持各种平台，具备很好的通用性，但是却没有利用好平台的特性进行优化，缺少注册 SIMD 这样的指令优化，因此，开源界则有一些优化方案，比如 Intel 提供了一个针对 Intel CPU 优化的 [zlib 版本](https://github.com/jtkukunas/zlib)，也有一群人维护了 [zlib-ng](https://github.com/zlib-ng/zlib-ng) 项目，该项目为 zlib 添加了 x86/arm/s390/power SIMD 指令支持，chromium 也提供了一个 zlib 优化版本 [chromium zlib](https://github.com/chromium/chromium/tree/master/third_party/zlib)，性能相当不错。除此之外还有一个速度非常快的 deflate 实现 [libdeflate](https://github.com/ebiggers/libdeflate)，遗憾的是，libdeflate 并不支持流式压缩，这就很难被 git 使用。
 
 ### 解决拉取时的性能问题
 
