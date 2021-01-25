@@ -196,6 +196,8 @@ Git Wire 协议是 Git 的一次大的改变，在协议中添加了命令，fil
 
 实际上集中式版本控制系统 SVN 早就利用子命令扩展了协议能力，SVN 协议使用 ABNF 描述协议，要比 git 的有线协议解析起来复杂一些。
 
+Git Wire 协议虽然是一个重大的变革，但同时也是一个新事物，也就意味着可能存在一些设计和实现上的不足，没有经历足够的考验，我们在支持该协议的时候就需要特别注意测试和验证。比如我就反馈过，当用户基于 v2 协议使用错误的 `--shallow-since` 克隆存储库时，服务端在传输流程结束后，客户端并不会正确的退出，Github Issue:  [Protocol v2: The wrong --shallow-since time format causes git to wait indefinitely](https://github.com/gitgitgadget/git/issues/457)，最近，我们在使用 v2 for git 协议浅表克隆时，也发现了了类似的问题，问题出现在服务端，现象是 git-upload-pack 无限等待，该问题差一点照成了严重的事故。
+
 ### 3.4 Git 数据的交换
 
 我们了解了 Git 的存储结构和传输协议后，再建立宏观上的 Git 数据交换映像就容易的多，我们对 Git 的操作实际上是发生在三个区域，工作区是我们实质上修 改，添加，删除文件的地方，通过 git add/commit/checkout 等命令，我们就将工作区的文件纳入版本 管理了，通过 git push/fetch 等命令，就将本地存储库和远程建立了关联。这里需要注意，git pull 实际 上是 git fetch+ git checkout（没有 merge 的情况下），大致如下图：
