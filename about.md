@@ -7,7 +7,7 @@ permalink: /about/
 
 # 简介
 
-昵称：Force Charlie，博叼  
+昵称：Force Charlie，博文
 邮箱：forcemz@outlook.com  
 个人博客： [https://forcemz.net](https://forcemz.net)  
 Github 主页：[https://github.com/fcharlie](https://github.com/fcharlie)  
@@ -106,6 +106,14 @@ Git-Analyze 开源地址 [https://gitee.com/oscstudio/git-analyze](https://gitee
 -   Minix  
 -   Hurd  
 -   Haiku  
+
+技术领域：
+
++   Windows 系统编程
++   Linux 系统编程
++   文件的压缩解压
++   Windows 权限管理
++   文件特征的分析
 
 
 通常来说，本人精通 git 和 svn。  

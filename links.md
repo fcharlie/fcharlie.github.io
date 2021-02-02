@@ -6,4 +6,4 @@ permalink: /links/
 
 ## 技术圈
 
-[**Mouri Naruto**](https://mourinaruto.github.io/)
++   **NSudo** 的开发者 --> [**Mouri Naruto**](https://mourinaruto.github.io/)
