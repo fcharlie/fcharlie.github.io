@@ -13,7 +13,8 @@ permalink: /about/
 Github 主页：[https://github.com/fcharlie](https://github.com/fcharlie)  
 Gitee 主页：[https://gitee.com/ipvb](https://gitee.com/ipvb)  
 开源极客，几个冷门开源项目作者。  
-前 Gitee 核心开发者，分布式、读写分离架构设计和实施者；Git 专栏[《Git 的反思》](https://gitee.com/Git-uses/rethinkgit) 作者。
+前 Gitee 核心开发者，分布式、读写分离架构设计和实施者；Git 专栏[《Git 的反思》](https://gitee.com/Git-uses/rethinkgit) 作者；国内代码托管行业老兵。  
+文学爱好者，喜欢滑板，自行车，爬山，刷剧等等。
 
 # 教育
 
@@ -22,10 +23,10 @@ Gitee 主页：[https://gitee.com/ipvb](https://gitee.com/ipvb)
 
 # 工作经验
 
-2014.06 ~ 2020.04 深圳市奥思网络科技有限公司（开源中国），码云团队核心工程师，主要负责码云（Gitee）基础架构设计和开发，
+2014.06 ~ 2020.04 深圳市奥思网络科技有限公司（开源中国），Gitee 团队核心工程师，主要负责 Gitee 基础架构设计和开发，
 Git 基础软件开发，服务器软件开发。
 
--   实现码云（GITEE）代码托管平台的 Subversion（SVN）接入，国内第一家。
+-   实现 Gitee 代码托管平台的 Subversion（SVN）接入，国内第一家。
 -   从事 GIT 基础服务开发，包括不限于分布式架构，实用工具等。
 -   开发了 svnsbz, 即 svn:// 协议动态代理服务器,支持实时监测并加载黑名单（基于 Linux iNotify）。
 -   开发了 Git 分布式前端，NGINX 模块，核心路由模块，核心路由库实现了 O1 高效路由缓存，支持域名解析，内部 DNS 缓存以及实时 DNS。
@@ -65,14 +66,13 @@ Git-Analyze 开源地址 [https://gitee.com/oscstudio/git-analyze](https://gitee
 
 # 技能
 
-包括但不限于以下语言和框架：  
-语言:
+擅长语言:
 
 -   C
 -   C++
+-   Go
 -   C#
 -   PowerShell
--   Go
 -   Java
 -   D
 -   Perl
@@ -82,25 +82,10 @@ Git-Analyze 开源地址 [https://gitee.com/oscstudio/git-analyze](https://gitee
 -   Ruby（不太喜欢）
 
 
-
-框架:
-
--   Boost Boost.Asio
--   Qt  
--   WTL
--   Win32  
--   ASP.NET
--   WPF
--   webpy
--   nginx Perl
--   Vibe.d
--   Rails  
--   Puma  
-
-操作系统：
+相应操作系统研究方向：
 
 -   Linux ,多线程，多进程，网络编程。
--   Windows Win32 程序开发，主要是 GUI 程序。  
+-   Windows Win32 GUI 开发，以及命令行开发。  
 -   FreeBSD
 -   ReactOS 内核研究
 -   Minix  
@@ -115,10 +100,6 @@ Git-Analyze 开源地址 [https://gitee.com/oscstudio/git-analyze](https://gitee
 +   Windows 权限管理
 +   文件特征的分析
 
-
-通常来说，本人精通 git 和 svn。  
-
-
 # 个人作品
 
 博客站点 [https://forcemz.net/](https://forcemz.net/)
@@ -126,8 +107,8 @@ Git-Analyze 开源地址 [https://gitee.com/oscstudio/git-analyze](https://gitee
 
 |作品|源码地址|描述|
 |---|---|---|
-|Baulk|[github.com/baulk/baulk](https://github.com/baulk/baulk)|基于 C++17 的极简 Windows 绿色包管理器|
-|Bela|[github.com/fcharlie/bela](https://github.com/fcharlie/bela)|基于 C++17/20 开发的 Windows 系统功能库|
+|Baulk|[github.com/baulk/baulk](https://github.com/baulk/baulk)|基于 C++20 的极简 Windows 绿色包管理器|
+|Bela|[github.com/fcharlie/bela](https://github.com/fcharlie/bela)|基于 C++20 开发的 Windows 系统功能库|
 |BelaUtils|[github.com/fcharlie/BelaUtils](https://github.com/fcharlie/BelaUtils)|基于 Bela 重写的 PEAnalyzer/Krycekium 等|
 |Bali|[github.com/balibuild/bali](https://github.com/balibuild/bali)|基于 Golang 的 Golang 构建打包工具，能够创建 STGZ 安装包和嵌入 Windows 应用程序清单，图标版本等|
 |Buna|[github.com/fcharlie/buna](https://github.com/fcharlie/buna)|从 Golang debug 模块 fork 过来的增强的可执行文件格式分析库|
