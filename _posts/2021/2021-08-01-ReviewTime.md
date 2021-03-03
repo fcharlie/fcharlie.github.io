@@ -1,7 +1,7 @@
 ---
 layout: post
-title:  "时间杂谈"
-date:   2021-01-01 12:00:00 +0800
+title:  "时间评论"
+date:   2021-08-01 12:00:00 +0800
 published: false
 categories: thought
 ---
