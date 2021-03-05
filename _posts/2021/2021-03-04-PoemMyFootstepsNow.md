@@ -7,7 +7,7 @@ categories: writing
 ---
 
 <center><br/>
-<font size=18><一></font><br/><br/>
+<font size=18>（一）火</font><br/><br/>
 天使说：“你若不努力爬出深坑，<br/> 
 你终将死于此地！”<br/>
 我按着坑壁的石块，<br/>
@@ -58,7 +58,7 @@ categories: writing
 请闭上你的双眼，<br/>
 永眠直到永远！<br/>
 
-<br/><br/><font size=18>（三）当下的足迹 </font><br/><br/>
+<br/><br/><font size=18>（三）飞鸟 </font><br/><br/>
 此前，一刻钟的生命已经枯萎，<br/>
 当下，你已获得新的生命，<br/>
 纵使你推脱不认识它，<br/>
