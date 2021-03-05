@@ -3,11 +3,10 @@ layout: post
 title:  "江南"
 date:   2021-03-05 10:00:00
 published: true
-categories: literature
+categories: writing
 ---
 
-<center><font size=24>江南</font><br/><br/>
-
+<center><br/>
 江南的乌篷船<br/>
 摇曳着小桨<br/>
 和着斜阳<br/>
