@@ -6,7 +6,7 @@ published: true
 categories: literature
 ---
 
-## 江南
+<center><font size=24>江南</font><br/><br/>
 
 江南的乌篷船<br/>
 摇曳着小桨<br/>
@@ -93,6 +93,8 @@ categories: literature
 即便化做了残骸<br/>
 还要眷恋着那个<br/>
 美丽的江南<br/>
+
+</center>
 
 ## 备注
 
