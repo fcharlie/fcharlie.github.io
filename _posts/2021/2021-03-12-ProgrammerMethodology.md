@@ -105,7 +105,7 @@ categories: thought
 
 ## 行业发展的讨论
 
-美国东部时间 2021 年 3 月 2 号，微软 Power Apps 产品总监 Ryan Cunningham 发布了一篇文章 [Introducing Microsoft Power Fx: the low-code programming language for everyone](https://powerapps.microsoft.com/en-us/blog/introducing-microsoft-power-fx-the-low-code-programming-language-for-everyone/) 推出了低代码开发平台 [Microsoft Power Fx](https://github.com/microsoft/power-fx)，低代码开发平台是无需编码（0代码或无代码）或通过少量代码就可以快速生成应用程序的开发平台。这一概念并不是新鲜事，国内还有阿里云旗下的宜搭，腾讯云旗下的 LowCode 等等。信息行业发展极度依赖从事该行业的人才，人才是短板，但低代码平台这样的工具能够减少人才的需求，也是未来的趋势。
+美国东部时间 2021 年 3 月 2 号，微软 Power Apps 产品总监 Ryan Cunningham 发布了一篇文章 [Introducing Microsoft Power Fx: the low-code programming language for everyone](https://powerapps.microsoft.com/en-us/blog/introducing-microsoft-power-fx-the-low-code-programming-language-for-everyone/) 推出了低代码开发平台 [Microsoft Power Fx](https://github.com/microsoft/power-fx)，低代码开发平台是无需编码（0代码或无代码）或通过少量代码就可以快速生成应用程序的开发平台。这一概念并不是新鲜事，国内还有阿里云旗下的宜搭，腾讯云旗下的 LowCode 等等。信息行业发展极度依赖从事该行业的人才，人才是短板，而低代码平台这样的工具能够减少人才的需求，解决了信息行业的短板，自然是未来的发展趋势。
 
 我们知道，信息技术的发展以及自动化技术还有其他科学技术的发展，极大的提升了社会的生产力，生产力决定生成关系，可能会导致一些行业的兴起，另一些行业的消亡，也会出现一些新的职业，导致另一些职业的消亡。前瞻经济学人曾写过一篇 [替代与升级：那些正在消逝的行业与岗位](https://t.qianzhan.com/caijing/detail/190129-1a4c68cf.html) 分析了一些传统行业的消退。特别是信息技术发展导致了一些行业的消退，一些岗位逐渐被取消，比如随着 AI 技术，语音合成技术的发展，机器翻译的准确性越来越高，发音更加自然，这将逐渐替代翻译人员；随着智能电网的发展，供电站抄表员也就逐渐淡出了人们的视野；随着个人计算机的普及，手机的运算能力上升，有些人的网管梦也就逐渐破灭了；还有传统的零售行业也被电商发展大潮冲击，门庭冷落鞍马稀，不复当年。
 
