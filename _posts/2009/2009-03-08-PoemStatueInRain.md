@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "让我化作一尊雨中的石像"
-date:   2021-03-07 10:00:00
+date:   2009-03-07 10:00:00
 published: true
 categories: writing
 ---
