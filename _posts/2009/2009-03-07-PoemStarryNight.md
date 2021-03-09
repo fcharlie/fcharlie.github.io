@@ -28,7 +28,7 @@ categories: writing
 只是<br/>
 想追寻一个女孩的去向<br/>
 复古的长裙<br/>
-那可爱的墨阳<br/>
+那可爱的模样<br/>
 已刻在我的心上<br/>
 </center>
 
