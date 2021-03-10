@@ -56,7 +56,7 @@ Git 基础软件开发，服务器软件开发。
 Git-Secure 开源地址 [https://gitee.com/oscstudio/git-secure](https://gitee.com/oscstudio/git-secure)  
 Git-Analyze 开源地址 [https://gitee.com/oscstudio/git-analyze](https://gitee.com/oscstudio/git-analyze)
 
-2020-05 ~ 至今 腾云扣钉，高级后端开发工程师。
+2020-05 ~ 至今 腾云扣钉（腾讯云全资子公司），高级后端开发工程师。
 
 -   设计规划代码扫描功能能力增强
 -   Subversion 目录权限修复
