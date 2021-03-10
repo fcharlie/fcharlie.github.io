@@ -19,7 +19,6 @@ Gitee 主页：[https://gitee.com/ipvb](https://gitee.com/ipvb)<br/>
 # 教育
 
 2010.09 ~ 2014.06 本科 湘南学院 计算机系 通信工程  
-2012.05 ~ 2014.06 年主导开发基于 ASP.NET 的 ACM 在线测评系统。
 
 # 工作经验
 
@@ -49,7 +48,7 @@ Git 基础软件开发，服务器软件开发。
 -   负责码云分布式存储架构变更设计和编码实现。
 -   基于 libgit2 开发了基于 git namespace 快照的企业存储库快照备份方案。
 -   Git 原生钩子支持大文件检测，存储库分析，分支权限管理，git 只读文件功能，git 禁止推送暴露用户私有邮箱，以及存储库响应式同步机制。
--   基于 Go 开发的 Blaze， git GC, 备份，存储库体积分析后台任务服务。
+-   基于 Go 开发的 Blaze， Git GC, 备份，存储库体积分析后台任务服务。
 -   Gitee 存储路由架构改造。并基于 Golang 编写了验证服务 Banjo 将基础服务验证 API 独立出来。
 -   基于 Go 开发了 blaze-archive Git archive 扩展工具，支持 archive 缓存，支持 `tar.br`,`tar.zst`,`tar.xz`,`tar.sz` 等压缩格式。
 -   设计和实现了 Gitee 存储库读写分离方案 RONE/RIME。
@@ -59,10 +58,10 @@ Git-Analyze 开源地址 [https://gitee.com/oscstudio/git-analyze](https://gitee
 
 2020-05 ~ 至今 腾云扣钉
 
-- 代码扫描功能
-- Subversion 目录权限修复
-- 代码托管高可用方案设计和实现
-- 代码托管功能补全和调优
+-   设计规划代码扫描功能能力增强
+-   Subversion 目录权限修复
+-   代码托管高可用方案设计和实现
+-   代码托管功能补全和调优
 
 # 技能
 
