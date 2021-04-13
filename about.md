@@ -22,6 +22,8 @@ Gitee 主页：[https://gitee.com/ipvb](https://gitee.com/ipvb)<br/>
 
 # 工作经验
 
+## 2014.06 ~ 2020.04 Gitee
+
 2014.06 ~ 2020.04 深圳市奥思网络科技有限公司（开源中国），Gitee 团队核心工程师，主要负责 Gitee 基础架构设计和开发，
 Git 基础软件开发，服务器软件开发。
 
@@ -56,12 +58,15 @@ Git 基础软件开发，服务器软件开发。
 Git-Secure 开源地址 [https://gitee.com/oscstudio/git-secure](https://gitee.com/oscstudio/git-secure)  
 Git-Analyze 开源地址 [https://gitee.com/oscstudio/git-analyze](https://gitee.com/oscstudio/git-analyze)
 
+## 2020-05 ~ 至今 腾云扣钉
+
 2020-05 ~ 至今 腾云扣钉（腾讯云全资子公司），高级后端开发工程师。
 
 -   设计规划代码扫描功能能力增强
 -   Subversion 目录权限修复
 -   代码托管高可用方案设计和实现
 -   代码托管功能补全和调优
+-   读级别权限控制的 Git 保护目录方案设计论证和实施
 
 # 技能
 
