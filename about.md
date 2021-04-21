@@ -130,6 +130,7 @@ Git-Analyze 开源地址 [https://gitee.com/oscstudio/git-analyze](https://gitee
 |WiFiAssistant|[github.com/fcharlie/WiFiAssistant](https://github.com/fcharlie/WiFiAssistant)|Windows 平台 WiFi 无线承载网络开启助手|
 |Planck|[github.com/fcharlie/Planck](https://github.com/fcharlie/Planck)|基于魔数和文件头的文件分析工具（库）|
 |Angelo|[github.com/fcharlie/Angelo](https://github.com/fcharlie/Angelo)|基于 AspNet Core 编写的跨平台 git http 服务|
+|wincurl|[github.com/fcharlie/wincurl](https://github.com/fcharlie/wincurl)|cURL for Windows 构建脚本，使用 MSVC 编译器 |
 
 
 ## 开源参与
