@@ -15,6 +15,7 @@ Gitee 主页：[https://gitee.com/ipvb](https://gitee.com/ipvb)<br/>
 开源极客，几个冷门开源项目作者。<br/>
 前 Gitee 核心开发者，分布式、读写分离架构设计和实施者；Git 专栏[《Git 的反思》](https://gitee.com/Git-uses/rethinkgit) 作者；国内代码托管行业老兵。<br/>
 文学爱好者，喜欢滑板，自行车，爬山，刷剧等等。<br/>
+座右铭：世界上只有一种真正的英雄主义，那就是认识生活的真相后依然爱它<br/>
 
 # 教育
 
