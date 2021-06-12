@@ -7,7 +7,7 @@ permalink: /about/
 
 # 简介
 
-昵称：Force Charlie，博文<br/>
+昵称：江二十三<br/>
 邮箱：forcemz@outlook.com<br/>
 个人博客： [https://forcemz.net](https://forcemz.net)<br/> 
 Github 主页：[https://github.com/fcharlie](https://github.com/fcharlie)<br/>
