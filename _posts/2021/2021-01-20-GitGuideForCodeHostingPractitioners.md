@@ -287,6 +287,9 @@ VFSforGit 的设计是独树一帜的，但也很难推广开来，目前除了 
 + [《基于 Git Namespace 的存储库快照方案》](https://forcemz.net/git/2018/11/18/GitNamespaceSnapshot/)
 + [《构建恰当的 Git SSH Server》](https://forcemz.net/git/2019/03/16/MakeAGitSSHServer/)
 + [《Git 原生钩子的深度优化》](https://forcemz.net/git/2017/11/22/GitNativeHookDepthOptimization/)
++ [Monorepos in Git](https://www.atlassian.com/git/tutorials/monorepos)
++ [Scaling monorepo maintenance](https://github.blog/2021-04-29-scaling-monorepo-maintenance/)
++ [Scaling Mercurial at Facebook](https://engineering.fb.com/2014/01/07/core-data/scaling-mercurial-at-facebook/)
 
 ## 7. 感谢
 
