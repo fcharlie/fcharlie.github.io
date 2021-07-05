@@ -224,6 +224,8 @@ VFSforGit 的设计是独树一帜的，但也很难推广开来，目前除了 
 
 最近，Git 贡献者还增加了 [Packfile URIs](https://github.com/git/git/blob/master/Documentation/technical/packfile-uri.txt) 设计，该方案旨在将对象通过 CDN 存储，然后客户端根据返回的地址请求到合适的 CDN 下载存储库对象，该方案仍处于早期，还有许多细节要处理，最终能做到什么程度有待观察。
 
+**2021-07-05 更新**，在代码托管领域，我们将单一大库称之为 `Monorepo`，显然，Microsoft 的 Windows 源代码存储库算得上，Microsoft 基于 Git 支持了单一大库；在使用 [Perforce](https://www.perforce.com/) 多年后，Google 开发了自己的 `Piper`（[相关阅读](https://cacm.acm.org/magazines/2016/7/204032-why-google-stores-billions-of-lines-of-code-in-a-single-repository/fulltext)），Facebook 更喜欢使用 `Mercurial`，他们在 Github 上开源了 `Monorepo` 解决方案，使用 Rust 编写的，带有 Mercurial 特色的 [EdenSCM](https://github.com/facebookexperimental/eden)，EdenSCM 和 VFSforGit 类似之处就是 EdenFS 在 Linux/macOS 上使用 FUSE，在 Windows 上使用 Projected FS 来提高用户的检出效率，做到按需拉取，按需下载。
+
 ### 4.2 代码托管平台伸缩性
 
 大型代码托管平台面临的另一个问题则是系统的伸缩性，在架构上具备良好的伸缩性则意味着平台能做到多大的规模，比如 Gitea/Gogs 这种倾向于单节点的开源代码托管平台要做到大型分布式代码托管平台就麻烦得多，而 Gitlab 则更容易搭建分布式可扩展的代码托管平台。
