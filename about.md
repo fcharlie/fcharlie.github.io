@@ -7,28 +7,25 @@ permalink: /about/
 
 # 简介
 
-昵称：江二十三<br/>
-邮箱：forcemz@outlook.com<br/>
-个人博客： [https://forcemz.net](https://forcemz.net)<br/> 
-Github 主页：[https://github.com/fcharlie](https://github.com/fcharlie)<br/>
-Gitee 主页：[https://gitee.com/ipvb](https://gitee.com/ipvb)<br/>
-开源极客，几个冷门开源项目作者。<br/>
-前 Gitee 核心开发者，分布式、读写分离架构设计和实施者；Git 专栏[《Git 的反思》](https://gitee.com/Git-uses/rethinkgit) 作者；国内代码托管行业老兵。<br/>
-文学爱好者，喜欢滑板，自行车，爬山，刷剧等等。<br/>
-座右铭：世界上只有一种真正的英雄主义，那就是认识生活的真相后依然爱它<br/>
+昵称：Force Charlie，博文
+邮箱：forcemz@outlook.com  
+个人博客： [https://forcemz.net](https://forcemz.net)  
+Github 主页：[https://github.com/fcharlie](https://github.com/fcharlie)  
+Gitee 主页：[https://gitee.com/ipvb](https://gitee.com/ipvb)  
+开源极客，几个冷门开源项目作者。  
+前 Gitee 核心开发者，分布式、读写分离架构设计和实施者；Git 专栏[《Git 的反思》](https://gitee.com/Git-uses/rethinkgit) 作者。
 
 # 教育
 
 2010.09 ~ 2014.06 本科 湘南学院 计算机系 通信工程  
+2012.05 ~ 2014.06 年主导开发基于 ASP.NET 的 ACM 在线测评系统。
 
 # 工作经验
 
-## 2014.06 ~ 2020.04 Gitee
-
-2014.06 ~ 2020.04 深圳市奥思网络科技有限公司（开源中国），Gitee 团队核心工程师，主要负责 Gitee 基础架构设计和开发，
+2014.06 ~ 2020.04 深圳市奥思网络科技有限公司（开源中国），码云团队核心工程师，主要负责码云（Gitee）基础架构设计和开发，
 Git 基础软件开发，服务器软件开发。
 
--   实现 Gitee 代码托管平台的 Subversion（SVN）接入，国内第一家。
+-   实现码云（GITEE）代码托管平台的 Subversion（SVN）接入，国内第一家。
 -   从事 GIT 基础服务开发，包括不限于分布式架构，实用工具等。
 -   开发了 svnsbz, 即 svn:// 协议动态代理服务器,支持实时监测并加载黑名单（基于 Linux iNotify）。
 -   开发了 Git 分布式前端，NGINX 模块，核心路由模块，核心路由库实现了 O1 高效路由缓存，支持域名解析，内部 DNS 缓存以及实时 DNS。
@@ -51,7 +48,7 @@ Git 基础软件开发，服务器软件开发。
 -   负责码云分布式存储架构变更设计和编码实现。
 -   基于 libgit2 开发了基于 git namespace 快照的企业存储库快照备份方案。
 -   Git 原生钩子支持大文件检测，存储库分析，分支权限管理，git 只读文件功能，git 禁止推送暴露用户私有邮箱，以及存储库响应式同步机制。
--   基于 Go 开发的 Blaze， Git GC, 备份，存储库体积分析后台任务服务。
+-   基于 Go 开发的 Blaze， git GC, 备份，存储库体积分析后台任务服务。
 -   Gitee 存储路由架构改造。并基于 Golang 编写了验证服务 Banjo 将基础服务验证 API 独立出来。
 -   基于 Go 开发了 blaze-archive Git archive 扩展工具，支持 archive 缓存，支持 `tar.br`,`tar.zst`,`tar.xz`,`tar.sz` 等压缩格式。
 -   设计和实现了 Gitee 存储库读写分离方案 RONE/RIME。
@@ -59,25 +56,27 @@ Git 基础软件开发，服务器软件开发。
 Git-Secure 开源地址 [https://gitee.com/oscstudio/git-secure](https://gitee.com/oscstudio/git-secure)  
 Git-Analyze 开源地址 [https://gitee.com/oscstudio/git-analyze](https://gitee.com/oscstudio/git-analyze)
 
-## 2020-05 ~ 至今 腾云扣钉
+2020-05 ~ 2021-07 腾云扣钉
 
-2020-05 ~ 至今 腾云扣钉（腾讯云全资子公司），高级后端开发工程师。
+- 代码扫描功能
+- Subversion 目录权限修复
+- 代码托管高可用方案设计和实现
+- 代码托管功能补全和调优
 
--   负责代码扫描（CodeDog）接入架构设计，保证其在公有云安全信息安全，计算资源需求弹性化，负责代码扫描能力增强，集成多种开源代码分析工具提高扫描能力。
--   解决了代码托管 Subversion 目录权限功能缺陷。
--   负责设计代码托管系统**高可用**架构并实施和上线。
--   负责代码托管功能补全包括不限于代码语言分析，代码推送记录分析等功能。
--   负责设计和实施代码托管读级别目录权限控制，该特性暂无国内外友商（包括 Github/Gitlab/Gitee/Bitbucket 等等）实施。
+2021-07 ~ 至今 蚂蚁集团
+
+- 研发效能 & 代码平台
 
 # 技能
 
-擅长语言:
+包括但不限于以下语言和框架：  
+语言:
 
 -   C
 -   C++
--   Go
 -   C#
 -   PowerShell
+-   Go
 -   Java
 -   D
 -   Perl
@@ -87,10 +86,25 @@ Git-Analyze 开源地址 [https://gitee.com/oscstudio/git-analyze](https://gitee
 -   Ruby（不太喜欢）
 
 
-相应操作系统研究方向：
+
+框架:
+
+-   Boost Boost.Asio
+-   Qt  
+-   WTL
+-   Win32  
+-   ASP.NET
+-   WPF
+-   webpy
+-   nginx Perl
+-   Vibe.d
+-   Rails  
+-   Puma  
+
+操作系统：
 
 -   Linux ,多线程，多进程，网络编程。
--   Windows Win32 GUI 开发，以及命令行开发。  
+-   Windows Win32 程序开发，主要是 GUI 程序。  
 -   FreeBSD
 -   ReactOS 内核研究
 -   Minix  
@@ -105,6 +119,10 @@ Git-Analyze 开源地址 [https://gitee.com/oscstudio/git-analyze](https://gitee
 +   Windows 权限管理
 +   文件特征的分析
 
+
+通常来说，本人精通 git 和 svn。  
+
+
 # 个人作品
 
 博客站点 [https://forcemz.net/](https://forcemz.net/)
@@ -112,26 +130,25 @@ Git-Analyze 开源地址 [https://gitee.com/oscstudio/git-analyze](https://gitee
 
 |作品|源码地址|描述|
 |---|---|---|
-|Baulk|[github.com/baulk/baulk](https://github.com/baulk/baulk)|基于 C++20 的极简 Windows 绿色包管理器|
-|Privexec|[github.com/M2Team/Privexec](https://github.com/M2Team/Privexec)|Windows 运行特定权限工具<br>支持 **System**，**TrustedInstaller** 提权<br>支持 **UAC 降权**，启动**低完整性**权限进程，启动 **AppContainer** 进程<br>包含 Privexec，AppExec，wsudo<br>wsudo 能够一定程度上模拟 sudo|
-|Bela|[github.com/fcharlie/bela](https://github.com/fcharlie/bela)|基于 C++20 开发的 Windows 系统功能库|
+|Baulk|[github.com/baulk/baulk](https://github.com/baulk/baulk)|基于 C++17 的极简 Windows 绿色包管理器|
+|Bela|[github.com/fcharlie/bela](https://github.com/fcharlie/bela)|基于 C++17/20 开发的 Windows 系统功能库|
 |BelaUtils|[github.com/fcharlie/BelaUtils](https://github.com/fcharlie/BelaUtils)|基于 Bela 重写的 PEAnalyzer/Krycekium 等|
 |Bali|[github.com/balibuild/bali](https://github.com/balibuild/bali)|基于 Golang 的 Golang 构建打包工具，能够创建 STGZ 安装包和嵌入 Windows 应用程序清单，图标版本等|
 |Buna|[github.com/fcharlie/buna](https://github.com/fcharlie/buna)|从 Golang debug 模块 fork 过来的增强的可执行文件格式分析库|
 |Clangbuilder|[github.com/fstudio/clangbuilder](https://github.com/fstudio/clangbuilder)|基于 PowerShell 的 LLVM 自动构建工具集|
 |TunnelSSH|[github.com/balibuild/tunnelssh](https://github.com/balibuild/tunnelssh)|一个机智的 SSH 客户端|
-|wincurl|[github.com/fcharlie/wincurl](https://github.com/fcharlie/wincurl)|cURL for Windows 构建脚本，使用 MSVC 编译器 |
+|svnsrv|[gitee.com/oschina/svnsrv](https://gitee.com/oschina/svnsrv)|开源跨平台的 svn 协议动态代理服务器。|
 |iBurnMgr|[github.com/fcharlie/iBurnMgr](https://github.com/fcharlie/iBurnMgr)|基于 Direct2D 开发的 USB 启动盘制作软件。|
 |Krycekium|[github.com/fcharlie/Krycekium](https://github.com/fcharlie/Krycekium)|基于 Msi API 编写的 `.msi` 安装包解压工具，用于提取制作绿色软件|
 |Kismet|[WIN32: github.com/fcharlie/Kismet](https://github.com/fcharlie/Kismet)<br>[UWP: github.com/fcharlie/KismetUWP](https://github.com/fcharlie/KismetUWP)|基于 RHash 编写 Hash 计算工具，支持 MD5,SHA1 SHA1DC,SHA2,SHA3|
 |Ginkgo|[github.com/fstudio/Ginkgo](https://github.com/fstudio/Ginkgo)|基于 WPF 开发的 Metro 风格 Batch 编辑器|
 |whois|[github.com/fcharlie/whois](https://github.com/fcharlie/whois)|Windows 平台 whois 实现 (基于 C++17 WSAPoll)|
+|Privexec|[github.com/M2Team/Privexec](https://github.com/M2Team/Privexec)|Windows 运行特定权限工具<br>支持 **System**，**TrustedInstaller** 提权<br>支持 **UAC 降权**，启动**低完整性**权限进程，启动 **AppContainer** 进程<br>包含 Privexec，AppExec，wsudo<br>wsudo 能够一定程度上模拟 sudo|
 |PE Analyzer|[github.com/fcharlie/PEAnalyzer](https://github.com/fcharlie/PEAnalyzer)|基于 C++ & Direct2D 开发的 PE 分析软件<br>能够解析 PE 文件依赖|
 |MsysLauncher|[github.com/fcharlie/msys2-launcher](https://github.com/fcharlie/msys2-launcher)|MSYS2 运行环境启动器|
 |WiFiAssistant|[github.com/fcharlie/WiFiAssistant](https://github.com/fcharlie/WiFiAssistant)|Windows 平台 WiFi 无线承载网络开启助手|
 |Planck|[github.com/fcharlie/Planck](https://github.com/fcharlie/Planck)|基于魔数和文件头的文件分析工具（库）|
 |Angelo|[github.com/fcharlie/Angelo](https://github.com/fcharlie/Angelo)|基于 AspNet Core 编写的跨平台 git http 服务|
-
 
 
 ## 开源参与
