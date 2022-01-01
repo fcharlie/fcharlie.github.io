@@ -2,13 +2,14 @@
 layout: post
 title:  "反思 - 研发效能的困局"
 date:   2021-12-31 20:00:00 +0800
-published: false
+published: true
 categories: thought
 ---
 # 作者
 
 第一作者：江二十三
 
+**思考了半年之久，我觉得并不能简单的回答研发效能的问题，首先是人，效率只是工具，我写不好研发效能。 2022-01-01 21:13 UTC+8**
 
 ## 0. 前言
 
