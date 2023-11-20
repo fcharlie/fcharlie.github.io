@@ -7,7 +7,7 @@ permalink: /about/
 
 # 简介
 
-昵称：江二十三
+昵称：江二十三  
 邮箱：forcemz@outlook.com  
 个人博客： [https://forcemz.net](https://forcemz.net)  
 Github 主页：[https://github.com/fcharlie](https://github.com/fcharlie)  
@@ -61,6 +61,7 @@ Git-Analyze 开源地址 [https://gitee.com/oscstudio/git-analyze](https://gitee
 - 代码扫描功能
 - Subversion 目录权限修复
 - 代码托管高可用方案设计和实现
+- Git 目录级别权限控制（业内首个读级别权限控制）
 - 代码托管功能补全和调优
 
 2021-07 ~ 至今 蚂蚁集团
