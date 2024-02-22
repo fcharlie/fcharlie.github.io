@@ -99,63 +99,22 @@ Zeta 的在设计上摆脱了很多 Git 的桎梏，因此在 AI，游戏研发�
 # 技能
 
 包括但不限于以下语言和框架：  
-语言:
+语言：C，C++，C#，PowerShell，Go，Java，D，Perl，Shell，Python，Makefile，Ruby
 
--   C
--   C++
--   C#
--   PowerShell
--   Go
--   Java
--   D
--   Perl
--   Shell
--   Python（不太喜欢）
--   Makefile
--   Ruby（不太喜欢）
+框架: Boost Boost.Asio，Qt，WTL，Win32 ，ASP.NET，WPF，webpy，nginx Perl，Vibe.d，Rails ，Puma  
 
+操作系统技术：
 
+-   Linux ：多线程，多进程，网络编程。
+-   Windows: Win32 程序开发，主要是 GUI 程序。  
+-   其他：FreeBSD，ReactOS 内核研究
 
-框架:
-
--   Boost Boost.Asio
--   Qt  
--   WTL
--   Win32  
--   ASP.NET
--   WPF
--   webpy
--   nginx Perl
--   Vibe.d
--   Rails  
--   Puma  
-
-操作系统：
-
--   Linux ,多线程，多进程，网络编程。
--   Windows Win32 程序开发，主要是 GUI 程序。  
--   FreeBSD
--   ReactOS 内核研究
--   Minix  
--   Hurd  
--   Haiku  
-
-技术领域：
-
-+   Windows 系统编程
-+   Linux 系统编程
-+   文件的压缩解压
-+   Windows 权限管理
-+   文件特征的分析
+技术领域：Windows 系统编程，Linux 系统编程，文件的压缩解压，Windows 权限管理，文件特征的分析
 
 
 通常来说，本人精通 git 和 svn。  
 
-
 # 个人作品
-
-博客站点 [https://forcemz.net/](https://forcemz.net/)
-
 
 |作品|源码地址|描述|
 |---|---|---|
