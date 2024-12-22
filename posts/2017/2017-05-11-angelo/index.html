@@ -1,0 +1,396 @@
+<!doctype html><html lang=en><head><title>基于 AspNetCore 的 Git HTTP 服务器</title>
+<meta charset=utf-8><meta name=X-UA-Compatible content="IE=edge"><meta name=google-site-verification content><meta content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=5" name=viewport><meta content="telephone=no" name=format-detection><meta name=description content><meta name=renderer content="webkit"><meta name=theme-color content="#ffffff"><script src=/js/toc.js></script><link type=text/css rel=stylesheet href=/vendor/css/bootstrap.min.css><link rel=stylesheet href=/scss/dark-mode.min.cb53f1bee2b8900cb4f082afbf00175d6618f281cf9a2fe8619e3b52d20b5721.css integrity="sha256-y1PxvuK4kAy08IKvvwAXXWYY8oHPmi/oYZ47UtILVyE=" media=screen><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Material+Icons"></head><body><div id=app><div class=single-column-drawer-container id=drawer v-bind:class="{ 'single-column-drawer-container-active': isDrawerOpen }"><div class=drawer-content><div class=drawer-menu><a class="a-block drawer-menu-item active" href=/posts>归档
+</a><a class="a-block drawer-menu-item false" href=/categories>分类
+</a><a class="a-block drawer-menu-item false" href=/tags>标签
+</a><a class="a-block drawer-menu-item false" href=/about>关于
+</a><a class="a-block drawer-menu-item false" href=/index.xml>RSS Feed</a><div class=toc><div class=toc-content><center>- CATALOG -</center><ul><li><a href=#%e5%85%b3%e4%ba%8e class=nav-关于>关于</a></li><ul><li><a href=#dotnet-core-%e5%ae%89%e8%a3%85 class=nav-dotnet-core-安装>DotNet Core 安装</a></li><li><a href=#dotnet-%e5%91%bd%e4%bb%a4 class=nav-dotnet-命令>DotNet 命令</a></li><li><a href=#%e9%a1%b9%e7%9b%ae%e4%be%9d%e8%b5%96 class=nav-项目依赖>项目依赖</a></li><li><a href=#angelo-%e6%9c%8d%e5%8a%a1%e5%99%a8%e5%85%a5%e5%8f%a3 class=nav-angelo-服务器入口>Angelo 服务器入口</a></li><li><a href=#%e6%9c%8d%e5%8a%a1%e5%99%a8%e9%85%8d%e7%bd%ae%e4%b8%8e%e5%88%9d%e5%a7%8b%e5%8c%96 class=nav-服务器配置与初始化>服务器配置与初始化</a></li><li><a href=#%e6%9c%8d%e5%8a%a1%e5%99%a8%e8%af%b7%e6%b1%82%e4%b8%8e%e5%93%8d%e5%ba%94 class=nav-服务器请求与响应>服务器请求与响应</a></li><li><a href=#%e8%bf%90%e8%a1%8c class=nav-运行>运行</a></li><li><a href=#%e5%85%b6%e4%bb%96 class=nav-其他>其他</a></li></ul></div></div></div></div></div><transition name=fade><div id=drawer-mask v-bind:class="{ 'single-column-drawer-mask': mounted }" v-if=isDrawerOpen v-on:click=toggleDrawer></div></transition><nav id=navBar class="navbar sticky-top navbar-light single-column-nav-container"><div id=navBackground class=nav-background></div><div class="container container-narrow nav-content"><button id=nav_dropdown_btn class=nav-dropdown-toggle type=button v-on:click=toggleDrawer>
+<i class=material-icons>menu
+</i></button>
+<a id=navTitle class=navbar-brand href=https://forcemz.net/>Charlie's Rethinking
+</a><button type=button class=nav-darkmode-toggle id=darkModeToggleButton2>
+<i class=material-icons id=darkModeToggleIcon2>dark_mode</i></button></div></nav><div class=single-column-header-container id=pageHead v-bind:style="{ transform: 'translateZ(0px) translateY('+.3*scrollY+'px)', opacity: 1-navOpacity }"><a href=https://forcemz.net/><div class=single-column-header-title>Charlie's Rethinking</div><div class=single-column-header-subtitle>Themed by Diary.</div></a></div><div id=content><div id=streamContainer class=stream-container><div class="post-list-container post-list-container-shadow"><div class=post><div class=post-head-wrapper-text-only><div class=post-title>基于 AspNetCore 的 Git HTTP 服务器<div class=post-meta><time itemprop=datePublished>2017-05-11 17:00
+</time><i class=material-icons>folder</i>
+<a href=/categories/developer>developer</a>
+&nbsp;</div></div></div><div class=post-body-wrapper><div class=post-body v-pre><h1 id=关于>关于</h1><p>Git HTTP 服务器是代码托管服务最重要的组件之一，Git HTTP 服务器将 HTTP 请求的数据写入到 git-upload-pack/git-receive-pack 的标准输入，然后读取 git-upload-pack/git-receive-pack 的输出，写入 HTTP 响应包体，然后传输给客户端。原理非常简单。</p><h2 id=dotnet-core-安装>DotNet Core 安装</h2><p>首先需要下载 .NET Core <a href=https://www.microsoft.com/net/download>.NET Downloads</a> ,此站点为正式释放版本，
+如果要体验新的版本可以去 Github 项目主页下载最新的：Github: <a href=https://github.com/dotnet/cli>dotnet/cli</a></p><p>包括 Windows Ubuntu Debain 等都有安装指南</p><h2 id=dotnet-命令>DotNet 命令</h2><p>通常来说，dotnet 创建一个项目非常简单，进入到一个目录，运行</p><blockquote><p>dotnet new</p></blockquote><p>还原依赖</p><blockquote><p>dotnet restore</p></blockquote><p>编译</p><blockquote><p>dotnet build</p></blockquote><p>运行</p><blockquote><p>dotnet run args&mldr;</p></blockquote><p>发布</p><blockquote><p>dotnet publish</p></blockquote><h2 id=项目依赖>项目依赖</h2><p>AspNetCore 的项目依赖一般都需要添加 <code>Microsoft.AspNetCore</code> 此类库依赖 HTTP 服务器类库 Kestrel： <a href=https://github.com/aspnet/KestrelHttpServer>https://github.com/aspnet/KestrelHttpServer</a>，网络库底层使用 <code>libuv</code></p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-xml data-lang=xml><span style=display:flex><span><span style=color:#58a1dd>&lt;Project</span> <span style=color:#58a1dd>Sdk=</span><span style=color:#a6be9d>&#34;Microsoft.NET.Sdk.Web&#34;</span><span style=color:#58a1dd>&gt;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>&lt;PropertyGroup&gt;</span>
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>&lt;OutputType&gt;</span>Exe<span style=color:#58a1dd>&lt;/OutputType&gt;</span>
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>&lt;TargetFramework&gt;</span>netcoreapp1.1<span style=color:#58a1dd>&lt;/TargetFramework&gt;</span>
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>&lt;RuntimeIdentifiers&gt;</span>win10-x64;osx.10.11-x64;ubuntu.16.04-x64<span style=color:#58a1dd>&lt;/RuntimeIdentifiers&gt;</span>
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>&lt;/PropertyGroup&gt;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>&lt;ItemGroup&gt;</span>
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>&lt;Folder</span> <span style=color:#58a1dd>Include=</span><span style=color:#a6be9d>&#34;wwwroot\&#34;</span> <span style=color:#58a1dd>/&gt;</span>
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>&lt;/ItemGroup&gt;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>&lt;ItemGroup&gt;</span>
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>&lt;PackageReference</span> <span style=color:#58a1dd>Include=</span><span style=color:#a6be9d>&#34;Microsoft.AspNetCore&#34;</span> <span style=color:#58a1dd>Version=</span><span style=color:#a6be9d>&#34;1.1.2&#34;</span> <span style=color:#58a1dd>/&gt;</span>
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>&lt;/ItemGroup&gt;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#58a1dd>&lt;/Project&gt;</span>
+</span></span></code></pre></div><h2 id=angelo-服务器入口>Angelo 服务器入口</h2><p>运行一个 HTTP 服务器，在 Kestrel 的眼中就是一个 WebHostBuilder，WebHostBuilder 绑定好参数就可以运行了，ASP.NET 团队做了很多事情，
+比如多线程，TCP 设置 NoDelay ，开启 HTTPS , 开启 HTTPS 要额外的证书，设置网站根目录，UseStartup 是一种模板类，
+实现的类必须拥有 Configure 方法。关于 Unix domain socket，笔者并未测试。</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=display:flex><span><span style=color:#ff636f>using</span> <span style=color:#58a1dd>System</span>;
+</span></span><span style=display:flex><span><span style=color:#ff636f>using</span> <span style=color:#58a1dd>System.Collections.Generic</span>;
+</span></span><span style=display:flex><span><span style=color:#ff636f>using</span> <span style=color:#58a1dd>System.IO</span>;
+</span></span><span style=display:flex><span><span style=color:#ff636f>using</span> <span style=color:#58a1dd>System.Linq</span>;
+</span></span><span style=display:flex><span><span style=color:#ff636f>using</span> <span style=color:#58a1dd>System.Threading.Tasks</span>;
+</span></span><span style=display:flex><span><span style=color:#ff636f>using</span> <span style=color:#58a1dd>Microsoft.AspNetCore.Hosting</span>;
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>namespace</span> <span style=color:#58a1dd>Angelo</span>
+</span></span><span style=display:flex><span>{
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>public</span> <span style=color:#ff636f>class</span> <span style=color:#58a1dd>Program</span>
+</span></span><span style=display:flex><span>    {
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>public</span> <span style=color:#ff636f>static</span> <span style=color:#ff636f>void</span> <span style=color:#58a1dd>Main</span>(<span style=color:#ff636f>string</span>[] <span style=color:#58a1dd>args</span>)
+</span></span><span style=display:flex><span>        {
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>var</span> <span style=color:#58a1dd>host</span> = <span style=color:#ff636f>new</span> <span style=color:#58a1dd>WebHostBuilder</span>()
+</span></span><span style=display:flex><span>                .<span style=color:#58a1dd>UseKestrel</span>()
+</span></span><span style=display:flex><span>                .<span style=color:#58a1dd>UseContentRoot</span>(<span style=color:#58a1dd>Directory</span>.<span style=color:#58a1dd>GetCurrentDirectory</span>())
+</span></span><span style=display:flex><span>                .<span style=color:#58a1dd>UseIISIntegration</span>()
+</span></span><span style=display:flex><span>                .<span style=color:#58a1dd>UseStartup</span>&lt;<span style=color:#58a1dd>Startup</span>&gt;()
+</span></span><span style=display:flex><span>                .<span style=color:#58a1dd>Build</span>();
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>            <span style=color:#58a1dd>host</span>.<span style=color:#58a1dd>Run</span>();
+</span></span><span style=display:flex><span>        }
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><h2 id=服务器配置与初始化>服务器配置与初始化</h2><p>熟悉 .NET 的都知道，以前读取配置文件有 System.Configuration ,通过读取 XML 格式后缀名为 .config 的配置文件，而 ASP.NET Core 支持 INI JSON XML 类型的配置，目前我使用的是 JSON, 即 <code>appsettings.json</code>。</p><p>以下面的配置文件（appsettings.json）内容:</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-json data-lang=json><span style=display:flex><span>{
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>&#34;Logging&#34;</span>: {
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>&#34;IncludeScopes&#34;</span>: <span style=color:#ff636f>false</span>,
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>&#34;LogLevel&#34;</span>: {
+</span></span><span style=display:flex><span>            <span style=color:#58a1dd>&#34;Default&#34;</span>: <span style=color:#a6be9d>&#34;Warning&#34;</span>
+</span></span><span style=display:flex><span>        }
+</span></span><span style=display:flex><span>    },
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>&#34;Appconfig&#34;</span>: {
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>&#34;Root&#34;</span>: <span style=color:#a6be9d>&#34;F:\\GitHub&#34;</span>,
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>&#34;PathConvert&#34;</span>: <span style=color:#ff636f>false</span>,
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>&#34;Realm&#34;</span>: <span style=color:#a6be9d>&#34;git.io&#34;</span>,
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>&#34;Gitbin&#34;</span>: <span style=color:#a6be9d>&#34;C:\\Program Files\\Git\\bin\\git.exe&#34;</span>
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>初始化解析分别如下：</p><p>Appconfig.cs:</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=display:flex><span><span style=color:#ff636f>using</span> <span style=color:#58a1dd>System</span>;
+</span></span><span style=display:flex><span><span style=color:#ff636f>using</span> <span style=color:#58a1dd>System.Text</span>;
+</span></span><span style=display:flex><span><span style=color:#ff636f>using</span> <span style=color:#58a1dd>System.Linq</span>;
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>namespace</span> <span style=color:#58a1dd>Angelo</span>
+</span></span><span style=display:flex><span>{
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>public</span> <span style=color:#ff636f>class</span> <span style=color:#58a1dd>AuthResult</span>
+</span></span><span style=display:flex><span>    {
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>public</span> <span style=color:#ff636f>int</span> <span style=color:#58a1dd>Result</span> { <span style=color:#ff636f>get</span>; <span style=color:#ff636f>set</span>; }
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>public</span> <span style=color:#ff636f>int</span> <span style=color:#58a1dd>Userid</span> { <span style=color:#ff636f>get</span>; <span style=color:#ff636f>set</span>; }
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>public</span> <span style=color:#ff636f>class</span> <span style=color:#58a1dd>Appconfig</span>
+</span></span><span style=display:flex><span>    {
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>public</span> <span style=color:#ff636f>string</span> <span style=color:#58a1dd>Root</span> { <span style=color:#ff636f>get</span>; <span style=color:#ff636f>set</span>; }
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>public</span> <span style=color:#ff636f>bool</span> <span style=color:#58a1dd>PathConvert</span> { <span style=color:#ff636f>get</span>; <span style=color:#ff636f>set</span>; } = <span style=color:#ff636f>false</span>;
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>public</span> <span style=color:#ff636f>string</span> <span style=color:#58a1dd>AuthorizeURL</span> { <span style=color:#ff636f>get</span>; <span style=color:#ff636f>set</span>; }
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>public</span> <span style=color:#ff636f>string</span> <span style=color:#58a1dd>Realm</span> { <span style=color:#ff636f>get</span>; <span style=color:#ff636f>set</span>; }
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>public</span> <span style=color:#ff636f>string</span> <span style=color:#58a1dd>Gitbin</span> { <span style=color:#ff636f>get</span>; <span style=color:#ff636f>set</span>; }
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>public</span> <span style=color:#ff636f>class</span> <span style=color:#58a1dd>AppconfigProvider</span>
+</span></span><span style=display:flex><span>    {
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>public</span> <span style=color:#ff636f>static</span> <span style=color:#58a1dd>Appconfig</span> <span style=color:#58a1dd>config</span> { <span style=color:#ff636f>get</span>; <span style=color:#ff636f>set</span>; }
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>public</span> <span style=color:#ff636f>static</span> <span style=color:#ff636f>string</span> <span style=color:#58a1dd>PathcombineRoot</span>(<span style=color:#ff636f>string</span> <span style=color:#58a1dd>repodir</span>)
+</span></span><span style=display:flex><span>        {
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>var</span> <span style=color:#58a1dd>sb</span> = <span style=color:#ff636f>new</span> <span style=color:#58a1dd>StringBuilder</span>(<span style=color:#58a1dd>config</span>.<span style=color:#58a1dd>Root</span>);
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>config</span>.<span style=color:#58a1dd>PathConvert</span>)
+</span></span><span style=display:flex><span>            {
+</span></span><span style=display:flex><span>                <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>repodir</span>.<span style=color:#58a1dd>Length</span> &lt; <span style=color:#a6be9d>3</span>)
+</span></span><span style=display:flex><span>                    <span style=color:#ff636f>return</span> <span style=color:#ff636f>null</span>;
+</span></span><span style=display:flex><span>                <span style=color:#58a1dd>sb</span>.<span style=color:#58a1dd>Append</span>(<span style=color:#a6be9d>&#39;/&#39;</span>);
+</span></span><span style=display:flex><span>                <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>repodir</span>.<span style=color:#58a1dd>First</span>() == <span style=color:#a6be9d>&#39;/&#39;</span>)
+</span></span><span style=display:flex><span>                {
+</span></span><span style=display:flex><span>                    <span style=color:#58a1dd>sb</span>.<span style=color:#58a1dd>Append</span>(<span style=color:#58a1dd>repodir</span>.<span style=color:#58a1dd>ElementAt</span>(<span style=color:#a6be9d>1</span>));
+</span></span><span style=display:flex><span>                    <span style=color:#58a1dd>sb</span>.<span style=color:#58a1dd>Append</span>(<span style=color:#58a1dd>repodir</span>.<span style=color:#58a1dd>ElementAt</span>(<span style=color:#a6be9d>2</span>));
+</span></span><span style=display:flex><span>                }
+</span></span><span style=display:flex><span>                <span style=color:#ff636f>else</span>
+</span></span><span style=display:flex><span>                {
+</span></span><span style=display:flex><span>                    <span style=color:#58a1dd>sb</span>.<span style=color:#58a1dd>Append</span>(<span style=color:#58a1dd>repodir</span>.<span style=color:#58a1dd>ElementAt</span>(<span style=color:#a6be9d>0</span>));
+</span></span><span style=display:flex><span>                    <span style=color:#58a1dd>sb</span>.<span style=color:#58a1dd>Append</span>(<span style=color:#58a1dd>repodir</span>.<span style=color:#58a1dd>ElementAt</span>(<span style=color:#a6be9d>1</span>));
+</span></span><span style=display:flex><span>                    <span style=color:#58a1dd>sb</span>.<span style=color:#58a1dd>Append</span>(<span style=color:#a6be9d>&#39;/&#39;</span>);
+</span></span><span style=display:flex><span>                }
+</span></span><span style=display:flex><span>                <span style=color:#58a1dd>sb</span>.<span style=color:#58a1dd>Append</span>(<span style=color:#58a1dd>repodir</span>);
+</span></span><span style=display:flex><span>                <span style=color:#ff636f>return</span> <span style=color:#58a1dd>System</span>.<span style=color:#58a1dd>IO</span>.<span style=color:#58a1dd>Path</span>.<span style=color:#58a1dd>GetFullPath</span>(<span style=color:#58a1dd>sb</span>.<span style=color:#58a1dd>ToString</span>());
+</span></span><span style=display:flex><span>            }
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>repodir</span>.<span style=color:#58a1dd>First</span>() != <span style=color:#a6be9d>&#39;/&#39;</span>)
+</span></span><span style=display:flex><span>            {
+</span></span><span style=display:flex><span>                <span style=color:#58a1dd>sb</span>.<span style=color:#58a1dd>Append</span>(<span style=color:#a6be9d>&#39;/&#39;</span>);
+</span></span><span style=display:flex><span>            }
+</span></span><span style=display:flex><span>            <span style=color:#58a1dd>sb</span>.<span style=color:#58a1dd>Append</span>(<span style=color:#58a1dd>repodir</span>);
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>return</span> <span style=color:#58a1dd>System</span>.<span style=color:#58a1dd>IO</span>.<span style=color:#58a1dd>Path</span>.<span style=color:#58a1dd>GetFullPath</span>(<span style=color:#58a1dd>sb</span>.<span style=color:#58a1dd>ToString</span>());
+</span></span><span style=display:flex><span>        }
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>public</span> <span style=color:#ff636f>static</span> <span style=color:#58a1dd>AuthResult</span> <span style=color:#58a1dd>Authorize</span>(<span style=color:#ff636f>string</span> <span style=color:#58a1dd>authtext</span>, <span style=color:#ff636f>string</span> <span style=color:#58a1dd>pwn</span>)
+</span></span><span style=display:flex><span>        {
+</span></span><span style=display:flex><span>            <span style=color:#828b96;font-style:italic>/// NOT IMPL</span>
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>var</span> <span style=color:#58a1dd>result</span> = <span style=color:#ff636f>new</span> <span style=color:#58a1dd>AuthResult</span>
+</span></span><span style=display:flex><span>            {
+</span></span><span style=display:flex><span>                <span style=color:#58a1dd>Result</span> = <span style=color:#a6be9d>0</span>,
+</span></span><span style=display:flex><span>                <span style=color:#58a1dd>Userid</span> = <span style=color:#a6be9d>1</span>
+</span></span><span style=display:flex><span>            };
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>return</span> <span style=color:#58a1dd>result</span>;
+</span></span><span style=display:flex><span>        }
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>Startup.cs</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=display:flex><span><span style=color:#ff636f>using</span> <span style=color:#58a1dd>System</span>;
+</span></span><span style=display:flex><span><span style=color:#ff636f>using</span> <span style=color:#58a1dd>System.Text</span>;
+</span></span><span style=display:flex><span><span style=color:#ff636f>using</span> <span style=color:#58a1dd>System.Linq</span>;
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>namespace</span> <span style=color:#58a1dd>Angelo</span>
+</span></span><span style=display:flex><span>{
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>public</span> <span style=color:#ff636f>class</span> <span style=color:#58a1dd>AuthResult</span>
+</span></span><span style=display:flex><span>    {
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>public</span> <span style=color:#ff636f>int</span> <span style=color:#58a1dd>Result</span> { <span style=color:#ff636f>get</span>; <span style=color:#ff636f>set</span>; }
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>public</span> <span style=color:#ff636f>int</span> <span style=color:#58a1dd>Userid</span> { <span style=color:#ff636f>get</span>; <span style=color:#ff636f>set</span>; }
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>public</span> <span style=color:#ff636f>class</span> <span style=color:#58a1dd>Appconfig</span>
+</span></span><span style=display:flex><span>    {
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>public</span> <span style=color:#ff636f>string</span> <span style=color:#58a1dd>Root</span> { <span style=color:#ff636f>get</span>; <span style=color:#ff636f>set</span>; }
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>public</span> <span style=color:#ff636f>bool</span> <span style=color:#58a1dd>PathConvert</span> { <span style=color:#ff636f>get</span>; <span style=color:#ff636f>set</span>; } = <span style=color:#ff636f>false</span>;
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>public</span> <span style=color:#ff636f>string</span> <span style=color:#58a1dd>AuthorizeURL</span> { <span style=color:#ff636f>get</span>; <span style=color:#ff636f>set</span>; }
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>public</span> <span style=color:#ff636f>string</span> <span style=color:#58a1dd>Realm</span> { <span style=color:#ff636f>get</span>; <span style=color:#ff636f>set</span>; }
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>public</span> <span style=color:#ff636f>string</span> <span style=color:#58a1dd>Gitbin</span> { <span style=color:#ff636f>get</span>; <span style=color:#ff636f>set</span>; }
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>public</span> <span style=color:#ff636f>class</span> <span style=color:#58a1dd>AppconfigProvider</span>
+</span></span><span style=display:flex><span>    {
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>public</span> <span style=color:#ff636f>static</span> <span style=color:#58a1dd>Appconfig</span> <span style=color:#58a1dd>config</span> { <span style=color:#ff636f>get</span>; <span style=color:#ff636f>set</span>; }
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>public</span> <span style=color:#ff636f>static</span> <span style=color:#ff636f>string</span> <span style=color:#58a1dd>PathcombineRoot</span>(<span style=color:#ff636f>string</span> <span style=color:#58a1dd>repodir</span>)
+</span></span><span style=display:flex><span>        {
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>var</span> <span style=color:#58a1dd>sb</span> = <span style=color:#ff636f>new</span> <span style=color:#58a1dd>StringBuilder</span>(<span style=color:#58a1dd>config</span>.<span style=color:#58a1dd>Root</span>);
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>config</span>.<span style=color:#58a1dd>PathConvert</span>)
+</span></span><span style=display:flex><span>            {
+</span></span><span style=display:flex><span>                <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>repodir</span>.<span style=color:#58a1dd>Length</span> &lt; <span style=color:#a6be9d>3</span>)
+</span></span><span style=display:flex><span>                    <span style=color:#ff636f>return</span> <span style=color:#ff636f>null</span>;
+</span></span><span style=display:flex><span>                <span style=color:#58a1dd>sb</span>.<span style=color:#58a1dd>Append</span>(<span style=color:#a6be9d>&#39;/&#39;</span>);
+</span></span><span style=display:flex><span>                <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>repodir</span>.<span style=color:#58a1dd>First</span>() == <span style=color:#a6be9d>&#39;/&#39;</span>)
+</span></span><span style=display:flex><span>                {
+</span></span><span style=display:flex><span>                    <span style=color:#58a1dd>sb</span>.<span style=color:#58a1dd>Append</span>(<span style=color:#58a1dd>repodir</span>.<span style=color:#58a1dd>ElementAt</span>(<span style=color:#a6be9d>1</span>));
+</span></span><span style=display:flex><span>                    <span style=color:#58a1dd>sb</span>.<span style=color:#58a1dd>Append</span>(<span style=color:#58a1dd>repodir</span>.<span style=color:#58a1dd>ElementAt</span>(<span style=color:#a6be9d>2</span>));
+</span></span><span style=display:flex><span>                }
+</span></span><span style=display:flex><span>                <span style=color:#ff636f>else</span>
+</span></span><span style=display:flex><span>                {
+</span></span><span style=display:flex><span>                    <span style=color:#58a1dd>sb</span>.<span style=color:#58a1dd>Append</span>(<span style=color:#58a1dd>repodir</span>.<span style=color:#58a1dd>ElementAt</span>(<span style=color:#a6be9d>0</span>));
+</span></span><span style=display:flex><span>                    <span style=color:#58a1dd>sb</span>.<span style=color:#58a1dd>Append</span>(<span style=color:#58a1dd>repodir</span>.<span style=color:#58a1dd>ElementAt</span>(<span style=color:#a6be9d>1</span>));
+</span></span><span style=display:flex><span>                    <span style=color:#58a1dd>sb</span>.<span style=color:#58a1dd>Append</span>(<span style=color:#a6be9d>&#39;/&#39;</span>);
+</span></span><span style=display:flex><span>                }
+</span></span><span style=display:flex><span>                <span style=color:#58a1dd>sb</span>.<span style=color:#58a1dd>Append</span>(<span style=color:#58a1dd>repodir</span>);
+</span></span><span style=display:flex><span>                <span style=color:#ff636f>return</span> <span style=color:#58a1dd>System</span>.<span style=color:#58a1dd>IO</span>.<span style=color:#58a1dd>Path</span>.<span style=color:#58a1dd>GetFullPath</span>(<span style=color:#58a1dd>sb</span>.<span style=color:#58a1dd>ToString</span>());
+</span></span><span style=display:flex><span>            }
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>repodir</span>.<span style=color:#58a1dd>First</span>() != <span style=color:#a6be9d>&#39;/&#39;</span>)
+</span></span><span style=display:flex><span>            {
+</span></span><span style=display:flex><span>                <span style=color:#58a1dd>sb</span>.<span style=color:#58a1dd>Append</span>(<span style=color:#a6be9d>&#39;/&#39;</span>);
+</span></span><span style=display:flex><span>            }
+</span></span><span style=display:flex><span>            <span style=color:#58a1dd>sb</span>.<span style=color:#58a1dd>Append</span>(<span style=color:#58a1dd>repodir</span>);
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>return</span> <span style=color:#58a1dd>System</span>.<span style=color:#58a1dd>IO</span>.<span style=color:#58a1dd>Path</span>.<span style=color:#58a1dd>GetFullPath</span>(<span style=color:#58a1dd>sb</span>.<span style=color:#58a1dd>ToString</span>());
+</span></span><span style=display:flex><span>        }
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>public</span> <span style=color:#ff636f>static</span> <span style=color:#58a1dd>AuthResult</span> <span style=color:#58a1dd>Authorize</span>(<span style=color:#ff636f>string</span> <span style=color:#58a1dd>authtext</span>, <span style=color:#ff636f>string</span> <span style=color:#58a1dd>pwn</span>)
+</span></span><span style=display:flex><span>        {
+</span></span><span style=display:flex><span>            <span style=color:#828b96;font-style:italic>/// NOT IMPL</span>
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>var</span> <span style=color:#58a1dd>result</span> = <span style=color:#ff636f>new</span> <span style=color:#58a1dd>AuthResult</span>
+</span></span><span style=display:flex><span>            {
+</span></span><span style=display:flex><span>                <span style=color:#58a1dd>Result</span> = <span style=color:#a6be9d>0</span>,
+</span></span><span style=display:flex><span>                <span style=color:#58a1dd>Userid</span> = <span style=color:#a6be9d>1</span>
+</span></span><span style=display:flex><span>            };
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>return</span> <span style=color:#58a1dd>result</span>;
+</span></span><span style=display:flex><span>        }
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><h2 id=服务器请求与响应>服务器请求与响应</h2><p>在 Angelo 中，核心就是对请求进行处理后使用不同参数执行不同的 git 命令，讲 HTTP 包体写入到 git 命令输入，讲 git 命令输出作为响应体返回给客户端。</p><p>得益于 DotNet <code>async/await</code> 实现 Angelo 的过程颇为简单。</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=display:flex><span><span style=color:#ff636f>using</span> <span style=color:#58a1dd>System</span>;
+</span></span><span style=display:flex><span><span style=color:#ff636f>using</span> <span style=color:#58a1dd>System.IO</span>;
+</span></span><span style=display:flex><span><span style=color:#ff636f>using</span> <span style=color:#58a1dd>System.IO.Compression</span>;
+</span></span><span style=display:flex><span><span style=color:#ff636f>using</span> <span style=color:#58a1dd>System.Diagnostics</span>;
+</span></span><span style=display:flex><span><span style=color:#ff636f>using</span> <span style=color:#58a1dd>System.Threading.Tasks</span>;
+</span></span><span style=display:flex><span><span style=color:#ff636f>using</span> <span style=color:#58a1dd>Microsoft.AspNetCore.Http</span>;
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>namespace</span> <span style=color:#58a1dd>Angelo</span>
+</span></span><span style=display:flex><span>{
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>public</span> <span style=color:#ff636f>class</span> <span style=color:#58a1dd>Session</span>
+</span></span><span style=display:flex><span>    {
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>private</span> <span style=color:#58a1dd>HttpContext</span> <span style=color:#58a1dd>Context</span> { <span style=color:#ff636f>get</span>; }
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>public</span> <span style=color:#58a1dd>Session</span>(<span style=color:#58a1dd>HttpContext</span> <span style=color:#58a1dd>context</span>) 
+</span></span><span style=display:flex><span>        {
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>this</span>.<span style=color:#58a1dd>Context</span> = <span style=color:#58a1dd>context</span>;
+</span></span><span style=display:flex><span>               
+</span></span><span style=display:flex><span>        }
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>private</span> <span style=color:#ff636f>async</span> <span style=color:#58a1dd>Task</span> <span style=color:#58a1dd>Unauthorized</span>()
+</span></span><span style=display:flex><span>        {
+</span></span><span style=display:flex><span>            <span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Response</span>.<span style=color:#58a1dd>StatusCode</span> = <span style=color:#58a1dd>StatusCodes</span>.<span style=color:#58a1dd>Status401Unauthorized</span>;
+</span></span><span style=display:flex><span>            <span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Response</span>.<span style=color:#58a1dd>Headers</span>.<span style=color:#58a1dd>Add</span>(<span style=color:#a6be9d>&#34;WWW-Authenticate&#34;</span>, <span style=color:#a6be9d>$&#34;Basic realm=\&#34;</span>{<span style=color:#58a1dd>AppconfigProvider</span>.<span style=color:#58a1dd>config</span>.<span style=color:#58a1dd>Realm</span>}\<span style=color:#a6be9d>&#34;&#34;</span>);
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>await</span> <span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Response</span>.<span style=color:#58a1dd>WriteAsync</span>(<span style=color:#a6be9d>&#34;Unauthorized&#34;</span>);
+</span></span><span style=display:flex><span>        }
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>private</span> <span style=color:#ff636f>async</span> <span style=color:#58a1dd>Task</span> <span style=color:#58a1dd>NotFound</span>()
+</span></span><span style=display:flex><span>        {
+</span></span><span style=display:flex><span>            <span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Response</span>.<span style=color:#58a1dd>StatusCode</span> = <span style=color:#58a1dd>StatusCodes</span>.<span style=color:#58a1dd>Status404NotFound</span>;
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>await</span> <span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Response</span>.<span style=color:#58a1dd>WriteAsync</span>(<span style=color:#a6be9d>&#34;Not Found&#34;</span>);
+</span></span><span style=display:flex><span>        }
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>void</span> <span style=color:#58a1dd>HeadersFill</span>()
+</span></span><span style=display:flex><span>        {
+</span></span><span style=display:flex><span>            <span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Response</span>.<span style=color:#58a1dd>Headers</span>[<span style=color:#a6be9d>&#34;Expires&#34;</span>] = <span style=color:#a6be9d>&#34;Fri, 01 Jan 1980 00:00:00 GMT&#34;</span>;
+</span></span><span style=display:flex><span>            <span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Response</span>.<span style=color:#58a1dd>Headers</span>[<span style=color:#a6be9d>&#34;Pragma&#34;</span>] = <span style=color:#a6be9d>&#34;no-cache&#34;</span>;
+</span></span><span style=display:flex><span>            <span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Response</span>.<span style=color:#58a1dd>Headers</span>[<span style=color:#a6be9d>&#34;Cache-Control&#34;</span>] = <span style=color:#a6be9d>&#34;no-cache, max-age=0, must-revalidate&#34;</span>;
+</span></span><span style=display:flex><span>        }
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>private</span> <span style=color:#ff636f>async</span> <span style=color:#58a1dd>Task</span> <span style=color:#58a1dd>ExchangeRefs</span>()
+</span></span><span style=display:flex><span>        {
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>var</span> <span style=color:#58a1dd>url</span> = <span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Request</span>.<span style=color:#58a1dd>Path</span>.<span style=color:#58a1dd>ToString</span>();
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>if</span> (!<span style=color:#58a1dd>url</span>.<span style=color:#58a1dd>EndsWith</span>(<span style=color:#a6be9d>&#34;/info/refs&#34;</span>) || !<span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Request</span>.<span style=color:#58a1dd>Query</span>.<span style=color:#58a1dd>ContainsKey</span>(<span style=color:#a6be9d>&#34;service&#34;</span>))
+</span></span><span style=display:flex><span>            {
+</span></span><span style=display:flex><span>                <span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Response</span>.<span style=color:#58a1dd>StatusCode</span> = <span style=color:#58a1dd>StatusCodes</span>.<span style=color:#58a1dd>Status400BadRequest</span>;
+</span></span><span style=display:flex><span>                <span style=color:#ff636f>await</span> <span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Response</span>.<span style=color:#58a1dd>WriteAsync</span>(<span style=color:#a6be9d>&#34;Bad Request !&#34;</span>);
+</span></span><span style=display:flex><span>                <span style=color:#ff636f>return</span>;
+</span></span><span style=display:flex><span>            }
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>var</span> <span style=color:#58a1dd>path</span> = <span style=color:#58a1dd>url</span>.<span style=color:#58a1dd>Substring</span>(<span style=color:#a6be9d>0</span>, <span style=color:#58a1dd>url</span>.<span style=color:#58a1dd>Length</span> - <span style=color:#a6be9d>&#34;/info/refs&#34;</span>.<span style=color:#58a1dd>Length</span>);
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>string</span> <span style=color:#58a1dd>authtxt</span> = <span style=color:#ff636f>null</span>;
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Request</span>.<span style=color:#58a1dd>Headers</span>.<span style=color:#58a1dd>ContainsKey</span>(<span style=color:#a6be9d>&#34;Authorization&#34;</span>))
+</span></span><span style=display:flex><span>            {
+</span></span><span style=display:flex><span>                <span style=color:#58a1dd>authtxt</span> = <span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Request</span>.<span style=color:#58a1dd>Headers</span>[<span style=color:#a6be9d>&#34;Authorization&#34;</span>].<span style=color:#58a1dd>ToString</span>();
+</span></span><span style=display:flex><span>            }
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>var</span> <span style=color:#58a1dd>result</span> = <span style=color:#58a1dd>AppconfigProvider</span>.<span style=color:#58a1dd>Authorize</span>(<span style=color:#58a1dd>authtxt</span>, <span style=color:#58a1dd>path</span>);
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>result</span> == <span style=color:#ff636f>null</span>)
+</span></span><span style=display:flex><span>            {
+</span></span><span style=display:flex><span>                <span style=color:#ff636f>await</span> <span style=color:#58a1dd>Unauthorized</span>();
+</span></span><span style=display:flex><span>                <span style=color:#ff636f>return</span>;
+</span></span><span style=display:flex><span>            }
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>var</span> <span style=color:#58a1dd>repodir</span> = <span style=color:#58a1dd>AppconfigProvider</span>.<span style=color:#58a1dd>PathcombineRoot</span>(<span style=color:#58a1dd>path</span>);
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>if</span> (!<span style=color:#58a1dd>Directory</span>.<span style=color:#58a1dd>Exists</span>(<span style=color:#58a1dd>repodir</span>))
+</span></span><span style=display:flex><span>            {
+</span></span><span style=display:flex><span>                <span style=color:#ff636f>await</span> <span style=color:#58a1dd>NotFound</span>();
+</span></span><span style=display:flex><span>                <span style=color:#ff636f>return</span>;
+</span></span><span style=display:flex><span>            }
+</span></span><span style=display:flex><span>            <span style=color:#58a1dd>HeadersFill</span>();
+</span></span><span style=display:flex><span>            <span style=color:#58a1dd>Process</span> <span style=color:#58a1dd>process</span> = <span style=color:#ff636f>new</span> <span style=color:#58a1dd>Process</span>();
+</span></span><span style=display:flex><span>            <span style=color:#58a1dd>process</span>.<span style=color:#58a1dd>StartInfo</span>.<span style=color:#58a1dd>FileName</span> = <span style=color:#58a1dd>AppconfigProvider</span>.<span style=color:#58a1dd>config</span>.<span style=color:#58a1dd>Gitbin</span>;
+</span></span><span style=display:flex><span>            <span style=color:#58a1dd>process</span>.<span style=color:#58a1dd>StartInfo</span>.<span style=color:#58a1dd>Environment</span>.<span style=color:#58a1dd>Add</span>(<span style=color:#a6be9d>&#34;GL_ID&#34;</span>, <span style=color:#a6be9d>$&#34;user-{result.Userid}&#34;</span>);
+</span></span><span style=display:flex><span>            <span style=color:#58a1dd>process</span>.<span style=color:#58a1dd>StartInfo</span>.<span style=color:#58a1dd>RedirectStandardOutput</span> = <span style=color:#ff636f>true</span>;
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>switch</span> (<span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Request</span>.<span style=color:#58a1dd>Query</span>[<span style=color:#a6be9d>&#34;service&#34;</span>])
+</span></span><span style=display:flex><span>            {
+</span></span><span style=display:flex><span>                <span style=color:#ff636f>case</span> <span style=color:#a6be9d>&#34;git-upload-pack&#34;</span>:
+</span></span><span style=display:flex><span>                    {
+</span></span><span style=display:flex><span>                        <span style=color:#58a1dd>process</span>.<span style=color:#58a1dd>StartInfo</span>.<span style=color:#58a1dd>Arguments</span> = <span style=color:#a6be9d>$&#34;upload-pack --stateless-rpc --advertise-refs \&#34;</span>{<span style=color:#58a1dd>repodir</span>}\<span style=color:#a6be9d>&#34;&#34;</span>;
+</span></span><span style=display:flex><span>                        <span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Response</span>.<span style=color:#58a1dd>ContentType</span> = <span style=color:#a6be9d>&#34;application/x-git-upload-pack-advertisement&#34;</span>;
+</span></span><span style=display:flex><span>                        <span style=color:#ff636f>var</span> <span style=color:#58a1dd>bytes</span> = <span style=color:#58a1dd>System</span>.<span style=color:#58a1dd>Text</span>.<span style=color:#58a1dd>Encoding</span>.<span style=color:#58a1dd>UTF8</span>.<span style=color:#58a1dd>GetBytes</span>(<span style=color:#a6be9d>&#34;001e# service=git-upload-pack\n0000&#34;</span>);
+</span></span><span style=display:flex><span>                        <span style=color:#ff636f>await</span> <span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Response</span>.<span style=color:#58a1dd>Body</span>.<span style=color:#58a1dd>WriteAsync</span>(<span style=color:#58a1dd>bytes</span>, <span style=color:#a6be9d>0</span>, <span style=color:#58a1dd>bytes</span>.<span style=color:#58a1dd>Length</span>);
+</span></span><span style=display:flex><span>                    }
+</span></span><span style=display:flex><span>                    <span style=color:#ff636f>break</span>;
+</span></span><span style=display:flex><span>                <span style=color:#ff636f>case</span> <span style=color:#a6be9d>&#34;git-receive-pack&#34;</span>:
+</span></span><span style=display:flex><span>                    {
+</span></span><span style=display:flex><span>                        <span style=color:#58a1dd>process</span>.<span style=color:#58a1dd>StartInfo</span>.<span style=color:#58a1dd>Arguments</span> = <span style=color:#a6be9d>$&#34;receive-pack --stateless-rpc --advertise-refs \&#34;</span>{<span style=color:#58a1dd>repodir</span>}\<span style=color:#a6be9d>&#34;&#34;</span>;
+</span></span><span style=display:flex><span>                        <span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Response</span>.<span style=color:#58a1dd>ContentType</span> = <span style=color:#a6be9d>&#34;application/x-git-receive-pack-advertisement&#34;</span>;
+</span></span><span style=display:flex><span>                        <span style=color:#ff636f>var</span> <span style=color:#58a1dd>bytes2</span> = <span style=color:#58a1dd>System</span>.<span style=color:#58a1dd>Text</span>.<span style=color:#58a1dd>Encoding</span>.<span style=color:#58a1dd>UTF8</span>.<span style=color:#58a1dd>GetBytes</span>(<span style=color:#a6be9d>&#34;001f# service=git-receive-pack\n0000&#34;</span>);
+</span></span><span style=display:flex><span>                        <span style=color:#ff636f>await</span> <span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Response</span>.<span style=color:#58a1dd>Body</span>.<span style=color:#58a1dd>WriteAsync</span>(<span style=color:#58a1dd>bytes2</span>, <span style=color:#a6be9d>0</span>, <span style=color:#58a1dd>bytes2</span>.<span style=color:#58a1dd>Length</span>);
+</span></span><span style=display:flex><span>                    }
+</span></span><span style=display:flex><span>                    <span style=color:#ff636f>break</span>;
+</span></span><span style=display:flex><span>                <span style=color:#ff636f>default</span>:
+</span></span><span style=display:flex><span>                    {
+</span></span><span style=display:flex><span>                        <span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Response</span>.<span style=color:#58a1dd>StatusCode</span> = <span style=color:#58a1dd>StatusCodes</span>.<span style=color:#58a1dd>Status400BadRequest</span>;
+</span></span><span style=display:flex><span>                        <span style=color:#ff636f>await</span> <span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Response</span>.<span style=color:#58a1dd>WriteAsync</span>(<span style=color:#a6be9d>&#34;Invalid service !&#34;</span>);
+</span></span><span style=display:flex><span>                    }
+</span></span><span style=display:flex><span>                    <span style=color:#ff636f>break</span>;
+</span></span><span style=display:flex><span>            }
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>if</span> (!<span style=color:#58a1dd>process</span>.<span style=color:#58a1dd>Start</span>())
+</span></span><span style=display:flex><span>            {
+</span></span><span style=display:flex><span>                <span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Response</span>.<span style=color:#58a1dd>StatusCode</span> = <span style=color:#58a1dd>StatusCodes</span>.<span style=color:#58a1dd>Status404NotFound</span>;
+</span></span><span style=display:flex><span>                <span style=color:#ff636f>await</span> <span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Response</span>.<span style=color:#58a1dd>WriteAsync</span>(<span style=color:#a6be9d>&#34;Git Not Found&#34;</span>);
+</span></span><span style=display:flex><span>            }
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>await</span> <span style=color:#58a1dd>process</span>.<span style=color:#58a1dd>StandardOutput</span>.<span style=color:#58a1dd>BaseStream</span>.<span style=color:#58a1dd>CopyToAsync</span>(<span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Response</span>.<span style=color:#58a1dd>Body</span>);
+</span></span><span style=display:flex><span>        }
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>private</span> <span style=color:#ff636f>async</span> <span style=color:#58a1dd>Task</span> <span style=color:#58a1dd>ExchangePackets</span>()
+</span></span><span style=display:flex><span>        {
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>var</span> <span style=color:#58a1dd>url</span> = <span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Request</span>.<span style=color:#58a1dd>Path</span>.<span style=color:#58a1dd>ToString</span>();
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>var</span> <span style=color:#58a1dd>index</span> = <span style=color:#58a1dd>url</span>.<span style=color:#58a1dd>LastIndexOf</span>(<span style=color:#a6be9d>&#39;/&#39;</span>);
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>index</span> == -<span style=color:#a6be9d>1</span>)
+</span></span><span style=display:flex><span>            {
+</span></span><span style=display:flex><span>                <span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Response</span>.<span style=color:#58a1dd>StatusCode</span> = <span style=color:#58a1dd>StatusCodes</span>.<span style=color:#58a1dd>Status404NotFound</span>;
+</span></span><span style=display:flex><span>                <span style=color:#ff636f>await</span> <span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Response</span>.<span style=color:#58a1dd>WriteAsync</span>(<span style=color:#a6be9d>&#34;Not Found!&#34;</span>);
+</span></span><span style=display:flex><span>                <span style=color:#ff636f>return</span>;
+</span></span><span style=display:flex><span>            }
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>var</span> <span style=color:#58a1dd>service</span> = <span style=color:#58a1dd>url</span>.<span style=color:#58a1dd>Substring</span>(<span style=color:#58a1dd>index</span> + <span style=color:#a6be9d>1</span>);
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>var</span> <span style=color:#58a1dd>path</span> = <span style=color:#58a1dd>url</span>.<span style=color:#58a1dd>Substring</span>(<span style=color:#a6be9d>0</span>, <span style=color:#58a1dd>index</span>);
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>string</span> <span style=color:#58a1dd>authtxt</span> = <span style=color:#ff636f>null</span>;
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Request</span>.<span style=color:#58a1dd>Headers</span>.<span style=color:#58a1dd>ContainsKey</span>(<span style=color:#a6be9d>&#34;Authorization&#34;</span>))
+</span></span><span style=display:flex><span>            {
+</span></span><span style=display:flex><span>                <span style=color:#58a1dd>authtxt</span> = <span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Request</span>.<span style=color:#58a1dd>Headers</span>[<span style=color:#a6be9d>&#34;Authorization&#34;</span>].<span style=color:#58a1dd>ToString</span>();
+</span></span><span style=display:flex><span>            }
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>var</span> <span style=color:#58a1dd>result</span> = <span style=color:#58a1dd>AppconfigProvider</span>.<span style=color:#58a1dd>Authorize</span>(<span style=color:#58a1dd>authtxt</span>, <span style=color:#58a1dd>path</span>);
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>result</span> == <span style=color:#ff636f>null</span>)
+</span></span><span style=display:flex><span>            {
+</span></span><span style=display:flex><span>                <span style=color:#ff636f>await</span> <span style=color:#58a1dd>Unauthorized</span>();
+</span></span><span style=display:flex><span>                <span style=color:#ff636f>return</span>;
+</span></span><span style=display:flex><span>            }
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>var</span> <span style=color:#58a1dd>repodir</span> = <span style=color:#58a1dd>AppconfigProvider</span>.<span style=color:#58a1dd>PathcombineRoot</span>(<span style=color:#58a1dd>path</span>);
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>if</span> (!<span style=color:#58a1dd>Directory</span>.<span style=color:#58a1dd>Exists</span>(<span style=color:#58a1dd>repodir</span>))
+</span></span><span style=display:flex><span>            {
+</span></span><span style=display:flex><span>                <span style=color:#ff636f>await</span> <span style=color:#58a1dd>NotFound</span>();
+</span></span><span style=display:flex><span>                <span style=color:#ff636f>return</span>;
+</span></span><span style=display:flex><span>            }
+</span></span><span style=display:flex><span>            <span style=color:#58a1dd>HeadersFill</span>();
+</span></span><span style=display:flex><span>            <span style=color:#58a1dd>Process</span> <span style=color:#58a1dd>process</span> = <span style=color:#ff636f>new</span> <span style=color:#58a1dd>Process</span>();
+</span></span><span style=display:flex><span>            <span style=color:#58a1dd>process</span>.<span style=color:#58a1dd>StartInfo</span>.<span style=color:#58a1dd>FileName</span> = <span style=color:#58a1dd>AppconfigProvider</span>.<span style=color:#58a1dd>config</span>.<span style=color:#58a1dd>Gitbin</span>;
+</span></span><span style=display:flex><span>            <span style=color:#58a1dd>process</span>.<span style=color:#58a1dd>StartInfo</span>.<span style=color:#58a1dd>RedirectStandardInput</span> = <span style=color:#ff636f>true</span>;
+</span></span><span style=display:flex><span>            <span style=color:#58a1dd>process</span>.<span style=color:#58a1dd>StartInfo</span>.<span style=color:#58a1dd>RedirectStandardOutput</span> = <span style=color:#ff636f>true</span>;
+</span></span><span style=display:flex><span>            <span style=color:#58a1dd>process</span>.<span style=color:#58a1dd>StartInfo</span>.<span style=color:#58a1dd>Environment</span>.<span style=color:#58a1dd>Add</span>(<span style=color:#a6be9d>&#34;GL_ID&#34;</span>, <span style=color:#a6be9d>$&#34;user-{result.Userid}&#34;</span>);
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>service</span> == <span style=color:#a6be9d>&#34;git-upload-pack&#34;</span>)
+</span></span><span style=display:flex><span>            {
+</span></span><span style=display:flex><span>                <span style=color:#58a1dd>process</span>.<span style=color:#58a1dd>StartInfo</span>.<span style=color:#58a1dd>Arguments</span> = <span style=color:#a6be9d>&#34;upload-pack  --stateless-rpc  \&#34;&#34;</span> + <span style=color:#58a1dd>repodir</span> + <span style=color:#a6be9d>&#34;\&#34;&#34;</span>;
+</span></span><span style=display:flex><span>                <span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Response</span>.<span style=color:#58a1dd>ContentType</span> = <span style=color:#a6be9d>&#34;application/x-git-upload-pack-result&#34;</span>;
+</span></span><span style=display:flex><span>            }
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>else</span> <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>service</span> == <span style=color:#a6be9d>&#34;git-receive-pack&#34;</span>)
+</span></span><span style=display:flex><span>            {
+</span></span><span style=display:flex><span>                <span style=color:#58a1dd>process</span>.<span style=color:#58a1dd>StartInfo</span>.<span style=color:#58a1dd>Arguments</span> = <span style=color:#a6be9d>&#34;receive-pack  --stateless-rpc \&#34;&#34;</span> + <span style=color:#58a1dd>repodir</span> + <span style=color:#a6be9d>&#34;\&#34;&#34;</span>;
+</span></span><span style=display:flex><span>                <span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Response</span>.<span style=color:#58a1dd>ContentType</span> = <span style=color:#a6be9d>&#34;application/x-git-receive-pack-result&#34;</span>;
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>            }
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>else</span>
+</span></span><span style=display:flex><span>            {
+</span></span><span style=display:flex><span>                <span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Response</span>.<span style=color:#58a1dd>StatusCode</span> = <span style=color:#58a1dd>StatusCodes</span>.<span style=color:#58a1dd>Status400BadRequest</span>;
+</span></span><span style=display:flex><span>                <span style=color:#ff636f>await</span> <span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Response</span>.<span style=color:#58a1dd>WriteAsync</span>(<span style=color:#a6be9d>&#34;Invalid service !&#34;</span>);
+</span></span><span style=display:flex><span>                <span style=color:#ff636f>return</span>;
+</span></span><span style=display:flex><span>            }
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>if</span> (!<span style=color:#58a1dd>process</span>.<span style=color:#58a1dd>Start</span>())
+</span></span><span style=display:flex><span>            {
+</span></span><span style=display:flex><span>                <span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Response</span>.<span style=color:#58a1dd>StatusCode</span> = <span style=color:#58a1dd>StatusCodes</span>.<span style=color:#58a1dd>Status404NotFound</span>;
+</span></span><span style=display:flex><span>                <span style=color:#ff636f>await</span> <span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Response</span>.<span style=color:#58a1dd>WriteAsync</span>(<span style=color:#a6be9d>&#34;Git Not Found&#34;</span>);
+</span></span><span style=display:flex><span>            }
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Request</span>.<span style=color:#58a1dd>Headers</span>.<span style=color:#58a1dd>ContainsKey</span>(<span style=color:#a6be9d>&#34;Content-Encoding&#34;</span>) &amp;&amp; <span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Request</span>.<span style=color:#58a1dd>Headers</span>[<span style=color:#a6be9d>&#34;Content-Encoding&#34;</span>].<span style=color:#58a1dd>Equals</span>(<span style=color:#a6be9d>&#34;gzip&#34;</span>))
+</span></span><span style=display:flex><span>            {
+</span></span><span style=display:flex><span>                <span style=color:#ff636f>var</span> <span style=color:#58a1dd>input</span> = <span style=color:#ff636f>new</span> <span style=color:#58a1dd>GZipStream</span>(<span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Request</span>.<span style=color:#58a1dd>Body</span>, <span style=color:#58a1dd>CompressionMode</span>.<span style=color:#58a1dd>Decompress</span>);
+</span></span><span style=display:flex><span>                <span style=color:#ff636f>await</span> <span style=color:#58a1dd>input</span>.<span style=color:#58a1dd>CopyToAsync</span>(<span style=color:#58a1dd>process</span>.<span style=color:#58a1dd>StandardInput</span>.<span style=color:#58a1dd>BaseStream</span>);
+</span></span><span style=display:flex><span>            }
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>else</span>
+</span></span><span style=display:flex><span>            {
+</span></span><span style=display:flex><span>                <span style=color:#ff636f>await</span> <span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Request</span>.<span style=color:#58a1dd>Body</span>.<span style=color:#58a1dd>CopyToAsync</span>(<span style=color:#58a1dd>process</span>.<span style=color:#58a1dd>StandardInput</span>.<span style=color:#58a1dd>BaseStream</span>);
+</span></span><span style=display:flex><span>                <span style=color:#ff636f>await</span> <span style=color:#58a1dd>process</span>.<span style=color:#58a1dd>StandardInput</span>.<span style=color:#58a1dd>WriteAsync</span>(<span style=color:#a6be9d>&#39;\0&#39;</span>);
+</span></span><span style=display:flex><span>            }
+</span></span><span style=display:flex><span>            <span style=color:#58a1dd>process</span>.<span style=color:#58a1dd>StandardInput</span>.<span style=color:#58a1dd>Dispose</span>();
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>await</span> <span style=color:#58a1dd>process</span>.<span style=color:#58a1dd>StandardOutput</span>.<span style=color:#58a1dd>BaseStream</span>.<span style=color:#58a1dd>CopyToAsync</span>(<span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Response</span>.<span style=color:#58a1dd>Body</span>);
+</span></span><span style=display:flex><span>        }
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>public</span> <span style=color:#ff636f>async</span> <span style=color:#58a1dd>Task</span> <span style=color:#58a1dd>Handle</span>()
+</span></span><span style=display:flex><span>        {
+</span></span><span style=display:flex><span>            <span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Response</span>.<span style=color:#58a1dd>Headers</span>[<span style=color:#a6be9d>&#34;Server&#34;</span>] = <span style=color:#a6be9d>&#34;Angelo/1.0&#34;</span>;
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Request</span>.<span style=color:#58a1dd>Method</span> == <span style=color:#a6be9d>&#34;GET&#34;</span>)
+</span></span><span style=display:flex><span>            {
+</span></span><span style=display:flex><span>                <span style=color:#ff636f>await</span> <span style=color:#58a1dd>ExchangeRefs</span>();
+</span></span><span style=display:flex><span>            }
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>else</span> <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Request</span>.<span style=color:#58a1dd>Method</span> == <span style=color:#a6be9d>&#34;POST&#34;</span>)
+</span></span><span style=display:flex><span>            {
+</span></span><span style=display:flex><span>                <span style=color:#ff636f>await</span> <span style=color:#58a1dd>ExchangePackets</span>();
+</span></span><span style=display:flex><span>            }
+</span></span><span style=display:flex><span>            <span style=color:#ff636f>else</span>
+</span></span><span style=display:flex><span>            {
+</span></span><span style=display:flex><span>                <span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Response</span>.<span style=color:#58a1dd>StatusCode</span> = <span style=color:#58a1dd>StatusCodes</span>.<span style=color:#58a1dd>Status405MethodNotAllowed</span>;
+</span></span><span style=display:flex><span>                <span style=color:#ff636f>await</span> <span style=color:#58a1dd>Context</span>.<span style=color:#58a1dd>Response</span>.<span style=color:#58a1dd>WriteAsync</span>(<span style=color:#a6be9d>&#34;Method Not Allowed&#34;</span>);
+</span></span><span style=display:flex><span>            }
+</span></span><span style=display:flex><span>            <span style=color:#828b96;font-style:italic>//Context.Request.Path;</span>
+</span></span><span style=display:flex><span>        }
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><h2 id=运行>运行</h2><blockquote><p>dotnet run</p></blockquote><p>在 Windows 10 上运行成功<br>在 Ubuntu 16.04 上运行成功</p><h2 id=其他>其他</h2><p>源码使用 MIT 协议托管到 Github: <a href=https://github.com/fcharlie/Angelo>https://github.com/fcharlie/Angelo</a>，验证等其他细节未实现。</p><hr width=100% id=EOF><p style=color:#777>Last modified on 2017-05-11</p></div></div><nav class=post-pagination><a class=newer-posts href=/posts/2017/2017-05-14-kismet/>Next<br>Kismet 杂谈
+</a><a class=older-posts href=/posts/2017/2017-04-16-moses/>Previous<br>Git LFS 服务器实现杂谈</a></nav><div class=post-comment-wrapper></div></div></div></div></div><div id=sideContainer class=side-container><a class="a-block nav-head false" href=https://forcemz.net/><div class=nav-title>Charlie's Rethinking</div><div class=nav-subtitle>Themed by Diary.</div></a><div class=nav-link-list><a class="a-block nav-link-item active" href=/posts>归档
+</a><a class="a-block nav-link-item false" href=/categories>分类
+</a><a class="a-block nav-link-item false" href=/tags>标签
+</a><a class="a-block nav-link-item false" href=/about>关于
+</a><a class="a-block nav-link-item false" href=/index.xml>RSS Feed</a></div><div class=nav-footer>Hugo Theme <a href=https://github.com/amazingrise/hugo-theme-diary>Diary</a> by <a href=https://risehere.net/>Rise</a><br>Ported from <a href=https://mak1t0.cc/ target=_blank rel="noreferrer noopener">Makito</a>'s <a href=https://github.com/SumiMakito/hexo-theme-journal/ target=_blank rel="noreferrer noopener">Journal.</a><br><br>&copy;
+Copyright (c) 2009-2024 J23</div></div><div id=extraContainer class=extra-container><div class=toc-wrapper><div class=toc><div class=toc-content><center>- CATALOG -</center><ul><li><a href=#%e5%85%b3%e4%ba%8e class=nav-关于>关于</a></li><ul><li><a href=#dotnet-core-%e5%ae%89%e8%a3%85 class=nav-dotnet-core-安装>DotNet Core 安装</a></li><li><a href=#dotnet-%e5%91%bd%e4%bb%a4 class=nav-dotnet-命令>DotNet 命令</a></li><li><a href=#%e9%a1%b9%e7%9b%ae%e4%be%9d%e8%b5%96 class=nav-项目依赖>项目依赖</a></li><li><a href=#angelo-%e6%9c%8d%e5%8a%a1%e5%99%a8%e5%85%a5%e5%8f%a3 class=nav-angelo-服务器入口>Angelo 服务器入口</a></li><li><a href=#%e6%9c%8d%e5%8a%a1%e5%99%a8%e9%85%8d%e7%bd%ae%e4%b8%8e%e5%88%9d%e5%a7%8b%e5%8c%96 class=nav-服务器配置与初始化>服务器配置与初始化</a></li><li><a href=#%e6%9c%8d%e5%8a%a1%e5%99%a8%e8%af%b7%e6%b1%82%e4%b8%8e%e5%93%8d%e5%ba%94 class=nav-服务器请求与响应>服务器请求与响应</a></li><li><a href=#%e8%bf%90%e8%a1%8c class=nav-运行>运行</a></li><li><a href=#%e5%85%b6%e4%bb%96 class=nav-其他>其他</a></li></ul></div></div></div><div class=pagination><a id=globalBackToTop class="pagination-action animated-visibility" href=#top :class="{ invisible: scrollY == 0 }"><i class="material-icons pagination-action-icon">keyboard_arrow_up
+</i></a><a type=button class=pagination-action id=darkModeToggleButton><span class="material-icons pagination-action-icon" id=darkModeToggleIcon>dark_mode</span></a></div></div><div id=single-column-footer>Hugo Theme <a href=https://github.com/amazingrise/hugo-theme-diary>Diary</a> by <a href=https://risehere.net/>Rise</a><br>Ported from <a href=https://mak1t0.cc/ target=_blank rel="noreferrer noopener">Makito</a>'s <a href=https://github.com/SumiMakito/hexo-theme-journal/ target=_blank rel="noreferrer noopener">Journal.</a><br><br>&copy;
+Copyright (c) 2009-2024 J23</div></div><script src=/js/journal.js></script></body></html>

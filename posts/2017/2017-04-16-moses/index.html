@@ -1,0 +1,155 @@
+<!doctype html><html lang=en><head><title>Git LFS 服务器实现杂谈</title>
+<meta charset=utf-8><meta name=X-UA-Compatible content="IE=edge"><meta name=google-site-verification content><meta content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=5" name=viewport><meta content="telephone=no" name=format-detection><meta name=description content><meta name=renderer content="webkit"><meta name=theme-color content="#ffffff"><script src=/js/toc.js></script><link type=text/css rel=stylesheet href=/vendor/css/bootstrap.min.css><link rel=stylesheet href=/scss/dark-mode.min.cb53f1bee2b8900cb4f082afbf00175d6618f281cf9a2fe8619e3b52d20b5721.css integrity="sha256-y1PxvuK4kAy08IKvvwAXXWYY8oHPmi/oYZ47UtILVyE=" media=screen><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Material+Icons"></head><body><div id=app><div class=single-column-drawer-container id=drawer v-bind:class="{ 'single-column-drawer-container-active': isDrawerOpen }"><div class=drawer-content><div class=drawer-menu><a class="a-block drawer-menu-item active" href=/posts>归档
+</a><a class="a-block drawer-menu-item false" href=/categories>分类
+</a><a class="a-block drawer-menu-item false" href=/tags>标签
+</a><a class="a-block drawer-menu-item false" href=/about>关于
+</a><a class="a-block drawer-menu-item false" href=/index.xml>RSS Feed</a><div class=toc><div class=toc-content><center>- CATALOG -</center><ul><li><a href=#%e5%89%8d%e8%a8%80 class=nav-前言>前言</a></li><ul><li><a href=#lfs-%e4%b8%bb%e8%a6%81%e6%8a%80%e6%9c%af%e5%8e%9f%e7%90%86 class=nav-lfs-主要技术原理>LFS 主要技术原理</a></li><li><a href=#lfs-%e6%9c%8d%e5%8a%a1%e5%99%a8%e7%9a%84%e5%ae%9e%e7%8e%b0 class=nav-lfs-服务器的实现>LFS 服务器的实现</a></li><li><a href=#gvfs class=nav-gvfs>GVFS</a></li><li><a href=#%e9%97%b2%e8%81%8a class=nav-闲聊>闲聊</a></li></ul></div></div></div></div></div><transition name=fade><div id=drawer-mask v-bind:class="{ 'single-column-drawer-mask': mounted }" v-if=isDrawerOpen v-on:click=toggleDrawer></div></transition><nav id=navBar class="navbar sticky-top navbar-light single-column-nav-container"><div id=navBackground class=nav-background></div><div class="container container-narrow nav-content"><button id=nav_dropdown_btn class=nav-dropdown-toggle type=button v-on:click=toggleDrawer>
+<i class=material-icons>menu
+</i></button>
+<a id=navTitle class=navbar-brand href=https://forcemz.net/>Charlie's Rethinking
+</a><button type=button class=nav-darkmode-toggle id=darkModeToggleButton2>
+<i class=material-icons id=darkModeToggleIcon2>dark_mode</i></button></div></nav><div class=single-column-header-container id=pageHead v-bind:style="{ transform: 'translateZ(0px) translateY('+.3*scrollY+'px)', opacity: 1-navOpacity }"><a href=https://forcemz.net/><div class=single-column-header-title>Charlie's Rethinking</div><div class=single-column-header-subtitle>Themed by Diary.</div></a></div><div id=content><div id=streamContainer class=stream-container><div class="post-list-container post-list-container-shadow"><div class=post><div class=post-head-wrapper-text-only><div class=post-title>Git LFS 服务器实现杂谈<div class=post-meta><time itemprop=datePublished>2017-04-16 10:00
+</time><i class=material-icons>folder</i>
+<a href=/categories/git>git</a>
+&nbsp;</div></div></div><div class=post-body-wrapper><div class=post-body v-pre><h1 id=前言>前言</h1><p>从前言开始，便又要讲起 git 原理，多次讲起不胜其烦，诸位如果要了解 git 原理可以通过 bing google 或者其他搜索引擎从网络上查阅资料，也可以去 git-scm.com 网站查看 《Pro Git》，对于大多数开发者而言已是足够。</p><p>倘若开发者熟知 git 原理，便可以知道 git 在管理大文件时，显得尤为麻烦，一来反复修改占用空间巨大，二来，每次修改网络传输占用资源，为了给更多的开发者服务，代码托管系统往往还需要对存储，网络连接进行限制，大文件的传输和存储肯定会陷入了囧境。</p><p>开发者用到大文件的地方可能有静态资源，比如 PSD 文件，还有某 SDK 等。如何管理这些文件？善于思考的同学可能会想到，将这些大文件存储在第三方存储，等检出存储库后，再通过程序更新这些资源，实际上 NuGet，Maven 就是这种思路。但是对于 PSD 这类文件此方案就显得不足。</p><p>作为全球最大的代码托管平台，Github 在这方面深有感触，为了解决大文件存储的问题，2015年4月，Github 宣布推出 Git LFS ，
+<a href=https://github.com/blog/1986-announcing-git-large-file-storage-lfs>Announcing Git Large File Storage (LFS)</a>。</p><h2 id=lfs-主要技术原理>LFS 主要技术原理</h2><p>在 git 存储库中，有一些特殊文件， <code>.gitattributes</code>，<code>.gitignore</code>，<code>.gitattributes</code> 顾名思义用来管理存储库下路径的属性，如何过滤，如何 diff，如何合并。而 <code>.gitignore</code> 的作用则是排除指定的路径，不添加到版本库中。</p><p>笔者最早了解到 .gitattributes 时是使用 git 管理毕业论文，设置好 .gitattributes 后，就可以到 docx 文档进行 diff 了。利用这一特性，git lfs 在运行命令 <code>git lfs track</code> 后，将路径添加到 <code>.gitattributes</code> 文件中，比如这样：</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-text data-lang=text><span style=display:flex><span>clang.tar.gz filter=lfs diff=lfs merge=lfs -text
+</span></span></code></pre></div><p>然后修改 git 钩子，包括 post-checkout post-commit post-merge pre-push，其中的内容都是将当前钩子命令当做参数启动 git-lfs。</p><p>创建提交的过程中，比如添加了 clang.tar.gz ，git 会启动 lfs 命令，将 clang.tar.gz 文件的 hash 值（目前是 sha256），大小写入到一个名字叫 <code>clang.tar.gz</code> 文件中，然后将此文件作为大文件的 <code>Pointer</code> 提交到版本库中，原始的 clang.tar.gz 会单独存储到 <code>lfs/objects</code>，将更新推送到远程服务器上时，pre-push 钩子启动 git lfs，git lfs 连接到远程的 LFS 服务器，将文件上传到服务器上。</p><p>而 checkout 或者 pull 的时候，本地没有的大文件，git lfs 就会将大文件下载下来。</p><p>简单的说就是利用 .gitattributes 偷梁换柱。</p><p>git lfs 规范可以在 <a href=https://github.com/git-lfs/git-lfs/blob/master/docs/spec.md>https://github.com/git-lfs/git-lfs/blob/master/docs/spec.md</a> 查看。</p><h2 id=lfs-服务器的实现>LFS 服务器的实现</h2><p>实现一个 LFS 服务器实际上是比较简单的，在 Github 上搜索 <code>git lfs server</code> 可以找到很多个类似项目。在 git-lfs wiki 上也有
+<a href=https://github.com/git-lfs/git-lfs/wiki/Implementations>https://github.com/git-lfs/git-lfs/wiki/Implementations</a> ,</p><p>按照 v0.5 的协议，</p><p>获取大文件的信息:</p><blockquote><p>GET /info/lfs/objects/{oid}</p></blockquote><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-json data-lang=json><span style=display:flex><span>{
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>&#34;oid&#34;</span>: <span style=color:#a6be9d>&#34;oid&#34;</span>,
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>&#34;size&#34;</span>: <span style=color:#a6be9d>123</span>,
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>&#34;_links&#34;</span>: {
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>&#34;download&#34;</span>: {
+</span></span><span style=display:flex><span>            <span style=color:#58a1dd>&#34;href&#34;</span>: <span style=color:#a6be9d>&#34;http://some.com/oid&#34;</span>,
+</span></span><span style=display:flex><span>            <span style=color:#58a1dd>&#34;header&#34;</span>: {
+</span></span><span style=display:flex><span>                <span style=color:#58a1dd>&#34;Authorization&#34;</span>: <span style=color:#a6be9d>&#34;some token&#34;</span>
+</span></span><span style=display:flex><span>            }
+</span></span><span style=display:flex><span>        }
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>下载文件:</p><blockquote><p>GET /lfs/objects/{oid}</p></blockquote><p>而这个 URL 是由 /info/lfs/objects/{oid} 获得的。</p><p>如果要上传文件，首先是 POST：</p><blockquote><p>POST /lfs/info/objects/{oid}</p></blockquote><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-json data-lang=json><span style=display:flex><span>{
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>&#34;_links&#34;</span>: {
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>&#34;upload&#34;</span>: {
+</span></span><span style=display:flex><span>            <span style=color:#58a1dd>&#34;href&#34;</span>: <span style=color:#a6be9d>&#34;https://some-upload.com&#34;</span>,
+</span></span><span style=display:flex><span>            <span style=color:#58a1dd>&#34;header&#34;</span>: {
+</span></span><span style=display:flex><span>                <span style=color:#58a1dd>&#34;Key&#34;</span>: <span style=color:#a6be9d>&#34;value&#34;</span>
+</span></span><span style=display:flex><span>            }
+</span></span><span style=display:flex><span>        },
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>&#34;verify&#34;</span>: {
+</span></span><span style=display:flex><span>            <span style=color:#58a1dd>&#34;href&#34;</span>: <span style=color:#a6be9d>&#34;https://some-callback.com&#34;</span>,
+</span></span><span style=display:flex><span>            <span style=color:#58a1dd>&#34;header&#34;</span>: {
+</span></span><span style=display:flex><span>                <span style=color:#58a1dd>&#34;Key&#34;</span>: <span style=color:#a6be9d>&#34;value&#34;</span>
+</span></span><span style=display:flex><span>            }
+</span></span><span style=display:flex><span>        }
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>获得 upload 的 URL 后，然后使用 HTTP PUT 方法将文件上传到返回的 URL。PUT 时会将 header 的内容添加到 HTTP 请求头中，这里一般会使用 Authorization 头，这种设计可以将大文件存储到第三方存储上。</p><p>Git LFS 2.0 已经移除了 v0.5 版本的 API，目前使用 <a href=https://github.com/git-lfs/git-lfs/blob/master/docs/api/batch.md>Git LFS Batch API</a></p><p>Batch 实际上就是将 v0.5 API 的多个请求合并到一个请求中。由于 batch.md 已经说了，虽然不是很明白，也就不多说了。</p><p>大多数 Git LFS 服务已经支持 Batch API 了，也就没什么好说的了。</p><p>Git LFS 2.0 增加了 <a href=https://github.com/git-lfs/git-lfs/blob/master/docs/api/locking.md>Locking API</a></p><p>开发者可以对某路径进行锁定，以避免其他开发者提交新的大文件到存储机器。于是就有了 Locking API。</p><p>Locking API 需要实现的有 lock unlock verify （POST），list（GET）。verify 和 list 的区别主要是区分 <code>我的</code> 和 <code>其他的</code> 锁。</p><p>创建：</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-json data-lang=json><span style=display:flex><span>{
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>&#34;lock&#34;</span>: {
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>&#34;id&#34;</span>: <span style=color:#a6be9d>&#34;6&#34;</span>,
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>&#34;path&#34;</span>: <span style=color:#a6be9d>&#34;image/av115.psd&#34;</span>,
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>&#34;locked_at&#34;</span>: <span style=color:#a6be9d>&#34;2017-04-14T02:19:04Z&#34;</span>,
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>&#34;owner&#34;</span>: {
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;name&#34;</span>: <span style=color:#a6be9d>&#34;charlie&#34;</span>
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-json data-lang=json><span style=display:flex><span>{
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>&#34;locks&#34;</span>: [
+</span></span><span style=display:flex><span>    {
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;id&#34;</span>: <span style=color:#a6be9d>&#34;2&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;path&#34;</span>: <span style=color:#a6be9d>&#34;image/av111.psd&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;locked_at&#34;</span>: <span style=color:#a6be9d>&#34;2017-04-11T10:47:30Z&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;owner&#34;</span>: {
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>&#34;name&#34;</span>: <span style=color:#a6be9d>&#34;tom&#34;</span>
+</span></span><span style=display:flex><span>      }
+</span></span><span style=display:flex><span>    },
+</span></span><span style=display:flex><span>    {
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;id&#34;</span>: <span style=color:#a6be9d>&#34;3&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;path&#34;</span>: <span style=color:#a6be9d>&#34;image/av112.psd&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;locked_at&#34;</span>: <span style=color:#a6be9d>&#34;2017-04-12T06:30:09Z&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;owner&#34;</span>: {
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>&#34;name&#34;</span>: <span style=color:#a6be9d>&#34;jekk&#34;</span>
+</span></span><span style=display:flex><span>      }
+</span></span><span style=display:flex><span>    },
+</span></span><span style=display:flex><span>    {
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;id&#34;</span>: <span style=color:#a6be9d>&#34;4&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;path&#34;</span>: <span style=color:#a6be9d>&#34;image/av113.psd&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;locked_at&#34;</span>: <span style=color:#a6be9d>&#34;2017-04-12T06:30:13Z&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;owner&#34;</span>: {
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>&#34;name&#34;</span>: <span style=color:#a6be9d>&#34;other&#34;</span>
+</span></span><span style=display:flex><span>      }
+</span></span><span style=display:flex><span>    },
+</span></span><span style=display:flex><span>    {
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;id&#34;</span>: <span style=color:#a6be9d>&#34;5&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;path&#34;</span>: <span style=color:#a6be9d>&#34;image/av114.psd&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;locked_at&#34;</span>: <span style=color:#a6be9d>&#34;2017-04-12T06:30:16Z&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;owner&#34;</span>: {
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>&#34;name&#34;</span>: <span style=color:#a6be9d>&#34;charlie&#34;</span>
+</span></span><span style=display:flex><span>      }
+</span></span><span style=display:flex><span>    },
+</span></span><span style=display:flex><span>    {
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;id&#34;</span>: <span style=color:#a6be9d>&#34;6&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;path&#34;</span>: <span style=color:#a6be9d>&#34;image/av115.psd&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;locked_at&#34;</span>: <span style=color:#a6be9d>&#34;2017-04-14T02:19:04Z&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;owner&#34;</span>: {
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>&#34;name&#34;</span>: <span style=color:#a6be9d>&#34;charlie&#34;</span>
+</span></span><span style=display:flex><span>      }
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>  ],
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>&#34;next_cursor&#34;</span>: <span style=color:#a6be9d>&#34;6&#34;</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>验证：</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-json data-lang=json><span style=display:flex><span>{
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>&#34;ours&#34;</span>: [
+</span></span><span style=display:flex><span>    {
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;id&#34;</span>: <span style=color:#a6be9d>&#34;5&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;path&#34;</span>: <span style=color:#a6be9d>&#34;image/av114.psd&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;locked_at&#34;</span>: <span style=color:#a6be9d>&#34;2017-04-12T06:30:16Z&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;owner&#34;</span>: {
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>&#34;name&#34;</span>: <span style=color:#a6be9d>&#34;charlie&#34;</span>
+</span></span><span style=display:flex><span>      }
+</span></span><span style=display:flex><span>    },
+</span></span><span style=display:flex><span>    {
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;id&#34;</span>: <span style=color:#a6be9d>&#34;6&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;path&#34;</span>: <span style=color:#a6be9d>&#34;image/av115.psd&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;locked_at&#34;</span>: <span style=color:#a6be9d>&#34;2017-04-14T02:19:04Z&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;owner&#34;</span>: {
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>&#34;name&#34;</span>: <span style=color:#a6be9d>&#34;charlie&#34;</span>
+</span></span><span style=display:flex><span>      }
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>  ],
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>&#34;theirs&#34;</span>: [
+</span></span><span style=display:flex><span>    {
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;id&#34;</span>: <span style=color:#a6be9d>&#34;2&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;path&#34;</span>: <span style=color:#a6be9d>&#34;image/av111.psd&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;locked_at&#34;</span>: <span style=color:#a6be9d>&#34;2017-04-11T10:47:30Z&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;owner&#34;</span>: {
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>&#34;name&#34;</span>: <span style=color:#a6be9d>&#34;tom&#34;</span>
+</span></span><span style=display:flex><span>      }
+</span></span><span style=display:flex><span>    },
+</span></span><span style=display:flex><span>    {
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;id&#34;</span>: <span style=color:#a6be9d>&#34;3&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;path&#34;</span>: <span style=color:#a6be9d>&#34;image/av112.psd&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;locked_at&#34;</span>: <span style=color:#a6be9d>&#34;2017-04-12T06:30:09Z&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;owner&#34;</span>: {
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>&#34;name&#34;</span>: <span style=color:#a6be9d>&#34;jekk&#34;</span>
+</span></span><span style=display:flex><span>      }
+</span></span><span style=display:flex><span>    },
+</span></span><span style=display:flex><span>    {
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;id&#34;</span>: <span style=color:#a6be9d>&#34;4&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;path&#34;</span>: <span style=color:#a6be9d>&#34;image/av113.psd&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;locked_at&#34;</span>: <span style=color:#a6be9d>&#34;2017-04-12T06:30:13Z&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;owner&#34;</span>: {
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>&#34;name&#34;</span>: <span style=color:#a6be9d>&#34;other&#34;</span>
+</span></span><span style=display:flex><span>      }
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>  ],
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>&#34;next_cursor&#34;</span>: <span style=color:#a6be9d>&#34;6&#34;</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>笔者在实现 Git LFS 服务器时，使用的是 C++ , HTTP 库使用 cpprestsdk。锁的设计使用了 sqlite3，即每个存储库拥有一个 sqlite3 db，使用文件锁同步。</p><h2 id=gvfs>GVFS</h2><h2 id=闲聊>闲聊</h2><p>Microsoft，Github 还有 Google ，都拥有版本控制领域的精英，比如微软有 git-for-windows 的维护者 Johannes Schindelin @dscho ，libgit2 LibGit2Sharp 核心维护者 Edward Thomson @ethomson 他还在 Github 待过一段时间。而 Github 有 Carlos Martín Nieto @carlosmn Vincent Marti @vmg，二者参加 Soc2011 为 libgit2 添加了网络栈，vmg 是 github 的主力程序员了，涉猎很广。Google 有 Git 的主要维护者 Junio C Hamano。</p><p><a href=https://git.wiki.kernel.org/index.php/SoC2011Projects>SoC2011Projects</a></p><hr width=100% id=EOF><p style=color:#777>Last modified on 2017-04-16</p></div></div><nav class=post-pagination><a class=newer-posts href=/posts/2017/2017-05-11-angelo/>Next<br>基于 AspNetCore 的 Git HTTP 服务器
+</a><a class=older-posts href=/posts/2016/2016-12-31-total/>Previous<br>2016 技术总结</a></nav><div class=post-comment-wrapper></div></div></div></div></div><div id=sideContainer class=side-container><a class="a-block nav-head false" href=https://forcemz.net/><div class=nav-title>Charlie's Rethinking</div><div class=nav-subtitle>Themed by Diary.</div></a><div class=nav-link-list><a class="a-block nav-link-item active" href=/posts>归档
+</a><a class="a-block nav-link-item false" href=/categories>分类
+</a><a class="a-block nav-link-item false" href=/tags>标签
+</a><a class="a-block nav-link-item false" href=/about>关于
+</a><a class="a-block nav-link-item false" href=/index.xml>RSS Feed</a></div><div class=nav-footer>Hugo Theme <a href=https://github.com/amazingrise/hugo-theme-diary>Diary</a> by <a href=https://risehere.net/>Rise</a><br>Ported from <a href=https://mak1t0.cc/ target=_blank rel="noreferrer noopener">Makito</a>'s <a href=https://github.com/SumiMakito/hexo-theme-journal/ target=_blank rel="noreferrer noopener">Journal.</a><br><br>&copy;
+Copyright (c) 2009-2024 J23</div></div><div id=extraContainer class=extra-container><div class=toc-wrapper><div class=toc><div class=toc-content><center>- CATALOG -</center><ul><li><a href=#%e5%89%8d%e8%a8%80 class=nav-前言>前言</a></li><ul><li><a href=#lfs-%e4%b8%bb%e8%a6%81%e6%8a%80%e6%9c%af%e5%8e%9f%e7%90%86 class=nav-lfs-主要技术原理>LFS 主要技术原理</a></li><li><a href=#lfs-%e6%9c%8d%e5%8a%a1%e5%99%a8%e7%9a%84%e5%ae%9e%e7%8e%b0 class=nav-lfs-服务器的实现>LFS 服务器的实现</a></li><li><a href=#gvfs class=nav-gvfs>GVFS</a></li><li><a href=#%e9%97%b2%e8%81%8a class=nav-闲聊>闲聊</a></li></ul></div></div></div><div class=pagination><a id=globalBackToTop class="pagination-action animated-visibility" href=#top :class="{ invisible: scrollY == 0 }"><i class="material-icons pagination-action-icon">keyboard_arrow_up
+</i></a><a type=button class=pagination-action id=darkModeToggleButton><span class="material-icons pagination-action-icon" id=darkModeToggleIcon>dark_mode</span></a></div></div><div id=single-column-footer>Hugo Theme <a href=https://github.com/amazingrise/hugo-theme-diary>Diary</a> by <a href=https://risehere.net/>Rise</a><br>Ported from <a href=https://mak1t0.cc/ target=_blank rel="noreferrer noopener">Makito</a>'s <a href=https://github.com/SumiMakito/hexo-theme-journal/ target=_blank rel="noreferrer noopener">Journal.</a><br><br>&copy;
+Copyright (c) 2009-2024 J23</div></div><script src=/js/journal.js></script></body></html>

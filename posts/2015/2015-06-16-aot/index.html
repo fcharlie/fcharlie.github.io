@@ -1,0 +1,250 @@
+<!doctype html><html lang=en><head><title>软件的变革与 AOT </title><meta charset=utf-8><meta name=X-UA-Compatible content="IE=edge"><meta name=google-site-verification content><meta content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=5" name=viewport><meta content="telephone=no" name=format-detection><meta name=description content><meta name=renderer content="webkit"><meta name=theme-color content="#ffffff"><script src=/js/toc.js></script><link type=text/css rel=stylesheet href=/vendor/css/bootstrap.min.css><link rel=stylesheet href=/scss/dark-mode.min.cb53f1bee2b8900cb4f082afbf00175d6618f281cf9a2fe8619e3b52d20b5721.css integrity="sha256-y1PxvuK4kAy08IKvvwAXXWYY8oHPmi/oYZ47UtILVyE=" media=screen><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Material+Icons"></head><body><div id=app><div class=single-column-drawer-container id=drawer v-bind:class="{ 'single-column-drawer-container-active': isDrawerOpen }"><div class=drawer-content><div class=drawer-menu><a class="a-block drawer-menu-item active" href=/posts>归档
+</a><a class="a-block drawer-menu-item false" href=/categories>分类
+</a><a class="a-block drawer-menu-item false" href=/tags>标签
+</a><a class="a-block drawer-menu-item false" href=/about>关于
+</a><a class="a-block drawer-menu-item false" href=/index.xml>RSS Feed</a><div class=toc><div class=toc-content><center>- CATALOG -</center><ul><ul><li><a href=#%e5%89%8d%e8%a8%80 class=nav-前言>前言</a></li><li><a href=#llvm-%e7%bc%96%e8%af%91%e5%99%a8%e5%9f%ba%e7%a1%80%e8%ae%be%e6%96%bd%e7%9a%84%e5%8f%91%e8%bf%b9 class=nav-llvm-编译器基础设施的发迹>LLVM 编译器基础设施的发迹</a></li><ul><li><a href=#%e4%bc%a0%e7%bb%9f%e7%9a%84%e7%bc%96%e8%af%91%e5%99%a8 class=nav-传统的编译器>传统的编译器</a></li><li><a href=#%e5%9f%ba%e4%ba%8e-llvm-%e7%9a%84%e7%bc%96%e8%af%91%e5%99%a8 class=nav-基于-llvm-的编译器>基于 LLVM 的编译器</a></li></ul><li><a href=#android-%e4%b8%8e-aot class=nav-android-与-aot>Android 与 AOT</a></li><ul><ul><li><a href=#android-runtime class=nav-android-runtime>Android Runtime</a></li></ul></ul><li><a href=#net-%e4%b8%8e-aot class=nav-net-与-aot>.NET 与 AOT</a></li><ul><li><a href=#net-compiler-platform-roslyn class=nav-net-compiler-platform-roslyn>.NET Compiler Platform (“Roslyn”)</a></li><li><a href=#net-native class=nav-net-native>.NET Native</a></li><li><a href=#llilc---llvm-based-compiler-for-net-coreclr class=nav-llilc---llvm-based-compiler-for-net-coreclr>LLILC - LLVM-Based Compiler for .NET CoreCLR</a></li><li><a href=#net-core-runtime-corert class=nav-net-core-runtime-corert>.NET Core Runtime (CoreRT)</a></li></ul><li><a href=#%e6%8e%a2%e7%b4%a2%e7%9a%84%e8%84%9a%e6%ad%a5 class=nav-探索的脚步>探索的脚步</a></li><ul><li><a href=#41-csnative class=nav-41-csnative>4.1 CSNative</a></li><li><a href=#42-sharplang class=nav-42-sharplang>4.2 SharpLang</a></li></ul><li><a href=#%e5%85%b6%e4%bb%96 class=nav-其他>其他</a></li><ul><li><a href=#net class=nav-net>.NET</a></li><li><a href=#jvm class=nav-jvm>JVM</a></li><li><a href=#web-aot- class=nav-web-aot->Web AOT ?</a></li></ul></ul><li><a href=#%e5%a4%87%e6%b3%a8 class=nav-备注>备注</a></li></ul></div></div></div></div></div><transition name=fade><div id=drawer-mask v-bind:class="{ 'single-column-drawer-mask': mounted }" v-if=isDrawerOpen v-on:click=toggleDrawer></div></transition><nav id=navBar class="navbar sticky-top navbar-light single-column-nav-container"><div id=navBackground class=nav-background></div><div class="container container-narrow nav-content"><button id=nav_dropdown_btn class=nav-dropdown-toggle type=button v-on:click=toggleDrawer>
+<i class=material-icons>menu
+</i></button>
+<a id=navTitle class=navbar-brand href=https://forcemz.net/>Charlie's Rethinking
+</a><button type=button class=nav-darkmode-toggle id=darkModeToggleButton2>
+<i class=material-icons id=darkModeToggleIcon2>dark_mode</i></button></div></nav><div class=single-column-header-container id=pageHead v-bind:style="{ transform: 'translateZ(0px) translateY('+.3*scrollY+'px)', opacity: 1-navOpacity }"><a href=https://forcemz.net/><div class=single-column-header-title>Charlie's Rethinking</div><div class=single-column-header-subtitle>Themed by Diary.</div></a></div><div id=content><div id=streamContainer class=stream-container><div class="post-list-container post-list-container-shadow"><div class=post><div class=post-head-wrapper-text-only><div class=post-title>软件的变革与 AOT<div class=post-meta><time itemprop=datePublished>2015-06-16 21:30
+</time><i class=material-icons>folder</i>
+<a href=/categories/compiler>compiler</a>
+&nbsp;</div></div></div><div class=post-body-wrapper><div class=post-body v-pre><h2 id=前言>前言</h2><p>AOT 即 Ahead of Time Compilation,即运行前编，与之对应的是 JIT。众所周知，程序的源码并不能够被处理器直接执行，编程语言基本上都是人类可读，编译器或者解释器就需要将源代码转变为 CPU 可以操作的指令。比如一个加法函数最终需要执行 addl 汇编指令对应的机器码。</p><p>add.c</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-c++ data-lang=c++><span style=display:flex><span><span style=color:#ff636f>int</span> <span style=color:#58a1dd>add</span>(<span style=color:#ff636f>int</span> <span style=color:#58a1dd>x</span>,<span style=color:#ff636f>int</span> <span style=color:#58a1dd>y</span>){
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#58a1dd>x</span><span style=color:#ff636f>+</span><span style=color:#58a1dd>y</span>;
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><blockquote><p>clang -S add.c</p></blockquote><p>汇编文件 add.s</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-asm data-lang=asm><span style=display:flex><span>	<span style=color:#58a1dd>.text</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>.def</span>	 <span style=color:#58a1dd>add</span><span style=color:#828b96;font-style:italic>;
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#58a1dd>.scl</span>	<span style=color:#a6be9d>2</span><span style=color:#828b96;font-style:italic>;
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#58a1dd>.type</span>	<span style=color:#a6be9d>32</span><span style=color:#828b96;font-style:italic>;
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#58a1dd>.endef</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>.globl</span>	<span style=color:#58a1dd>add</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>.align</span>	<span style=color:#a6be9d>16</span>, <span style=color:#a6be9d>0x90</span>
+</span></span><span style=display:flex><span><span style=color:#58a1dd>add:</span>                                    <span style=color:#828b96;font-style:italic># @add
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span><span style=color:#58a1dd>.Ltmp0:</span>
+</span></span><span style=display:flex><span><span style=color:#58a1dd>.seh_proc</span> <span style=color:#58a1dd>add</span>
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic># BB#0:
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#58a1dd>pushq</span>	<span style=color:#58a1dd>%rax</span>
+</span></span><span style=display:flex><span><span style=color:#58a1dd>.Ltmp1:</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>.seh_stackalloc</span> <span style=color:#a6be9d>8</span>
+</span></span><span style=display:flex><span><span style=color:#58a1dd>.Ltmp2:</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>.seh_endprologue</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>movl</span>	<span style=color:#58a1dd>%ecx</span>, <span style=color:#a6be9d>4</span>(<span style=color:#58a1dd>%rsp</span>)
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>movl</span>	<span style=color:#58a1dd>%edx</span>, (<span style=color:#58a1dd>%rsp</span>)
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>movl</span>	<span style=color:#a6be9d>4</span>(<span style=color:#58a1dd>%rsp</span>), <span style=color:#58a1dd>%ecx</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>addl</span>	<span style=color:#58a1dd>%ecx</span>, <span style=color:#58a1dd>%edx</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>movl</span>	<span style=color:#58a1dd>%edx</span>, <span style=color:#58a1dd>%eax</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>popq</span>	<span style=color:#58a1dd>%rdx</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>retq</span>
+</span></span><span style=display:flex><span><span style=color:#58a1dd>.Ltmp3:</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>.seh_endproc</span>
+</span></span></code></pre></div><p>对于转变为机器码的时机，不同的语言有着不同的选择，或是完全转变为机器码后运行，或是在运行时转变为机器码。AOT 便是运行前转为机器码。
+，事实上C/C++ D,Pascal,Fortran之类的语言本质上也是 AOT,但本文讨论的 AOT 主要针对的是对于 Java,NET 等框架或语言的 AOT。</p><p>以 Java 为例，Java 源码被编译器 Java Vitrual Machine ByteCode,当需要执行的时候，将 JVM 指令一条一条的转变为对应处理器的指令，后执行，（实际上x86 上模拟执行 ARM 架构的程序也可以是这个套路。）但是这个效率并不高，而且不好优化，而 JIT 的做法是将字节码编译成对于处理器的指令后运行。这比纯解释又快了许多。</p><h2 id=llvm-编译器基础设施的发迹>LLVM 编译器基础设施的发迹</h2><p>数年前，LLVM 的官网对于 LLVM 项目的介绍是: &ldquo;Low Level Virtual Machine&rdquo;,低级虚拟机，而现在对 LLVM 的介绍是：<strong>The LLVM Compiler Infrastructure</strong>，即编译器基础设施。 在程序员圈子中对 LLVM 最深刻的影响来自于 Clang，C 家族编译器(C/C++ /Objective-C/C++ Compiler)前端，Clang 是 LLVM 最成功的实现，在平台支持上，Clang 短短几年达到了 GNU C Compliton (GCC) 20年的高度。 Clang 在编译速度，占用内存，以及整个框架的设计上都是可圈可点的，对用户友好的开源许可证 <em><a href=http://opensource.org/licenses/UoI-NCSA.php>The University of Illinois/NCSA Open Source License (NCSA)</a></em>. 实际上就有商业编译器依赖Clang实现，比如：Embarcadero™ C++ Builder 的 Win64 编译器 bcc64 就是完全基于 Clang 实现（3.1 trunk）。而 C++ Builder 前身是 Borland C/C++&amp;Turbo C.</p><p>下面bcc64的命令实例:</p><blockquote><p>bcc64 -cc1 -D_RTLDLL -fborland-extensions -triple=x86_64-pc-win32-elf -emit-obj -std=c++11 -o Hello.o Hello.cpp</p></blockquote><p>看过**《C/C++圣战》** 大抵也知道 Borland C/C++ 曾经是多么的辉煌，而现在却选择了 Clang 来实现 Win64 工具链 （C++ Builder 10 32位也使用了 clang）。</p><p>一方面，单从 C 语言家族来讲 Clang 基于库的模块化设计，易于 IDE 集成及其他用途的重用。比如 Sublime Text，VIM，Emacs 都有基于 Clang 实现 C/C++ 代码自动补全，Clang 提供一个 libclang 的库，可以编译成动态也可以编译成静态库，SublimeText 的 C/C++ 插件 SublimeClang 就是使用 libclang.dll(so/dylib)。其他的编译器对于 IDE 集成的支持是远远不及的，比如 Visual Studio IDE 对于 C++ 的智能提示是使用 <a href="http://www.edg.com/index.php?location=c_frontend">EDG C++ Frontend </a>目前 Clang 在 C++ 的标准上，远远优于其他主流编译器 Microsoft C++(cl),GCC (g++)。</p><p>另一方面，LLVM 实现了一套可扩展的编译器实现方案，任何人需要实现一个语言，只需要实现一个前段，然后将源码编译成 LLVM 字节码，也就是 LLVM IR, 然后 LLVM llc 将源码编译成不同平台的机器码，并且优化。比如最近正火的语言 Rust 后端也使用了 LLVM,以及 D 语言编译器 ldc，Go 语言编译器 llgo 等等。而 LLVM 不仅仅拥有 AOT 的能力，而且还有 JIT 模块, <a href=http://llvm.org/svn/llvm-project/llvm/trunk/lib/ExecutionEngine/>LLVM ExecutionEngine</a> ExecutionEngine 的 API 并不是非常稳定。</p><h3 id=传统的编译器>传统的编译器</h3><p>传统编译器需要经过前端(Frontend)，优化(Optimizer)，后端(Backend)然后将源代码转变为机器码。<br><img src=http://www.aosabook.org/images/llvm/SimpleCompiler.png alt=SimpleCompiler><br>Three Major Components of a Three-Phase Compiler</p><p>如果需要增加一种新的平台的支持，这种模型无法提供更多的可重用的代码。</p><p>要添加其他语言的支持模型如下：<br><img src=http://www.aosabook.org/images/llvm/RetargetableCompiler.png alt=Retargetable><br>Retargetablity</p><h3 id=基于-llvm-的编译器>基于 LLVM 的编译器</h3><p>基于 LLVM 的编译器架构如下：<br><img src=http://www.aosabook.org/images/llvm/LLVMCompiler1.png alt=LLVMCompiler1><br>LLVM&rsquo;s Implementation of the Three-Phase Design</p><p>基于 LLVM 的编译器前端将源码编译成 LLVM IR,然后在使用优化编译器编译成对应平台的机器码，一个很鲜明的对比是 D语言的编译器 DMD 与 ldc,DMD 是传统的编译器，而 ldc 是基于 LLVM 的编译器，DMD 目前依然只支持 x86/x86_64 架构处理器，而 ldc 可以生成 ARM64,PPC,PPC64, mips64 架构的机器码。详细的介绍可查看：
+<a href=http://wiki.dlang.org/Compilers#Comparison>Dlang Compilers</a></p><p>LLVM IR 可以反汇编成人类可读的形式，LLVM IR 类似于 RSIC 指令。</p><blockquote><p>clang add.c -S -emit-llvm</p></blockquote><p>add.ll</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-llvm data-lang=llvm><span style=display:flex><span><span style=color:#828b96;font-style:italic>; ModuleID = &#39;add.bc&#39;
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span><span style=color:#ff636f>target</span> <span style=color:#ff636f>datalayout</span> = <span style=color:#a6be9d>&#34;e-m:w-i64:64-f80:128-n8:16:32:64-S128&#34;</span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>target</span> <span style=color:#ff636f>triple</span> = <span style=color:#a6be9d>&#34;x86_64-w64-windows-gnu&#34;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>; Function Attrs: nounwind uwtable
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span><span style=color:#ff636f>define</span> <span style=color:#ff636f>i32</span> <span style=color:#58a1dd>@add</span>(<span style=color:#ff636f>i32</span> <span style=color:#58a1dd>%y</span>, <span style=color:#ff636f>i32</span> <span style=color:#58a1dd>%x</span>) <span style=color:#58a1dd>#0</span> {
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>%1</span> = <span style=color:#ff636f>alloca</span> <span style=color:#ff636f>i32</span>, <span style=color:#ff636f>align</span> <span style=color:#a6be9d>4</span>
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>%2</span> = <span style=color:#ff636f>alloca</span> <span style=color:#ff636f>i32</span>, <span style=color:#ff636f>align</span> <span style=color:#a6be9d>4</span>
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>store</span> <span style=color:#ff636f>i32</span> <span style=color:#58a1dd>%y</span>, <span style=color:#ff636f>i32</span>* <span style=color:#58a1dd>%1</span>, <span style=color:#ff636f>align</span> <span style=color:#a6be9d>4</span>
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>store</span> <span style=color:#ff636f>i32</span> <span style=color:#58a1dd>%x</span>, <span style=color:#ff636f>i32</span>* <span style=color:#58a1dd>%2</span>, <span style=color:#ff636f>align</span> <span style=color:#a6be9d>4</span>
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>%3</span> = <span style=color:#ff636f>load</span> <span style=color:#ff636f>i32</span>, <span style=color:#ff636f>i32</span>* <span style=color:#58a1dd>%2</span>, <span style=color:#ff636f>align</span> <span style=color:#a6be9d>4</span>
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>%4</span> = <span style=color:#ff636f>load</span> <span style=color:#ff636f>i32</span>, <span style=color:#ff636f>i32</span>* <span style=color:#58a1dd>%1</span>, <span style=color:#ff636f>align</span> <span style=color:#a6be9d>4</span>
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>%5</span> = <span style=color:#ff636f>add</span> <span style=color:#ff636f>nsw</span> <span style=color:#ff636f>i32</span> <span style=color:#58a1dd>%3</span>, <span style=color:#58a1dd>%4</span>
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>ret</span> <span style=color:#ff636f>i32</span> <span style=color:#58a1dd>%5</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>attributes</span> <span style=color:#58a1dd>#0</span> = { <span style=color:#ff636f>nounwind</span> <span style=color:#ff636f>uwtable</span> <span style=color:#a6be9d>&#34;disable-tail-calls&#34;</span>=<span style=color:#a6be9d>&#34;false&#34;</span> <span style=color:#a6be9d>&#34;less-precise-fpmad&#34;</span>=<span style=color:#a6be9d>&#34;false&#34;</span> <span style=color:#a6be9d>&#34;no-frame-pointer-elim&#34;</span>=<span style=color:#a6be9d>&#34;false&#34;</span> <span style=color:#a6be9d>&#34;no-infs-fp-math&#34;</span>=<span style=color:#a6be9d>&#34;false&#34;</span> <span style=color:#a6be9d>&#34;no-nans-fp-math&#34;</span>=<span style=color:#a6be9d>&#34;false&#34;</span> <span style=color:#a6be9d>&#34;stack-protector-buffer-size&#34;</span>=<span style=color:#a6be9d>&#34;8&#34;</span> <span style=color:#a6be9d>&#34;target-cpu&#34;</span>=<span style=color:#a6be9d>&#34;x86-64&#34;</span> <span style=color:#a6be9d>&#34;target-features&#34;</span>=<span style=color:#a6be9d>&#34;+sse,+sse2&#34;</span> <span style=color:#a6be9d>&#34;unsafe-fp-math&#34;</span>=<span style=color:#a6be9d>&#34;false&#34;</span> <span style=color:#a6be9d>&#34;use-soft-float&#34;</span>=<span style=color:#a6be9d>&#34;false&#34;</span> }
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#58a1dd>!llvm.module.flags</span> = !{<span style=color:#58a1dd>!0</span>}
+</span></span><span style=display:flex><span><span style=color:#58a1dd>!llvm.ident</span> = !{<span style=color:#58a1dd>!1</span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#58a1dd>!0</span> = !{<span style=color:#ff636f>i32</span> <span style=color:#a6be9d>1</span>, <span style=color:#58a1dd>!&#34;PIC Level&#34;</span>, <span style=color:#ff636f>i32</span> <span style=color:#a6be9d>2</span>}
+</span></span><span style=display:flex><span><span style=color:#58a1dd>!1</span> = !{<span style=color:#58a1dd>!&#34;clang version 3.7.0 (tags/RELEASE_370/final)&#34;</span>}
+</span></span></code></pre></div><p>使用以下命令即可：</p><blockquote><p>clang add.ll -c</p></blockquote><p>也可以使用 llc 命令编译</p><p>于2010年Chris Lattner 被 ACM 授予 &ldquo;Programming Languages Software Award&rdquo; 。2014年 Chris Lattner 作为苹果编译器开发团队的首席架构师，在 Apple WWDC 2014 推出了Swift。而 Swift 就是基于 LLVM 的，使用如下命令编译 swift 代码，即可得到 LLVM IR 代码。</p><blockquote><p>swiftc -S -emit-object hello.swift</p></blockquote><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-swift data-lang=swift><span style=display:flex><span><span style=color:#828b96;font-style:italic>// hello.swift</span>
+</span></span><span style=display:flex><span><span style=color:#58a1dd>print</span>(<span style=color:#a6be9d>&#34;Hello, world!&#34;</span>);
+</span></span></code></pre></div><p><a href=http://romain.goyet.com/articles/running_swift_code_on_android/>通过 LLVM 在 Android 上运行 Swift 代码</a></p><p>整个 LLVM 项目推出了很多重量级工具，除了 Clang 之外，还有 LLVM 调试器 lldb, LLVM 连接器 lld,目前都可以在 Windows, Linux ,Mac ,以及 BSD 上运行，目前 XCode 自带有这些工具，Windows 上，clang lld 都是能够安装集成到 Visual Studio 的。</p><p>很多公司贡献了代码到 LLVM 项目中，或使用 LLVM 的工具改善自己的产品，比如 Google ,Google NDK 以及 PNacl 都使用了 LLVM 的工具，而 LLVM 的许多特性就是 Google 实现的，比如地址消毒剂 AddressSanitizer（GCC 目前也支持了）。还有 Intel OpenCL, Adobe, NVIDIA Nucda,Microsoft WinObjc。</p><h2 id=android-与-aot>Android 与 AOT</h2><p>LLVM 优异的架构并没有被 Android 广泛使用。Android 最初由 Andy Rubin 开发作为数码相机的操作系统，使用 Linux 内核，后来发现市场需求不大被改造成智能手机操作系统反而获得了巨大成功。Rubin 选择了具有很大争议的 Java 作为 Android 的应用开发语言，Java 基于 JVM，能够在支持 JVM 的平台上运行，Java 的开发者非常多，你可以在中国任何一个理工科大学找到学习 Java 的学生，漫天遍地的 Java 培训机构，这对于 Android 来说非常有利，从 Google 收购 Android开始，这一切已然水到渠成。Android 使用的是 Dalvik 的虚拟机，这与 Java 官方的 JVM 技术上稍微有些差异，JVM 是一种堆栈机器，而 Dalvik 是<a href=http://zh.wikipedia.org/wiki/%E5%AF%84%E5%AD%98%E5%99%A8%E6%9C%BA>寄存器机</a>,孰优孰劣，也不太好评价，正如 CISC 与 RSIC 的争议，实际上对于软件而言，架构，编码实现，编译器（解析器），都会给软件的性能带来巨大的影响，时常发现某某 JavaScript 升级换代，性能增加一倍。</p><h4 id=android-runtime>Android Runtime</h4><p>2014年6月，Google 推出 Android 5.0(Android Lollipop) ，ART 完全取代了 Dalvik。<br><img src=https://upload.wikimedia.org/wikipedia/commons/2/25/ART_view.png alt="ART View"> ART 本质上一个混合的 AOT 方案，它还实现了 JVM 解释器。</p><p>Andy Rubin 先后在苹果 微软 谷歌公司工作过。</p><h2 id=net-与-aot>.NET 与 AOT</h2><p>说起.NET 就不得不谈到 <a href=http://zh.wikipedia.org/wiki/%E5%AE%89%E5%BE%B7%E6%96%AF%C2%B7%E6%B5%B7%E5%B0%94%E6%96%AF%E4%BC%AF%E6%A0%BC>Anders Hejlsberg</a> 此人，他来自丹麦，Turbo Pascal 最开始就是他开发的，Delphi/C#之父，C#&.NET 的首席架构师，TypeScript 的首席架构师，主持开发了 .NET Framework，Visual Basic.NET，以及最新的 .NET 编译器 <a href=http://msdn.microsoft.com/en-us/vstudio/roslyn.aspx>Roslyn</a> 。<br>值得注意的是 TypeScript 完全基于 ECMAScript 6标准草案开发，Java 的流行以至于微软也坐不住，在上个世纪末，微软也开发了自己的Java虚拟机，最初微软推出的是Visual J++，而在Anders加入微软后立即被委以重任，Visual J++在性能上甚至超越了Sun JVM，这个Sun带来了恐慌，Sun 以破坏兼容性将微软告上公堂，微软最终放弃了Java的开发，而C#与.NET也诞生了，.NET在设计上确实借鉴了Java的很多理念，并且超越了Java，这也是 Anders 从 Borland 就存在心中的构想。</p><p>类似于 LLVM 的研究，微软很早就有，这个项目是：</p><p><strong>Phoenix Compiler and Shared Source Common Language Infrastructure</strong></p><p>现在的 Microsoft Visual C++ 就有 Phoenix 编译器架构的技术积累。</p><p>Chris Lattner 曾于2004年在微软研究院实习，参与微软的 <a href=http://research.microsoft.com/en-us/collaboration/focus/cs/phoenix.aspx>Phoenix Compiler Framework</a> 项目，或许对于微软来说，应该感到遗憾，Chris Lattner 并没有最终加入微软，而是加入了苹果公司。很多时候技术是相互影响的，好的技术最后都会殊途同归。</p><p>在我刚进入大学的时候，刚刚学会编程，曾经下载过08版的 Phoenix Compiler 编译器工具，并且也试用过，不过到现在已经无法下载了。而 Phoenix Compiler Framework与LLVM的理念确实很相似，并且可以得知的是，Phoenix 很多的技术被整合到微软的 Microsoft C/C++ Compiler，就技术上而言 Phoenix 与 LLVM 有许多相似之处，比如都能转变成 IR，拥有软件优化和分析框架，然而具体的中间语言是不一样的。</p><p>Phoenix 的架构师 Andy Ayers 本人也是 LLILC 的核心成员。</p><blockquote><p>Phoenix不仅仅限于一个编译器，它还是一个软件优化和分析框架，能被其他编译器和工具使用。 它能生成二进制代码，也能输出MSIL程序集。源代码可以经过分析，
+并被表示为 IR（中间表示，Intermediate Representation）形式，这种形式可以在后期被各种工具分析和处理。<br>&mdash;-InfoQ: <a href=http://www.infoq.com/cn/news/2008/05/Phoenix-Compiler-Framework>Phoenix编译器框架说明</a></p></blockquote><p>在 .NET 未开源时，微软研究院还提供了一个 .NET 的学习代码 “<a href="http://www.microsoft.com/en-us/download/details.aspx?id=4917">Shared Source Common Language Infrastructure</a>”的源代码下载。</p><p>为什么说些无关的东西？实际上，微软的 .NET Native 实现离不开 Phoenix 编译器的技术研究。</p><p>.NET Framework 三阶段图：<br><img src=https://raw.githubusercontent.com/fstudio/Beaot/master/doc/Images/dotNet/CLR_diag.png alt=DotCLR>
+.Net Three-Phase</p><p>.NET Framewok Native & JIT 模型
+<img src=https://raw.githubusercontent.com/fcharlie/site-res/master/compilers/dotnativecoreclr.png alt=DotNetCoreCLR></p><h3 id=net-compiler-platform-roslyn>.NET Compiler Platform (&ldquo;Roslyn&rdquo;)</h3><p>Roslyn 是 Microsoft 推出的新一代 C#/VB.NET 编译器,相对于传统的 .NET C# 编译器,整个生产流程结构非常清晰,和 C++ 中的 clang 类比丝毫不为过,而 Visual Studio 2015 也充分利用了 Roslyn 的优秀特性.</p><p>目前无论是 Microsoft 还是 Mono 都参与到了 Roslyn 的开发过程中,利用 Roslyn ,一些第三方的 C# AOT 解决方案迅速的发展起来.</p><p>编译器管道:<br><img src=https://github.com/dotnet/roslyn/wiki/images/compiler-pipeline.png alt=Pipe></p><p>编译器管道及对应的 API:<br><img src=https://github.com/dotnet/roslyn/wiki/images/compiler-pipeline-api.png alt=API></p><p>编译器 API 和 服务:<br><img src=https://github.com/dotnet/roslyn/wiki/images/compiler-pipeline-lang-svc.png alt=svc></p><p>Roslyn APIs:<br><img src=https://raw.githubusercontent.com/fstudio/Beaot/master/doc/Images/Roslyn.png alt=Roslyn></p><h3 id=net-native>.NET Native</h3><p>.NET 的 AOT 解决方案在 Mono 中很早就出现了，Mono 平台支持 Android 以及 iOS 的 App 开发,由于 iOS 禁止第三方软件的 JIT 编译,在iOS 平台,Mono 使用的就是 Full AOT 策略.</p><p>Program.cs</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=display:flex><span><span style=color:#ff636f>using</span> <span style=color:#58a1dd>System</span>;
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>namespace</span> <span style=color:#58a1dd>hello</span>
+</span></span><span style=display:flex><span>{
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>class</span> <span style=color:#58a1dd>MainClass</span>
+</span></span><span style=display:flex><span>	{
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>public</span> <span style=color:#ff636f>static</span> <span style=color:#ff636f>void</span> <span style=color:#58a1dd>Main</span> (<span style=color:#ff636f>string</span>[] <span style=color:#58a1dd>args</span>)
+</span></span><span style=display:flex><span>		{
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>Console</span>.<span style=color:#58a1dd>WriteLine</span> (<span style=color:#a6be9d>&#34;Hello World!&#34;</span>);
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>使用 Mono 编译:</p><blockquote><p>mcs Program.cs</p></blockquote><p>然后使用 mono AOT 编译成机器码:</p><blockquote><p>mono &ndash;aot=full,nrgctx-trampolines=8096,nimt-trampolines=8096,ntrampolines=4048 Program.exe</p></blockquote><p>使用 objdump 反汇编:</p><blockquote><p>objdump -d Program.exe.so >Program.s</p></blockquote><p>这里只反汇编了执行段,Program.s:</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-txt data-lang=txt><span style=display:flex><span>
+</span></span><span style=display:flex><span>Program.exe.so：     文件格式 elf64-x86-64
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Disassembly of section .text:
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>0000000000001000 &lt;hello_MainClass__ctor-0x10&gt;:
+</span></span><span style=display:flex><span>    1000:	90                   	nop
+</span></span><span style=display:flex><span>    1001:	90                   	nop
+</span></span><span style=display:flex><span>    1002:	90                   	nop
+</span></span><span style=display:flex><span>    1003:	90                   	nop
+</span></span><span style=display:flex><span>    1004:	90                   	nop
+</span></span><span style=display:flex><span>    1005:	90                   	nop
+</span></span><span style=display:flex><span>    1006:	90                   	nop
+</span></span><span style=display:flex><span>    1007:	90                   	nop
+</span></span><span style=display:flex><span>    1008:	90                   	nop
+</span></span><span style=display:flex><span>    1009:	90                   	nop
+</span></span><span style=display:flex><span>    100a:	90                   	nop
+</span></span><span style=display:flex><span>    100b:	90                   	nop
+</span></span><span style=display:flex><span>    100c:	90                   	nop
+</span></span><span style=display:flex><span>    100d:	90                   	nop
+</span></span><span style=display:flex><span>    100e:	90                   	nop
+</span></span><span style=display:flex><span>    100f:	90                   	nop
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>0000000000001010 &lt;hello_MainClass__ctor&gt;:
+</span></span><span style=display:flex><span>    1010:	48 83 ec 08          	sub    $0x8,%rsp
+</span></span><span style=display:flex><span>    1014:	48 83 c4 08          	add    $0x8,%rsp
+</span></span><span style=display:flex><span>    1018:	c3                   	retq   
+</span></span><span style=display:flex><span>    1019:	00 00                	add    %al,(%rax)
+</span></span><span style=display:flex><span>    101b:	00 00                	add    %al,(%rax)
+</span></span><span style=display:flex><span>    101d:	00 00                	add    %al,(%rax)
+</span></span><span style=display:flex><span>	...
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>0000000000001020 &lt;hello_MainClass_Main_string__&gt;:
+</span></span><span style=display:flex><span>    1020:	48 83 ec 08          	sub    $0x8,%rsp
+</span></span><span style=display:flex><span>    1024:	49 8b 3d e5 24 00 00 	mov    0x24e5(%rip),%rdi        # 3510 &lt;__bss_start+0x20&gt;
+</span></span><span style=display:flex><span>    102b:	e8 20 00 00 00       	callq  1050 &lt;plt_System_Console_WriteLine_string&gt;
+</span></span><span style=display:flex><span>    1030:	48 83 c4 08          	add    $0x8,%rsp
+</span></span><span style=display:flex><span>    1034:	c3                   	retq   
+</span></span><span style=display:flex><span>    1035:	00 00                	add    %al,(%rax)
+</span></span><span style=display:flex><span>    1037:	00 90 90 90 90 00    	add    %dl,0x909090(%rax)
+</span></span><span style=display:flex><span>	...
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>0000000000001050 &lt;plt_System_Console_WriteLine_string&gt;:
+</span></span><span style=display:flex><span>    1050:	ff 25 ca 24 00 00    	jmpq   *0x24ca(%rip)        # 3520 &lt;__bss_start+0x30&gt;
+</span></span><span style=display:flex><span>    1056:	0e                   	(bad)  
+</span></span><span style=display:flex><span>	...
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>0000000000001060 &lt;method_addresses&gt;:
+</span></span><span style=display:flex><span>    1060:	e8 ab ff ff ff       	callq  1010 &lt;hello_MainClass__ctor&gt;
+</span></span><span style=display:flex><span>    1065:	e8 b6 ff ff ff       	callq  1020 &lt;hello_MainClass_Main_string__&gt;
+</span></span><span style=display:flex><span>    106a:	e8 f1 ff ff ff       	callq  1060 &lt;method_addresses&gt;
+</span></span><span style=display:flex><span>	...
+</span></span></code></pre></div><p>.NET Framework 一直有一个工具, NGEN (Native Image Generator), NGEN 会将程序集简单的编译成机器码,在C:\Windows\Microsoft.Net\assembly 目录就是 NGEN 的镜像. NGEN 依然无法脱离 .NET Framework,任然需要 JIT,程序运行的时候往往是 MSIL 和 MachineCode 混合运行.</p><p>Windows update 更新重启后,经常可以在任务管理器里面发现 NGEN 进程疯狂的执行任务.</p><p>在没有 .NET Native 时, Windows Phone 中,.NET App 在安装后就会通过 NGEN 转变为机器码,以此来提升运行速度,降低功耗.对于 .NET Native 的需求,随着 Microsoft 的 移动战略的实施变得尤为迫切.</p><p>早在2013年就有传闻，.NET将推出.NET Native,时至今日,基于 .NET 的 Windows 10 通用应用程序,都开始开启 .NET Native 支持.</p><p>.NET Native 基本的流程如下:</p><blockquote><p>App IL + FX -> MCG　-> Interop.g.cs -> CSC -> Interop.dll -> Merge -> IL transform -> NUTC -> RhBind -> .EXE</p></blockquote><p>.NET Native 工具链将所有依赖到的程序集反汇编成 C# 源码,使用 C# 编译器再编译成一个 dll, dll 再转 IR ,使用 <code>nutc_driver</code> 编译成机器码, 而 <code>nutc_driver</code> 代码是使用了 Microsoft C++ 后端代码. 最后生成一个 dll 和一个 Bootstrap 的 EXE, dll 导出的函数为:</p><blockquote><p>RHBinder__ShimExeMain</p></blockquote><p>使用 Visual C++ 工具 dumpbin 查看符号信息：</p><blockquote><p>dumpbin /EXPORTS App2.dll</p></blockquote><p>得到的结果如下：</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-txt data-lang=txt><span style=display:flex><span>Microsoft (R) COFF/PE Dumper Version 14.00.23303.0
+</span></span><span style=display:flex><span>Copyright (C) Microsoft Corporation.  All rights reserved.
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Dump of file app2.dll
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>File Type: DLL
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>  Section contains the following exports for 
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    00000000 characteristics
+</span></span><span style=display:flex><span>           0 time date stamp Thu Jan  1 08:00:00 1970
+</span></span><span style=display:flex><span>        0.00 version
+</span></span><span style=display:flex><span>           1 ordinal base
+</span></span><span style=display:flex><span>          20 number of functions
+</span></span><span style=display:flex><span>          20 number of names
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    ordinal hint RVA      name
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>          1    0 00258498 $thread_static_index = TlsIndexSection
+</span></span><span style=display:flex><span>          2    1 00688FA0 AppendExceptionStackFrame = System::Exception.AppendExceptionStackFrame
+</span></span><span style=display:flex><span>          3    2 004D6CC0 CheckStaticClassConstruction = System::Runtime::CompilerServices::ClassConstructorRunner.EnsureClassConstructorRun
+</span></span><span style=display:flex><span>          4    3 0067B240 CreateCommandLine = System::Runtime::CommandLine.InternalCreateCommandLine
+</span></span><span style=display:flex><span>          5    4 00681710 CtorCharArray = System::String.CtorCharArray
+</span></span><span style=display:flex><span>          6    5 00681520 CtorCharArrayStartLength = System::String.CtorCharArrayStartLength
+</span></span><span style=display:flex><span>          7    6 00680FC0 CtorCharCount = System::String.CtorCharCount
+</span></span><span style=display:flex><span>          8    7 00681300 CtorCharPtr = System::String.CtorCharPtr
+</span></span><span style=display:flex><span>          9    8 00681110 CtorCharPtrStartLength = System::String.CtorCharPtrStartLength
+</span></span><span style=display:flex><span>         10    9 0067E450 FailFast = System::RuntimeExceptionHelpers.RuntimeFailFast
+</span></span><span style=display:flex><span>         11    A 0067B110 GenericLookup = System::Runtime::TypeLoaderExports.GenericLookup
+</span></span><span style=display:flex><span>         12    B 0067AFF0 GenericLookupAndAllocArray = System::Runtime::TypeLoaderExports.GenericLookupAndAllocArray
+</span></span><span style=display:flex><span>         13    C 00462220 GenericLookupAndAllocObject = System::Runtime::TypeLoaderExports.GenericLookupAndAllocObject
+</span></span><span style=display:flex><span>         14    D 0067B080 GenericLookupAndCallCtor = System::Runtime::TypeLoaderExports.GenericLookupAndCallCtor
+</span></span><span style=display:flex><span>         15    E 0067AEE0 GenericLookupAndCast = System::Runtime::TypeLoaderExports.GenericLookupAndCast
+</span></span><span style=display:flex><span>         16    F 0067AF60 GenericLookupAndCheckArrayElemType = System::Runtime::TypeLoaderExports.GenericLookupAndCheckArrayElemType
+</span></span><span style=display:flex><span>         17   10 0067E500 GetRuntimeException = System::RuntimeExceptionHelpers.GetRuntimeException
+</span></span><span style=display:flex><span>         18   11 0067B170 GetThreadStaticsForDynamicType = System::Runtime::TypeLoaderExports.GetThreadStaticsForDynamicType
+</span></span><span style=display:flex><span>         19   12 0067AE50 InitializeFinalizerThread = System::Runtime::FinalizerInitRunner.DoInitialize
+</span></span><span style=display:flex><span>         20   13 0027BF10 RHBinder__ShimExeMain = RHBinder__ShimExeMain
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>  Summary
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>       5A000 .data
+</span></span><span style=display:flex><span>      1FE000 .rdata
+</span></span><span style=display:flex><span>       66000 .reloc
+</span></span><span style=display:flex><span>        3000 .rsrc
+</span></span><span style=display:flex><span>      4F4000 .text
+</span></span><span style=display:flex><span>        1000 .tkd0
+</span></span><span style=display:flex><span>        1000 .tkd1
+</span></span><span style=display:flex><span>        1000 .tkd2
+</span></span><span style=display:flex><span>        1000 .tkd3
+</span></span><span style=display:flex><span>        1000 .tkd4
+</span></span><span style=display:flex><span>        1000 .tkd5
+</span></span><span style=display:flex><span>        1000 .tkd6
+</span></span><span style=display:flex><span>        1000 .tkd7
+</span></span><span style=display:flex><span>        1000 .tks0
+</span></span><span style=display:flex><span>        1000 .tks1
+</span></span><span style=display:flex><span>        1000 .tks2
+</span></span><span style=display:flex><span>        1000 .tks3
+</span></span><span style=display:flex><span>        1000 .tks4
+</span></span><span style=display:flex><span>        1000 .tks5
+</span></span><span style=display:flex><span>        1000 .tks6
+</span></span><span style=display:flex><span>        1000 .tks7
+</span></span></code></pre></div><p>查看 App2.exe 导入的符号信息</p><blockquote><p>dumpbin /IMPORTS App2.exe</p></blockquote><p>输出如下：</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-txt data-lang=txt><span style=display:flex><span>Microsoft (R) COFF/PE Dumper Version 14.00.23303.0
+</span></span><span style=display:flex><span>Copyright (C) Microsoft Corporation.  All rights reserved.
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Dump of file app2.exe
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>File Type: EXECUTABLE IMAGE
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>  Section contains the following imports:
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    App2.dll
+</span></span><span style=display:flex><span>                402000 Import Address Table
+</span></span><span style=display:flex><span>                401028 Import Name Table
+</span></span><span style=display:flex><span>                     0 time date stamp
+</span></span><span style=display:flex><span>              FFFFFFFF Index of first forwarder reference
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>                    0 RHBinder__ShimExeMain
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>  Summary
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        1000 .data
+</span></span><span style=display:flex><span>        1000 .rdata
+</span></span><span style=display:flex><span>        1000 .reloc
+</span></span><span style=display:flex><span>        3000 .rsrc
+</span></span><span style=display:flex><span>        1000 .text
+</span></span></code></pre></div><p>.NET Native 的实现，在 IR 前期很大的程度上依赖 Roslyn 这类新型的编译器，而在 IR 后期，就得益于 Phoenix 编译器框架，
+.NET Native 后端和 Visual C/C++ 共用一套后端优化编译器。</p><p>在 Microsoft Channel 9 有一个对 .NET Native 的介绍视频：
+<a href=https://channel9.msdn.com/Events/dotnetConf/2014/-NET-Native-Deep-Dive>.NET Native Deep Dive</a></p><p>视频中的 PPT 可以下载：
+<a href=http://files.channel9.msdn.com/thumbnail/45d78758-8ab8-4e62-8a73-2e6a4027b49c.pptx>.NET Native PPTX</a></p><p>在 Visual Studio 2015 中，可以使用 NuGet 安装 .NET Native 的相关插件，以此来分析 .NET 引用能否被 .NET Native 支持。</p><blockquote><p>Install-Package Microsoft.NETNative.Analyzer</p></blockquote><p>对于 .NET Native, 大多数人并不会感到满意，大多数 .NET 开发者都希望 .NET Native 能够扩展到 桌面平台，能够支持 WPF &mldr;</p><h3 id=llilc---llvm-based-compiler-for-net-coreclr>LLILC - LLVM-Based Compiler for .NET CoreCLR</h3><p>在 .NET CoreCLR 开源后，.NET 开发团队也创建了基于 LLVM 的 .NET Core 编译器项目 LLILC，实际上，在之前已经有了 C# Native,
+SharpLang 之类的项目着手实现 .NET 的 AOT。然而这些项目大多是个人兴趣，支持有限。</p><p>LLILC 的核心开发者是 Phoenix 编译器框架的架构师 <a href=https://github.com/AndyAyersMS>Andy Ayers</a>, 大神本人也会在 gitter.im 上回答人们对 LLILC 的疑问。LLILC 包括 JIT 和 AOT ,不过目前 AOT 并没有编码实现。目前项目组的重心任然是 JIT 模块。</p><p>LLILC 的 JIT 架构<br><img src=https://github.com/dotnet/llilc/raw/master/Documentation/Images/JITArch.png alt=JIT></p><p>LLILC 的 AOT 架构<br><img src=https://github.com/dotnet/llilc/raw/master/Documentation/Images/AOTArch.png alt=AOT></p><p>MRT 也就是 .NET Native Runtime ，专门为 .NET Native 实现的一个精简运行时。</p><p>LLILC 依然是非常的不完善，最后的究竟怎样仍需观望。</p><p>从 .NET 还是 JVM 或者是 LLVM 来看，很多东西都是相似的，技术也在互相影响和渗透。</p><h3 id=net-core-runtime-corert>.NET Core Runtime (CoreRT)</h3><p>近期，.NET 推出了 .NET Core Runtime (CoreRT) 的项目，此项目和 .NET Core Runtime (CLR) 不同的是，CoreRT 提供了一套 .NET AOT 的机制,可以将 .NET 程序 编译成原生代码，不依赖 .NET 运行时而运行在宿主机器上。此项目的大部分代码来源于 CoreCLR ，也有部分与 UWA .NET Native 的代码类似。</p><p>这种 AOT 的优化的好处，文档中也有介绍</p><ul><li>编译后生成一个单文件，所有的依赖，包括 CoreRT</li><li>启动时是机器码，不需要生成机器码，也不要加载 JIT 编译器</li><li>可以使用其他优化编译器，包括 LLILC ,IL to CPP</li></ul><p>目前支持的是 Console App, 计划支持 ASP.NET 。</p><p>CoreRT 有两个方式生成机器码，第一个 使用是直接编译 IL 成机器码，默认情况下， RyuJIT 作为一个 AOT 编译器将 IL 编译成机器码，
+实际上这是一个很巧妙的策略，在 CoreCLR 中， RyuJIT 又变成了一个简单的 JIT 编译器。在前文中提到的 LLILC ，也可以作为 CoreRT 的
+AOT 编译器。</p><p>另一个方式是将 C# 代码编译成 C++ 代码，然后调用对应平台的 C++ 编译器优化编译成机器码。</p><p>在 CoreRT 介绍文档中， 提到了 UTC for UWP apps 也可以作为 CoreRT 的 AOT 编译器</p><p>项目地址： <a href=https://github.com/dotnet/corert>.NET Core Runtime</a></p><p>Channel9 视频： <a href=https://channel9.msdn.com/Events/Visual-Studio/Connect-event-2015/104>Introducing .NET Core: A Cross-Platform Runtime</a></p><p>CoreRT 介绍： <a href=https://github.com/dotnet/corert/blob/master/Documentation/intro-to-corert.md>Intro to .NET Native and CoreRT</a></p><p>目前，在 dotnet.github.io 页面可以获取 Windows , Ubuntu, 以及 Mac OS X 的安装包，这个是每日构建的。</p><p>初始化一个 dotnet 项目</p><blockquote><p>dotnet init</p></blockquote><p>安装依赖</p><blockquote><p>dotnet restore</p></blockquote><p>直接使用 RyuJIT 编译成机器码：</p><blockquote><p>dotnet compile &ndash;native</p></blockquote><p>编译生成 C++ 代码：</p><blockquote><p>dotnet compile &ndash;native &ndash;cpp</p></blockquote><p>实际上此项目还相当不完善，dotnet 工具链偶尔是无法运行的，不过可以预见此项目会给人们带来眼前一亮的感觉。</p><h2 id=探索的脚步>探索的脚步</h2><h3 id=41-csnative>4.1 CSNative</h3><p>永远不会有完全统一的意见，总会有人去创造新的轮子。不谈其他，重复的创造能对已有的东西带来技术革新，在 CodePlex上,就有个伙计实现了自己的 .NET Native 方案：<a href=http://csnative.codeplex.com/>C# Native</a>；他利用 Roslyn API 将 C# 编译成 MSIL，然后将 MSIL 编译成LLVM IR ,随后 &lsquo;LLVM System compiler&rsquo; llc 编译成 Native code ,用 GCC 将 Object 文件链接成 exe，GC 库是32位的 <a href=http://www.hboehm.info/gc/>libgc</a>， 现在已经转变了策略，直接生成 C++ 代码，使用 G++ 编译成二进制。</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=display:flex><span><span style=color:#ff636f>using</span> <span style=color:#58a1dd>System</span>;
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>class</span> <span style=color:#58a1dd>X</span> {
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>public</span> <span style=color:#ff636f>static</span> <span style=color:#ff636f>int</span> <span style=color:#58a1dd>Main</span> (<span style=color:#ff636f>string</span> [] <span style=color:#58a1dd>args</span>)
+</span></span><span style=display:flex><span>	{
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>Console</span>.<span style=color:#58a1dd>WriteLine</span> (<span style=color:#a6be9d>&#34;Hello, World!&#34;</span>);
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>Il2c 是一个利用 Roslyn 实现的 C#/MSIL to C++ 的编译器</p><blockquote><p>Il2c.exe helloworld.cs /corelib:CoreLib.dll</p></blockquote><p>生成 helloworld.cpp, 然后使用 g++ 编译成 exe :</p><blockquote><p>g++ -o helloworld.exe helloworld.cpp CoreLib.cpp -lstdc++ -lgcmt-lib -march=i686 -L .</p></blockquote><p>直接生成 Exe:</p><blockquote><p>Il2c.exe /exe helloworld.cs /corelib:CoreLib.dll</p></blockquote><p>C# Native 作者 AlexDev 本人也是 Babylon 3D (C#/native port) 的作者。</p><h3 id=42-sharplang>4.2 SharpLang</h3><p>同样的，在 Github上，也有一个基于 LLVM 的 C# Native 的解决方案: <a href=https://github.com/xen2/SharpLang>SharpLang</a>。
+在LLILC推出后，开发者 Virgile Bello 也就没有更新 SharpLang 了。</p><h2 id=其他>其他</h2><p>一些相关技术的图片：</p><h3 id=net>.NET</h3><p>实际上无论是 JVM 还是 .NET Framework 以及 LLVM Framework 在结构上是非常相似的，如下图：<br><img src=https://raw.githubusercontent.com/fstudio/Beaot/master/doc/Images/dotNet/CLR_diag.png alt=Framework></p><p>.NET 的功能演进:<br><img src=https://raw.githubusercontent.com/fstudio/Beaot/master/doc/Images/dotNet/DotNet.png alt=dotNet></p><p>从源码到运行：<br><img src=https://raw.githubusercontent.com/fstudio/Beaot/master/doc/Images/dotNet/Overview_of_the_Common_Language_Infrastructure.png alt=Step></p><h3 id=jvm>JVM</h3><p>JVM 加载器：<br><img src=https://raw.githubusercontent.com/fstudio/Beaot/master/doc/Images/JvmSpec7.png alt=JVM></p><h3 id=web-aot->Web AOT ?</h3><p><strong>asm.js</strong> 是一个非常容易优化的 JavaScript 子集:
+<a href=https://blog.mozilla.org/luke/2014/01/14/asm-js-aot-compilation-and-startup-performance/>asm.js AOT</a><br><img src=https://ffp4g1ylyit3jdyti1hqcvtb-wpengine.netdna-ssl.com/luke/files/2013/12/aot-diagram.png alt=asm.js-AOT></p><p><strong>PNacl</strong></p><p>本质上，PNaCl 通过编译本地的 C 和 C++ 代码到一个中间表示，而不是像在 Native Client 的特定于体系结构的表示。LLVM 类型的字节代码被包裹在一个可移植的执行体里面，这个执行体可以托管在一个 Web 服务器上，就像许多其它的网站资产一样。当该网站被访问的时候，Chrome 获取信息并将可移植的执行体转换成一个特定于体系结构的、便携式的、可执行的机器代码，直接为底层设备进行优化。这种转换方法意味着开发者不需要施行多次重新编译App，也可以在x86、ARM或MIPS设备上运行。</p><p><strong>WebAssembly</strong></p><p>WebAssembly 是 Microsoft Google Mozille Apple 开发者合作开发的一项新技术，可以作为任何编程语言的编译目标，
+使应用程序可以运行在浏览器或其它代理中。</p><p><a href=http://www.infoq.com/cn/news/2015/06/webassembly-wasm>InfoQ WebAssembly：面向Web的通用二进制和文本格式</a></p><h1 id=备注>备注</h1><ol><li>LLVM <a href=http://www.aosabook.org/en/llvm.html>http://www.aosabook.org/en/llvm.html</a></li><li>Embarcadero C++ Builder:<br><a href=http://docwiki.embarcadero.com/RADStudio/XE6/en/BCC64.EXE,_the_C%2B%2B_64-bit_Windows_Compiler>BCC64.EXE, the C++ 64-bit Windows Compiler</a><br><a href=http://docwiki.embarcadero.com/RADStudio/XE6/en/Clang-based_C%2B%2B_Compilers>Clang-based C++ Compilers</a></li><li>Phoenix Compiler Framework:<br><a href=https://en.wikipedia.org/wiki/Phoenix_%28compiler_framework%29>Phoenix Compiler Framework Wiki</a></li><li>Android Dalvik:<br><a href=https://en.wikipedia.org/wiki/Dalvik_%28software%29>Dalvik Wiki</a></li><li>LLILC News:<br><a href=http://www.infoq.com/news/2015/04/microsoft-llilc-llvm-compiler>InfoQ Microsoft Introduces LLILC, LLVM-based .NET/CoreCLR Compiler</a></li></ol><p><strong>UPDATE</strong> 几年之后，技术有了长足发展，本文并不一定符合当前新的技术形式。</p><hr width=100% id=EOF><p style=color:#777>Last modified on 2015-06-16</p></div></div><nav class=post-pagination><a class=newer-posts href=/posts/2015/2015-10-16-dev-vcs/>Next<br>Subversion 和 GIT 开发者演进之 2015
+</a><a class=older-posts href=/posts/2015/2015-06-11-app-container/>Previous<br>Windows AppContainer 降权，隔离与安全</a></nav><div class=post-comment-wrapper></div></div></div></div></div><div id=sideContainer class=side-container><a class="a-block nav-head false" href=https://forcemz.net/><div class=nav-title>Charlie's Rethinking</div><div class=nav-subtitle>Themed by Diary.</div></a><div class=nav-link-list><a class="a-block nav-link-item active" href=/posts>归档
+</a><a class="a-block nav-link-item false" href=/categories>分类
+</a><a class="a-block nav-link-item false" href=/tags>标签
+</a><a class="a-block nav-link-item false" href=/about>关于
+</a><a class="a-block nav-link-item false" href=/index.xml>RSS Feed</a></div><div class=nav-footer>Hugo Theme <a href=https://github.com/amazingrise/hugo-theme-diary>Diary</a> by <a href=https://risehere.net/>Rise</a><br>Ported from <a href=https://mak1t0.cc/ target=_blank rel="noreferrer noopener">Makito</a>'s <a href=https://github.com/SumiMakito/hexo-theme-journal/ target=_blank rel="noreferrer noopener">Journal.</a><br><br>&copy;
+Copyright (c) 2009-2024 J23</div></div><div id=extraContainer class=extra-container><div class=toc-wrapper><div class=toc><div class=toc-content><center>- CATALOG -</center><ul><ul><li><a href=#%e5%89%8d%e8%a8%80 class=nav-前言>前言</a></li><li><a href=#llvm-%e7%bc%96%e8%af%91%e5%99%a8%e5%9f%ba%e7%a1%80%e8%ae%be%e6%96%bd%e7%9a%84%e5%8f%91%e8%bf%b9 class=nav-llvm-编译器基础设施的发迹>LLVM 编译器基础设施的发迹</a></li><ul><li><a href=#%e4%bc%a0%e7%bb%9f%e7%9a%84%e7%bc%96%e8%af%91%e5%99%a8 class=nav-传统的编译器>传统的编译器</a></li><li><a href=#%e5%9f%ba%e4%ba%8e-llvm-%e7%9a%84%e7%bc%96%e8%af%91%e5%99%a8 class=nav-基于-llvm-的编译器>基于 LLVM 的编译器</a></li></ul><li><a href=#android-%e4%b8%8e-aot class=nav-android-与-aot>Android 与 AOT</a></li><ul><ul><li><a href=#android-runtime class=nav-android-runtime>Android Runtime</a></li></ul></ul><li><a href=#net-%e4%b8%8e-aot class=nav-net-与-aot>.NET 与 AOT</a></li><ul><li><a href=#net-compiler-platform-roslyn class=nav-net-compiler-platform-roslyn>.NET Compiler Platform (“Roslyn”)</a></li><li><a href=#net-native class=nav-net-native>.NET Native</a></li><li><a href=#llilc---llvm-based-compiler-for-net-coreclr class=nav-llilc---llvm-based-compiler-for-net-coreclr>LLILC - LLVM-Based Compiler for .NET CoreCLR</a></li><li><a href=#net-core-runtime-corert class=nav-net-core-runtime-corert>.NET Core Runtime (CoreRT)</a></li></ul><li><a href=#%e6%8e%a2%e7%b4%a2%e7%9a%84%e8%84%9a%e6%ad%a5 class=nav-探索的脚步>探索的脚步</a></li><ul><li><a href=#41-csnative class=nav-41-csnative>4.1 CSNative</a></li><li><a href=#42-sharplang class=nav-42-sharplang>4.2 SharpLang</a></li></ul><li><a href=#%e5%85%b6%e4%bb%96 class=nav-其他>其他</a></li><ul><li><a href=#net class=nav-net>.NET</a></li><li><a href=#jvm class=nav-jvm>JVM</a></li><li><a href=#web-aot- class=nav-web-aot->Web AOT ?</a></li></ul></ul><li><a href=#%e5%a4%87%e6%b3%a8 class=nav-备注>备注</a></li></ul></div></div></div><div class=pagination><a id=globalBackToTop class="pagination-action animated-visibility" href=#top :class="{ invisible: scrollY == 0 }"><i class="material-icons pagination-action-icon">keyboard_arrow_up
+</i></a><a type=button class=pagination-action id=darkModeToggleButton><span class="material-icons pagination-action-icon" id=darkModeToggleIcon>dark_mode</span></a></div></div><div id=single-column-footer>Hugo Theme <a href=https://github.com/amazingrise/hugo-theme-diary>Diary</a> by <a href=https://risehere.net/>Rise</a><br>Ported from <a href=https://mak1t0.cc/ target=_blank rel="noreferrer noopener">Makito</a>'s <a href=https://github.com/SumiMakito/hexo-theme-journal/ target=_blank rel="noreferrer noopener">Journal.</a><br><br>&copy;
+Copyright (c) 2009-2024 J23</div></div><script src=/js/journal.js></script></body></html>

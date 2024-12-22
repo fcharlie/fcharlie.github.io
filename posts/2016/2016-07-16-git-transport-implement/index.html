@@ -1,0 +1,117 @@
+<!doctype html><html lang=en><head><title>Git 传输协议实现</title>
+<meta charset=utf-8><meta name=X-UA-Compatible content="IE=edge"><meta name=google-site-verification content><meta content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=5" name=viewport><meta content="telephone=no" name=format-detection><meta name=description content><meta name=renderer content="webkit"><meta name=theme-color content="#ffffff"><script src=/js/toc.js></script><link type=text/css rel=stylesheet href=/vendor/css/bootstrap.min.css><link rel=stylesheet href=/scss/dark-mode.min.cb53f1bee2b8900cb4f082afbf00175d6618f281cf9a2fe8619e3b52d20b5721.css integrity="sha256-y1PxvuK4kAy08IKvvwAXXWYY8oHPmi/oYZ47UtILVyE=" media=screen><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Material+Icons"></head><body><div id=app><div class=single-column-drawer-container id=drawer v-bind:class="{ 'single-column-drawer-container-active': isDrawerOpen }"><div class=drawer-content><div class=drawer-menu><a class="a-block drawer-menu-item active" href=/posts>归档
+</a><a class="a-block drawer-menu-item false" href=/categories>分类
+</a><a class="a-block drawer-menu-item false" href=/tags>标签
+</a><a class="a-block drawer-menu-item false" href=/about>关于
+</a><a class="a-block drawer-menu-item false" href=/index.xml>RSS Feed</a><div class=toc><div class=toc-content><center>- CATALOG -</center><ul><li><a href=#git-%e4%bc%a0%e8%be%93%e5%8d%8f%e8%ae%ae%e5%ae%9e%e7%8e%b0 class=nav-git-传输协议实现>GIT 传输协议实现</a></li><ul><li><a href=#%e4%bc%a0%e8%be%93%e5%8d%8f%e8%ae%ae%e8%a7%84%e8%8c%83 class=nav-传输协议规范>传输协议规范</a></li><li><a href=#%e8%bf%9b%e7%a8%8b%e8%be%93%e5%85%a5%e8%be%93%e5%87%ba%e7%9a%84%e8%af%bb%e5%86%99 class=nav-进程输入输出的读写>进程输入输出的读写</a></li><li><a href=#%e5%85%b6%e4%bb%96 class=nav-其他>其他</a></li></ul></div></div></div></div></div><transition name=fade><div id=drawer-mask v-bind:class="{ 'single-column-drawer-mask': mounted }" v-if=isDrawerOpen v-on:click=toggleDrawer></div></transition><nav id=navBar class="navbar sticky-top navbar-light single-column-nav-container"><div id=navBackground class=nav-background></div><div class="container container-narrow nav-content"><button id=nav_dropdown_btn class=nav-dropdown-toggle type=button v-on:click=toggleDrawer>
+<i class=material-icons>menu
+</i></button>
+<a id=navTitle class=navbar-brand href=https://forcemz.net/>Charlie's Rethinking
+</a><button type=button class=nav-darkmode-toggle id=darkModeToggleButton2>
+<i class=material-icons id=darkModeToggleIcon2>dark_mode</i></button></div></nav><div class=single-column-header-container id=pageHead v-bind:style="{ transform: 'translateZ(0px) translateY('+.3*scrollY+'px)', opacity: 1-navOpacity }"><a href=https://forcemz.net/><div class=single-column-header-title>Charlie's Rethinking</div><div class=single-column-header-subtitle>Themed by Diary.</div></a></div><div id=content><div id=streamContainer class=stream-container><div class="post-list-container post-list-container-shadow"><div class=post><div class=post-head-wrapper-text-only><div class=post-title>Git 传输协议实现<div class=post-meta><time itemprop=datePublished>2016-07-16 20:00
+</time><i class=material-icons>folder</i>
+<a href=/categories/git>git</a>
+&nbsp;</div></div></div><div class=post-body-wrapper><div class=post-body v-pre><h1 id=git-传输协议实现>GIT 传输协议实现</h1><p>在 GIT 的三种主流传输协议 HTTP SSH GIT 中，GIT 协议是最少被使用的协议（也就是 URL 以 <code>git://</code> 开始的协议）。
+这是由于 git 协议的权限控制几乎没有，要么全部可读，要么全部可写，要么全部可读写。所以对于代码托管平台来说，
+git 协议的目的仅仅是为了支持 公开项目的只读访问。</p><p>在 git 的各种传输协议中，git 协议无疑是最高效的，HTTP 受限于 HTTP 的特性，传输过程需要构造 HTTP 请求和响应。
+如果是 HTTPS 还涉及到加密解密。另外 HTTP 的超时设置，以及包体大小限制都会影响用户体验。</p><p>而 SSH 协议的性能问题主要集中在加密解密上。当然相对于用户的信息安全来说，这些代价都是可以接受。</p><p>git 协议实际上相当于 SSH 无加密无验证，也就无从谈起权限控制，但实际上代码托管平台内部的一些同步服务，如果使用
+git 协议实现，将会得到很大的性能提升。</p><h2 id=传输协议规范>传输协议规范</h2><p>git 协议的技术文档可以从 git 源码目录的 <code>Documentation/technical</code> 找到，即 <a href=https://github.com/git/git/blob/master/Documentation/technical/pack-protocol.txt>Packfile transfer protocols</a>
+创建 TCP 连接后，git 客户端率先发送请求体，请求格式基于 BNF 的描述如下：</p><pre><code>git-proto-request = request-command SP pathname NUL [ host-parameter NUL ]
+request-command   = &quot;git-upload-pack&quot; / &quot;git-receive-pack&quot; / &quot;git-upload-archive&quot;   ; case sensitive
+pathname          = *( %x01-ff ) ; exclude NUL
+host-parameter    = &quot;host=&quot; hostname [ &quot;:&quot; port ]
+</code></pre><p>一个例子如下：</p><p><code>0033git-upload-pack /project.git\0host=myserver.com\0</code></p><p>在 git 的协议中，pkt-line 是非常有意思的设计，行前 4 个字节表示整个行长，长度包括其前 4 字节，
+但是有个特例，<code>0000</code> 其代表行长为 0，但其自身长度是 4。</p><p>下面是一个关于请求的结构体：</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-cpp data-lang=cpp><span style=display:flex><span><span style=color:#ff636f>struct</span> <span style=color:#58a1dd>GitRequest</span>{
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span> <span style=color:#58a1dd>command</span>;
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span> <span style=color:#58a1dd>path</span>;
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span> <span style=color:#58a1dd>host</span>;
+</span></span><span style=display:flex><span>};
+</span></span></code></pre></div><p>git 有自带的 git-daemon 实现，这个服务程序监听 9418 端口，在接收到客户端的请求后，先要判断 command 是
+否是被允许的，git 协议中有 fetch 和 push 以及 archive 之类的操作，分别对应的服务器上的命令是 git-upload-pack
+git-receive-pack git-upload-archive。HTTP 只会支持前两种，SSH 会支持三种，而 代码托管平台的 git 通常支持的是
+git-upload-pack git-upload-archive。</p><p>当不允许的命令被接入时需要发送错误信息给客户端，这个信息在不同的 git-daemon 实现中也不一样，大体如下所示。</p><p><code>001bERR service not enabled</code></p><p>git-daemon 将对请求路径进行转换，以期得到在服务器上的绝对路径，同时可以判断路径是否存在，不存在时
+可以给客户端发送 <strong>Repository Not Found</strong>。而 host 可能时域名也可能时 ip 地址，当然也可以包括端口。
+服务器可以在这里做进一步的限制，出于安全考虑应当考虑到请求是可以被伪造的。</p><p>客户端发送请求过去后，服务器将启动相应的命令，将命令标准错误和标准输出的内容发送给客户端，
+将客户端传输过来的数据写入到命令的标准输入中来。</p><p>在请求体中，命令为 git-upload-pack /project.git 在服务器上运行时，就会类似</p><blockquote><p>git-upload-pack ${RepositoriesRoot}/project.git</p></blockquote><p>出于限制连接的目的，一般还会添加 <code>--timeout=60</code> 这样的参数。timeout 并不是整个操作过程的超时。</p><p>与 HTTP 不同的是，git 协议的命令中没有参数 <code>--stateless-rpc</code> 和 <code>--advertise-refs</code> ，在 HTTP 中，两个参数都存在时，
+只输出存储库的引用列表与 capabilities，与之对于的是 <code>GET /repository.git/info/refs?service=git-upload(receive)-pack</code> ，
+当只有 &ndash;stateless-rpc 时，等待客户端的数据，然后解析发送数据给客户端,，与之对应的是 <code>POST /repository.git/git-upload(receive)-pack</code>。</p><h2 id=进程输入输出的读写>进程输入输出的读写</h2><p>在 C 语言中，有 popen 函数，可以创建一个进程,并将进程的标准输出或标准输入创建成一个文件指针，即 <code>FILE*</code>
+其他可以使用 C 函数的语言很多也提供了类似的实现，比如 Ruby，基于 Ruby 的 git HTTP 服务器 grack 正是使用的 popen，
+相比与其他语言改造的 popen，C 语言中 popen 存在了一些缺陷，比如无法同时读写，如果要输出标准错误，
+需要在命令参数中额外的将标准错误重定向到标准输出。</p><p>在 musl libc 的中，popen 的实现如下：</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-cpp data-lang=cpp><span style=display:flex><span><span style=color:#58a1dd>FILE</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>popen</span>(<span style=color:#ff636f>const</span> <span style=color:#ff636f>char</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>cmd</span>, <span style=color:#ff636f>const</span> <span style=color:#ff636f>char</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>mode</span>)
+</span></span><span style=display:flex><span>{
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>int</span> <span style=color:#58a1dd>p</span>[<span style=color:#a6be9d>2</span>], <span style=color:#58a1dd>op</span>, <span style=color:#58a1dd>e</span>;
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>pid_t</span> <span style=color:#58a1dd>pid</span>;
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>FILE</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>f</span>;
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>posix_spawn_file_actions_t</span> <span style=color:#58a1dd>fa</span>;
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> (<span style=color:#ff636f>*</span><span style=color:#58a1dd>mode</span> <span style=color:#ff636f>==</span> <span style=color:#a6be9d>&#39;r&#39;</span>) {
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>op</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>	} <span style=color:#ff636f>else</span> <span style=color:#ff636f>if</span> (<span style=color:#ff636f>*</span><span style=color:#58a1dd>mode</span> <span style=color:#ff636f>==</span> <span style=color:#a6be9d>&#39;w&#39;</span>) {
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>op</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>1</span>;
+</span></span><span style=display:flex><span>	} <span style=color:#ff636f>else</span> {
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>errno</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>EINVAL</span>;
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> (<span style=color:#58a1dd>pipe2</span>(<span style=color:#58a1dd>p</span>, <span style=color:#58a1dd>O_CLOEXEC</span>)) <span style=color:#ff636f>return</span> <span style=color:#58a1dd>NULL</span>;
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>f</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>fdopen</span>(<span style=color:#58a1dd>p</span>[<span style=color:#58a1dd>op</span>], <span style=color:#58a1dd>mode</span>);
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>f</span>) {
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>__syscall</span>(<span style=color:#58a1dd>SYS_close</span>, <span style=color:#58a1dd>p</span>[<span style=color:#a6be9d>0</span>]);
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>__syscall</span>(<span style=color:#58a1dd>SYS_close</span>, <span style=color:#58a1dd>p</span>[<span style=color:#a6be9d>1</span>]);
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#58a1dd>NULL</span>;
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>FLOCK</span>(<span style=color:#58a1dd>f</span>);
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>/* If the child&#39;s end of the pipe happens to already be on the final
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>	 * fd number to which it will be assigned (either 0 or 1), it must
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>	 * be moved to a different fd. Otherwise, there is no safe way to
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>	 * remove the close-on-exec flag in the child without also creating
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>	 * a file descriptor leak race condition in the parent. */</span>
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> (<span style=color:#58a1dd>p</span>[<span style=color:#a6be9d>1</span><span style=color:#ff636f>-</span><span style=color:#58a1dd>op</span>] <span style=color:#ff636f>==</span> <span style=color:#a6be9d>1</span><span style=color:#ff636f>-</span><span style=color:#58a1dd>op</span>) {
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>int</span> <span style=color:#58a1dd>tmp</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>fcntl</span>(<span style=color:#a6be9d>1</span><span style=color:#ff636f>-</span><span style=color:#58a1dd>op</span>, <span style=color:#58a1dd>F_DUPFD_CLOEXEC</span>, <span style=color:#a6be9d>0</span>);
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>if</span> (<span style=color:#58a1dd>tmp</span> <span style=color:#ff636f>&lt;</span> <span style=color:#a6be9d>0</span>) {
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>e</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>errno</span>;
+</span></span><span style=display:flex><span>			<span style=color:#ff636f>goto</span> <span style=color:#58a1dd>fail</span>;
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>__syscall</span>(<span style=color:#58a1dd>SYS_close</span>, <span style=color:#58a1dd>p</span>[<span style=color:#a6be9d>1</span><span style=color:#ff636f>-</span><span style=color:#58a1dd>op</span>]);
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>p</span>[<span style=color:#a6be9d>1</span><span style=color:#ff636f>-</span><span style=color:#58a1dd>op</span>] <span style=color:#ff636f>=</span> <span style=color:#58a1dd>tmp</span>;
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>e</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>ENOMEM</span>;
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>posix_spawn_file_actions_init</span>(<span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>fa</span>)) {
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>posix_spawn_file_actions_adddup2</span>(<span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>fa</span>, <span style=color:#58a1dd>p</span>[<span style=color:#a6be9d>1</span><span style=color:#ff636f>-</span><span style=color:#58a1dd>op</span>], <span style=color:#a6be9d>1</span><span style=color:#ff636f>-</span><span style=color:#58a1dd>op</span>)) {
+</span></span><span style=display:flex><span>			<span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span>(<span style=color:#58a1dd>e</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>posix_spawn</span>(<span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>pid</span>, <span style=color:#a6be9d>&#34;/bin/sh&#34;</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>fa</span>, <span style=color:#a6be9d>0</span>,
+</span></span><span style=display:flex><span>			    (<span style=color:#ff636f>char</span> <span style=color:#ff636f>*</span>[]){ <span style=color:#a6be9d>&#34;sh&#34;</span>, <span style=color:#a6be9d>&#34;-c&#34;</span>, (<span style=color:#ff636f>char</span> <span style=color:#ff636f>*</span>)<span style=color:#58a1dd>cmd</span>, <span style=color:#a6be9d>0</span> }, <span style=color:#58a1dd>__environ</span>))) {
+</span></span><span style=display:flex><span>				<span style=color:#58a1dd>posix_spawn_file_actions_destroy</span>(<span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>fa</span>);
+</span></span><span style=display:flex><span>				<span style=color:#58a1dd>f</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>pipe_pid</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>pid</span>;
+</span></span><span style=display:flex><span>				<span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>strchr</span>(<span style=color:#58a1dd>mode</span>, <span style=color:#a6be9d>&#39;e&#39;</span>))
+</span></span><span style=display:flex><span>					<span style=color:#58a1dd>fcntl</span>(<span style=color:#58a1dd>p</span>[<span style=color:#58a1dd>op</span>], <span style=color:#58a1dd>F_SETFD</span>, <span style=color:#a6be9d>0</span>);
+</span></span><span style=display:flex><span>				<span style=color:#58a1dd>__syscall</span>(<span style=color:#58a1dd>SYS_close</span>, <span style=color:#58a1dd>p</span>[<span style=color:#a6be9d>1</span><span style=color:#ff636f>-</span><span style=color:#58a1dd>op</span>]);
+</span></span><span style=display:flex><span>				<span style=color:#58a1dd>FUNLOCK</span>(<span style=color:#58a1dd>f</span>);
+</span></span><span style=display:flex><span>				<span style=color:#ff636f>return</span> <span style=color:#58a1dd>f</span>;
+</span></span><span style=display:flex><span>			}
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>posix_spawn_file_actions_destroy</span>(<span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>fa</span>);
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span><span style=color:#58a1dd>fail</span>:
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>fclose</span>(<span style=color:#58a1dd>f</span>);
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>__syscall</span>(<span style=color:#58a1dd>SYS_close</span>, <span style=color:#58a1dd>p</span>[<span style=color:#a6be9d>1</span><span style=color:#ff636f>-</span><span style=color:#58a1dd>op</span>]);
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>errno</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>e</span>;
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>return</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>在 Windows Visual C++ 中，popen 源码在 <code>C:\Program Files (x86)\Windows Kits\10\Source\${SDKVersion}\ucrt\conio\popen.cpp</code> ，
+按照 MSDN 文档说明，Windows 32 GUI 程序，即 subsystem 是 Windows 的程序，使用 popen 可能导致程序无限失去响应。</p><p>所以在笔者实现 git-daemon 及其他 git 服务器时，都不会使用 popen 这个函数。</p><p>为了支持跨平台和简化编程，笔者在实现 svn 代理服务器时就使用了 Boost Asio 库，后来也用 Asio 实现过一个 git 远程命令服务，
+每一个客户端与服务器连接后，服务器启动程序，需要创建 3 条管道，分别是 子进程的标准输入 输出 错误，即 stdout stdin stderr，
+然后注册读写异步事件，将子进程的输出与错误写入到 socket 发送出去，读取 socket 写入到子进程的标准输入中。</p><p>在 POSIX 系统中，boost 有一个文件描述符类 <code>boost::asio::posix::stream_descriptor</code> 这个类不能是常规文件。</p><p>在 Windows 系统中，boost 有文件句柄类 <code>boost::asio::windows::stream_handle</code> 此处的文件应当支持随机读取，
+比如命名管道（当然在 Windows 系统的，匿名管道实际上也是命名管道的一种特例实现）。</p><p>以上两种类都支持 <code>async_read</code> <code>async_write</code> ，所以可以很方便的实现异步的读取。</p><p>上面的做法，<del>唯一的缺陷是性能并不是非常高，</del> 代码逻辑也比较复杂，当然好处是，错误异常可控一些。</p><p>在 Linux 网络通信中，类似与 git 协议这样读取子进程输入输出的服务程序的传统做法是，将 子进程的 IO 重定向到 socket，
+值得注意的是 boost 中 socket 是异步非阻塞的，然而，git 命令的标准输入标准错误标准输出都是同步的，所以在 fork 子进程之前，
+需要将 socket 设置为同步阻塞，当 fork 失败时，要设置回来。</p><p><code>socket_.native_non_blocking(false);</code></p><p>另外，为了记录子进程是否异常退出，需要注册信号 SIGCHLD 并且使用 waitpid 函数去等待，boost 就有<code>boost::asio::signal_set::async_wait</code> 可以异步安全的监听子进程是否退出 。</p><p>一般而言，在 Windows 平台上，进程的输入输出并不能重定向到 socket，但你可以使用将进程的输入输出重定向到管道，然后使用 IOCP 去将管道与 socket 联系起来，性能并不会很差。</p><h2 id=其他>其他</h2><p>对于非代码托管平台的从业者来说，上面的相关内容可能显得无足轻重，不过，网络编程都是殊途同归，最后核心理念都是类似的。关于git-daemon 如果笔者有时间会实现一个跨平台的简易版并开源。</p><hr width=100% id=EOF><p style=color:#777>Last modified on 2016-07-16</p></div></div><nav class=post-pagination><a class=newer-posts href=/posts/2016/2016-08-12-git-analyze/>Next<br>Git Analyze 工具实现与原理
+</a><a class=older-posts href=/posts/2016/2016-07-09-git-storage/>Previous<br>Git 存储格式与运用</a></nav><div class=post-comment-wrapper></div></div></div></div></div><div id=sideContainer class=side-container><a class="a-block nav-head false" href=https://forcemz.net/><div class=nav-title>Charlie's Rethinking</div><div class=nav-subtitle>Themed by Diary.</div></a><div class=nav-link-list><a class="a-block nav-link-item active" href=/posts>归档
+</a><a class="a-block nav-link-item false" href=/categories>分类
+</a><a class="a-block nav-link-item false" href=/tags>标签
+</a><a class="a-block nav-link-item false" href=/about>关于
+</a><a class="a-block nav-link-item false" href=/index.xml>RSS Feed</a></div><div class=nav-footer>Hugo Theme <a href=https://github.com/amazingrise/hugo-theme-diary>Diary</a> by <a href=https://risehere.net/>Rise</a><br>Ported from <a href=https://mak1t0.cc/ target=_blank rel="noreferrer noopener">Makito</a>'s <a href=https://github.com/SumiMakito/hexo-theme-journal/ target=_blank rel="noreferrer noopener">Journal.</a><br><br>&copy;
+Copyright (c) 2009-2024 J23</div></div><div id=extraContainer class=extra-container><div class=toc-wrapper><div class=toc><div class=toc-content><center>- CATALOG -</center><ul><li><a href=#git-%e4%bc%a0%e8%be%93%e5%8d%8f%e8%ae%ae%e5%ae%9e%e7%8e%b0 class=nav-git-传输协议实现>GIT 传输协议实现</a></li><ul><li><a href=#%e4%bc%a0%e8%be%93%e5%8d%8f%e8%ae%ae%e8%a7%84%e8%8c%83 class=nav-传输协议规范>传输协议规范</a></li><li><a href=#%e8%bf%9b%e7%a8%8b%e8%be%93%e5%85%a5%e8%be%93%e5%87%ba%e7%9a%84%e8%af%bb%e5%86%99 class=nav-进程输入输出的读写>进程输入输出的读写</a></li><li><a href=#%e5%85%b6%e4%bb%96 class=nav-其他>其他</a></li></ul></div></div></div><div class=pagination><a id=globalBackToTop class="pagination-action animated-visibility" href=#top :class="{ invisible: scrollY == 0 }"><i class="material-icons pagination-action-icon">keyboard_arrow_up
+</i></a><a type=button class=pagination-action id=darkModeToggleButton><span class="material-icons pagination-action-icon" id=darkModeToggleIcon>dark_mode</span></a></div></div><div id=single-column-footer>Hugo Theme <a href=https://github.com/amazingrise/hugo-theme-diary>Diary</a> by <a href=https://risehere.net/>Rise</a><br>Ported from <a href=https://mak1t0.cc/ target=_blank rel="noreferrer noopener">Makito</a>'s <a href=https://github.com/SumiMakito/hexo-theme-journal/ target=_blank rel="noreferrer noopener">Journal.</a><br><br>&copy;
+Copyright (c) 2009-2024 J23</div></div><script src=/js/journal.js></script></body></html>

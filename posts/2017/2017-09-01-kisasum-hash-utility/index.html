@@ -1,0 +1,118 @@
+<!doctype html><html lang=en><head><title>Kisasum Hash 实用工具</title>
+<meta charset=utf-8><meta name=X-UA-Compatible content="IE=edge"><meta name=google-site-verification content><meta content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=5" name=viewport><meta content="telephone=no" name=format-detection><meta name=description content><meta name=renderer content="webkit"><meta name=theme-color content="#ffffff"><script src=/js/toc.js></script><link type=text/css rel=stylesheet href=/vendor/css/bootstrap.min.css><link rel=stylesheet href=/scss/dark-mode.min.cb53f1bee2b8900cb4f082afbf00175d6618f281cf9a2fe8619e3b52d20b5721.css integrity="sha256-y1PxvuK4kAy08IKvvwAXXWYY8oHPmi/oYZ47UtILVyE=" media=screen><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Material+Icons"></head><body><div id=app><div class=single-column-drawer-container id=drawer v-bind:class="{ 'single-column-drawer-container-active': isDrawerOpen }"><div class=drawer-content><div class=drawer-menu><a class="a-block drawer-menu-item active" href=/posts>归档
+</a><a class="a-block drawer-menu-item false" href=/categories>分类
+</a><a class="a-block drawer-menu-item false" href=/tags>标签
+</a><a class="a-block drawer-menu-item false" href=/about>关于
+</a><a class="a-block drawer-menu-item false" href=/index.xml>RSS Feed</a><div class=toc><div class=toc-content><center>- CATALOG -</center><ul><ul><li><a href=#kisasum-hash-%e5%ae%9e%e7%94%a8%e5%b7%a5%e5%85%b7 class=nav-kisasum-hash-实用工具>Kisasum Hash 实用工具</a></li><li><a href=#%e6%9c%80%e5%90%8e class=nav-最后>最后</a></li></ul></div></div></div></div></div><transition name=fade><div id=drawer-mask v-bind:class="{ 'single-column-drawer-mask': mounted }" v-if=isDrawerOpen v-on:click=toggleDrawer></div></transition><nav id=navBar class="navbar sticky-top navbar-light single-column-nav-container"><div id=navBackground class=nav-background></div><div class="container container-narrow nav-content"><button id=nav_dropdown_btn class=nav-dropdown-toggle type=button v-on:click=toggleDrawer>
+<i class=material-icons>menu
+</i></button>
+<a id=navTitle class=navbar-brand href=https://forcemz.net/>Charlie's Rethinking
+</a><button type=button class=nav-darkmode-toggle id=darkModeToggleButton2>
+<i class=material-icons id=darkModeToggleIcon2>dark_mode</i></button></div></nav><div class=single-column-header-container id=pageHead v-bind:style="{ transform: 'translateZ(0px) translateY('+.3*scrollY+'px)', opacity: 1-navOpacity }"><a href=https://forcemz.net/><div class=single-column-header-title>Charlie's Rethinking</div><div class=single-column-header-subtitle>Themed by Diary.</div></a></div><div id=content><div id=streamContainer class=stream-container><div class="post-list-container post-list-container-shadow"><div class=post><div class=post-head-wrapper-text-only><div class=post-title>Kisasum Hash 实用工具<div class=post-meta><time itemprop=datePublished>2017-09-01 10:00
+</time><i class=material-icons>folder</i>
+<a href=/categories/developer>developer</a>
+&nbsp;</div></div></div><div class=post-body-wrapper><div class=post-body v-pre><h2 id=kisasum-hash-实用工具>Kisasum Hash 实用工具</h2><p>Kismet 是笔者开发的一个计算 Hash 的图形化工具，有桌面版本 Kismet 和 UWP 版本 KismetUWP。 在前面的 Blog 中有介绍：
+<a href=http://forcemz.net/developer/2017/05/14/Kismet/>Kismet 杂谈</a></p><p>KismetUWP 截图如下：</p><p><img src=https://github.com/fcharlie/KismetUWP/raw/master/docs/images/none.png alt=u1></p><p>当人们使用一系列命令完成工作时，这个时候优先需要命令行工具。</p><p>Hash 计算有什么命令行工具？无论是 PowerShell 还是 Unix Shell 都有一系列的 Hash 命令，比如 PowerShell，有 <code>Get-FileHash</code>， 命令格式如下</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-powershell data-lang=powershell><span style=display:flex><span><span style=color:#58a1dd>Get-FileHash</span> <span style=color:#58a1dd>windows10</span>.<span style=color:#58a1dd>iso</span> <span style=color:#58a1dd>SHA256</span>
+</span></span></code></pre></div><p>也可以使用强制参数，具体帮助信息如下</p><pre tabindex=0><code class=language-usage data-lang=usage>NAME
+    Get-FileHash
+
+SYNTAX
+    Get-FileHash [-Path] &lt;string[]&gt; [[-Algorithm] {SHA1 | SHA256 | SHA384 | SHA512 | MD5}]  [&lt;CommonParameters&gt;]
+
+    Get-FileHash [-LiteralPath] &lt;string[]&gt; [[-Algorithm] {SHA1 | SHA256 | SHA384 | SHA512 | MD5}]  [&lt;CommonParameters&gt;]
+
+    Get-FileHash [-InputStream] &lt;Stream&gt; [[-Algorithm] {SHA1 | SHA256 | SHA384 | SHA512 | MD5}]  [&lt;CommonParameters&gt;]
+
+
+ALIASES
+    None
+
+
+REMARKS
+    Get-Help cannot find the Help files for this cmdlet on this computer. It is displaying only partial help.
+        -- To download and install Help files for the module that includes this cmdlet, use Update-Help.
+        -- To view the Help topic for this cmdlet online, type: &#34;Get-Help Get-FileHash -Online&#34; or
+           go to https://go.microsoft.com/fwlink/?LinkId=517145.
+</code></pre><p>在 Unix Shell，也有 shasum sha256sum sha512sum sha384sum，第三方还有 sha3sum。</p><p>命令格式通常是：</p><pre tabindex=0><code>shaNsum file
+</code></pre><p>对于大多数人来说，这些命令都是极好的。但我并不满足，于是开发了 Kisasum Hash 实用工具，此工具支持输出 JSON 和 XML。</p><p>Kisasum 源码在 Kismet 的项目中 <a href=https://github.com/fcharlie/Kismet/tree/master/Kisasum>Kisasum</a>。</p><p>Kisasum 的帮助信息如下：</p><pre tabindex=0><code class=language-usage data-lang=usage>OVERVIEW: kisasum 1.0
+USAGE: kisasum [options] &lt;input&gt;
+OPTIONS:
+  -a, --algorithm  Hash Algorithm,support algorithm described below.
+                   Algorithm Ignore case, default sha256
+                   SHA1DC is SHA-1 collision.
+  -f, --format     Return information about hash in a format described below.
+  -h, -?, --help   Print usage and exit.
+  -v, --version    Print version and exit.
+
+Algorithm:
+  MD5        SHA1       SHA1DC
+  SHA224     SHA256     SHA384     SHA512
+  SHA3-224   SHA3-256   SHA3-384   SHA3-512
+
+Formats:
+  text     format to text, support progress
+  json     format to json
+  xml      format to xml
+</code></pre><p>Kisasum 支持的 Hash 算法与 Kismet 一致，Kisasum 支持输出普通文本，JSON，以及 XML。这样做的好处是，笔者可以使用 PowerShell 将 Kisasum 的输出转变为 PowerShell 对象，从而能够在 PowerShell 脚本中方便的使用 Kisasum。</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-powershell data-lang=powershell><span style=display:flex><span> <span style=color:#58a1dd>$hash</span>=.\<span style=color:#58a1dd>Kisasum</span>.<span style=color:#58a1dd>exe</span> <span style=color:#58a1dd>$FilePath1</span> <span style=color:#58a1dd>$FilePath2</span> -<span style=color:#58a1dd>-format</span>=<span style=color:#58a1dd>json</span> <span style=color:#58a1dd>-a</span> <span style=color:#58a1dd>sha3</span>-<span style=color:#a6be9d>256</span>|<span style=color:#58a1dd>ConvertFrom-JSON</span>
+</span></span><span style=display:flex><span> <span style=color:#ff636f>foreach</span>(<span style=color:#58a1dd>$f</span> <span style=color:#ff636f>in</span> <span style=color:#58a1dd>$hash</span>.<span style=color:#58a1dd>files</span>){
+</span></span><span style=display:flex><span>   <span style=color:#58a1dd>Write-Host</span> <span style=color:#a6be9d>&#34;</span>$(<span style=color:#58a1dd>$f</span>.<span style=color:#58a1dd>hash</span>)<span style=color:#a6be9d>    </span>$(<span style=color:#58a1dd>$f</span>.<span style=color:#58a1dd>name</span>)<span style=color:#a6be9d>&#34;</span>
+</span></span><span style=display:flex><span> }
+</span></span></code></pre></div><p>例子：</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-json data-lang=json><span style=display:flex><span><span style=color:#828b96;font-style:italic>//D:\Utilities\CharlieKit&gt;Kisasum Diego.exe Kisasum.exe -f json
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>{
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>&#34;algorithm&#34;</span>: <span style=color:#a6be9d>&#34;sha256&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>&#34;files&#34;</span>:
+</span></span><span style=display:flex><span>  [
+</span></span><span style=display:flex><span>    {
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;name&#34;</span>: <span style=color:#a6be9d>&#34;Diego.exe&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;hash&#34;</span>: <span style=color:#a6be9d>&#34;AEC1352B5A1123293EDE9A9B74665C013DE37453368909FC988E43862A86114B&#34;</span>
+</span></span><span style=display:flex><span>    },
+</span></span><span style=display:flex><span>    {
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;name&#34;</span>: <span style=color:#a6be9d>&#34;Kisasum.exe&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&#34;hash&#34;</span>: <span style=color:#a6be9d>&#34;596A02FF501883A194B283A40E6A1D046F6CEEEAF46FBAF6A98D0D1EBC74FA57&#34;</span>
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>  ]
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>格式化输出的思想借鉴了 <a href=https://github.com/Microsoft/vswhere><code>vswhere</code></a>，笔者的 <code>Clangbuilder</code> 正是使用 vswhere 作为 Visual Studio 检测工具，如果不是输出成 JSON 或者 XML，过程要麻烦得多。</p><p>Kisasum 格式化并没有使用第三方库，非常简单代码如下：</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-c++ data-lang=c++><span style=display:flex><span><span style=color:#ff636f>int</span> <span style=color:#58a1dd>KisasumPrintXML</span>(<span style=color:#ff636f>const</span> <span style=color:#58a1dd>KisasumResult</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>result</span>) {
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#58a1dd>ws</span>(<span style=color:#58a1dd>LR</span><span style=color:#a6be9d>&#34;(&lt;?xml version=&#34;</span><span style=color:#a6be9d>1.0</span><span style=color:#a6be9d>&#34;&gt;)&#34;</span>);
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>ws</span>.<span style=color:#58a1dd>append</span>(<span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;</span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>&lt;root&gt;</span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>  &lt;algorithm&gt;&#34;</span>)
+</span></span><span style=display:flex><span>		.<span style=color:#58a1dd>append</span>(<span style=color:#58a1dd>result</span>.<span style=color:#58a1dd>algorithm</span>)
+</span></span><span style=display:flex><span>		.<span style=color:#58a1dd>append</span>(<span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;&lt;/algorithm&gt;</span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>  &lt;files&gt;</span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>&#34;</span>);
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>for</span> (<span style=color:#ff636f>const</span> <span style=color:#ff636f>auto</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>e</span> : <span style=color:#58a1dd>result</span>.<span style=color:#58a1dd>elems</span>) {
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>ws</span>.<span style=color:#58a1dd>append</span>(<span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;    &lt;file&gt;</span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>      &lt;name&gt;&#34;</span>)
+</span></span><span style=display:flex><span>			.<span style=color:#58a1dd>append</span>(<span style=color:#58a1dd>e</span>.<span style=color:#58a1dd>filename</span>)
+</span></span><span style=display:flex><span>			.<span style=color:#58a1dd>append</span>(<span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;&lt;/name&gt;</span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>      &lt;hash&gt;&#34;</span>)
+</span></span><span style=display:flex><span>			.<span style=color:#58a1dd>append</span>(<span style=color:#58a1dd>e</span>.<span style=color:#58a1dd>hash</span>)
+</span></span><span style=display:flex><span>			.<span style=color:#58a1dd>append</span>(<span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;&lt;/hash&gt;</span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>    &lt;/file&gt;</span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>&#34;</span>);
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>ws</span>.<span style=color:#58a1dd>append</span>(<span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;  &lt;/files&gt;</span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>&lt;/root&gt;</span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>&#34;</span>);
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>console</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>WriteFormatted</span>(<span style=color:#58a1dd>ws</span>.<span style=color:#58a1dd>data</span>(), <span style=color:#58a1dd>ws</span>.<span style=color:#58a1dd>size</span>());
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>return</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span><span style=color:#ff636f>int</span> <span style=color:#58a1dd>KisasumPrintJSON</span>(<span style=color:#ff636f>const</span> <span style=color:#58a1dd>KisasumResult</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>result</span>) {
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#58a1dd>ws</span>(<span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;{</span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>&#34;</span>); <span style=color:#828b96;font-style:italic>/// start
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#58a1dd>ws</span>.<span style=color:#58a1dd>append</span>(<span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;  </span><span style=color:#a6be9d>\&#34;</span><span style=color:#a6be9d>algorithm</span><span style=color:#a6be9d>\&#34;</span><span style=color:#a6be9d>: </span><span style=color:#a6be9d>\&#34;</span><span style=color:#a6be9d>&#34;</span>)
+</span></span><span style=display:flex><span>		.<span style=color:#58a1dd>append</span>(<span style=color:#58a1dd>result</span>.<span style=color:#58a1dd>algorithm</span>)
+</span></span><span style=display:flex><span>		.<span style=color:#58a1dd>append</span>(<span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;</span><span style=color:#a6be9d>\&#34;</span><span style=color:#a6be9d>,</span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>  </span><span style=color:#a6be9d>\&#34;</span><span style=color:#a6be9d>files</span><span style=color:#a6be9d>\&#34;</span><span style=color:#a6be9d>: </span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>  [&#34;</span>);
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>for</span> (<span style=color:#ff636f>const</span> <span style=color:#ff636f>auto</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>e</span> : <span style=color:#58a1dd>result</span>.<span style=color:#58a1dd>elems</span>) {
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>ws</span>.<span style=color:#58a1dd>append</span>(<span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;</span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>    {</span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>      </span><span style=color:#a6be9d>\&#34;</span><span style=color:#a6be9d>name</span><span style=color:#a6be9d>\&#34;</span><span style=color:#a6be9d>: </span><span style=color:#a6be9d>\&#34;</span><span style=color:#a6be9d>&#34;</span>)
+</span></span><span style=display:flex><span>			.<span style=color:#58a1dd>append</span>(<span style=color:#58a1dd>e</span>.<span style=color:#58a1dd>filename</span>)
+</span></span><span style=display:flex><span>			.<span style=color:#58a1dd>append</span>(<span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;</span><span style=color:#a6be9d>\&#34;</span><span style=color:#a6be9d>,</span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>      </span><span style=color:#a6be9d>\&#34;</span><span style=color:#a6be9d>hash</span><span style=color:#a6be9d>\&#34;</span><span style=color:#a6be9d>: </span><span style=color:#a6be9d>\&#34;</span><span style=color:#a6be9d>&#34;</span>)
+</span></span><span style=display:flex><span>			.<span style=color:#58a1dd>append</span>(<span style=color:#58a1dd>e</span>.<span style=color:#58a1dd>hash</span>)
+</span></span><span style=display:flex><span>			.<span style=color:#58a1dd>append</span>(<span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;</span><span style=color:#a6be9d>\&#34;\n</span><span style=color:#a6be9d>    },&#34;</span>);
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> (<span style=color:#58a1dd>ws</span>.<span style=color:#58a1dd>back</span>() <span style=color:#ff636f>==</span> <span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#39;,&#39;</span>) {
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>ws</span>.<span style=color:#58a1dd>pop_back</span>();
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>ws</span>.<span style=color:#58a1dd>append</span>(<span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;</span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>  ]</span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>}</span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>&#34;</span>);
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>console</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>WriteFormatted</span>(<span style=color:#58a1dd>ws</span>.<span style=color:#58a1dd>data</span>(), <span style=color:#58a1dd>ws</span>.<span style=color:#58a1dd>size</span>());
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>return</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>最后输出到控制台，控制台进行了封装。</p><h2 id=最后>最后</h2><p>欢迎大家使用和提出宝贵意见。</p><hr width=100% id=EOF><p style=color:#777>Last modified on 2017-09-01</p></div></div><nav class=post-pagination><a class=newer-posts href=/posts/2017/2017-11-22-git-native-hook-depth-optimization/>Next<br>Git 原生钩子的深度优化
+</a><a class=older-posts href=/posts/2017/2017-07-31-git-secure-with-powershell/>Previous<br>基于 Powershell Core 的 Git 存储库加密方案</a></nav><div class=post-comment-wrapper></div></div></div></div></div><div id=sideContainer class=side-container><a class="a-block nav-head false" href=https://forcemz.net/><div class=nav-title>Charlie's Rethinking</div><div class=nav-subtitle>Themed by Diary.</div></a><div class=nav-link-list><a class="a-block nav-link-item active" href=/posts>归档
+</a><a class="a-block nav-link-item false" href=/categories>分类
+</a><a class="a-block nav-link-item false" href=/tags>标签
+</a><a class="a-block nav-link-item false" href=/about>关于
+</a><a class="a-block nav-link-item false" href=/index.xml>RSS Feed</a></div><div class=nav-footer>Hugo Theme <a href=https://github.com/amazingrise/hugo-theme-diary>Diary</a> by <a href=https://risehere.net/>Rise</a><br>Ported from <a href=https://mak1t0.cc/ target=_blank rel="noreferrer noopener">Makito</a>'s <a href=https://github.com/SumiMakito/hexo-theme-journal/ target=_blank rel="noreferrer noopener">Journal.</a><br><br>&copy;
+Copyright (c) 2009-2024 J23</div></div><div id=extraContainer class=extra-container><div class=toc-wrapper><div class=toc><div class=toc-content><center>- CATALOG -</center><ul><ul><li><a href=#kisasum-hash-%e5%ae%9e%e7%94%a8%e5%b7%a5%e5%85%b7 class=nav-kisasum-hash-实用工具>Kisasum Hash 实用工具</a></li><li><a href=#%e6%9c%80%e5%90%8e class=nav-最后>最后</a></li></ul></div></div></div><div class=pagination><a id=globalBackToTop class="pagination-action animated-visibility" href=#top :class="{ invisible: scrollY == 0 }"><i class="material-icons pagination-action-icon">keyboard_arrow_up
+</i></a><a type=button class=pagination-action id=darkModeToggleButton><span class="material-icons pagination-action-icon" id=darkModeToggleIcon>dark_mode</span></a></div></div><div id=single-column-footer>Hugo Theme <a href=https://github.com/amazingrise/hugo-theme-diary>Diary</a> by <a href=https://risehere.net/>Rise</a><br>Ported from <a href=https://mak1t0.cc/ target=_blank rel="noreferrer noopener">Makito</a>'s <a href=https://github.com/SumiMakito/hexo-theme-journal/ target=_blank rel="noreferrer noopener">Journal.</a><br><br>&copy;
+Copyright (c) 2009-2024 J23</div></div><script src=/js/journal.js></script></body></html>

@@ -1,0 +1,154 @@
+<!doctype html><html lang=en><head><title>Git 存储格式与运用</title>
+<meta charset=utf-8><meta name=X-UA-Compatible content="IE=edge"><meta name=google-site-verification content><meta content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=5" name=viewport><meta content="telephone=no" name=format-detection><meta name=description content><meta name=renderer content="webkit"><meta name=theme-color content="#ffffff"><script src=/js/toc.js></script><link type=text/css rel=stylesheet href=/vendor/css/bootstrap.min.css><link rel=stylesheet href=/scss/dark-mode.min.cb53f1bee2b8900cb4f082afbf00175d6618f281cf9a2fe8619e3b52d20b5721.css integrity="sha256-y1PxvuK4kAy08IKvvwAXXWYY8oHPmi/oYZ47UtILVyE=" media=screen><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Material+Icons"></head><body><div id=app><div class=single-column-drawer-container id=drawer v-bind:class="{ 'single-column-drawer-container-active': isDrawerOpen }"><div class=drawer-content><div class=drawer-menu><a class="a-block drawer-menu-item active" href=/posts>归档
+</a><a class="a-block drawer-menu-item false" href=/categories>分类
+</a><a class="a-block drawer-menu-item false" href=/tags>标签
+</a><a class="a-block drawer-menu-item false" href=/about>关于
+</a><a class="a-block drawer-menu-item false" href=/index.xml>RSS Feed</a><div class=toc><div class=toc-content><center>- CATALOG -</center><ul><li><a href=#git-%e5%ad%98%e5%82%a8%e6%a0%bc%e5%bc%8f%e4%b8%8e%e8%bf%90%e7%94%a8 class=nav-git-存储格式与运用>GIT 存储格式与运用</a></li><ul><li><a href=#%e5%ad%98%e5%82%a8%e5%ba%93%e7%9a%84%e5%b8%83%e5%b1%80 class=nav-存储库的布局>存储库的布局</a></li><li><a href=#%e6%9d%be%e6%95%a3%e6%96%87%e4%bb%b6%e6%a0%bc%e5%bc%8f class=nav-松散文件格式>松散文件格式</a></li><li><a href=#pack-%e6%96%87%e4%bb%b6%e6%a0%bc%e5%bc%8f class=nav-pack-文件格式>Pack 文件格式</a></li><ul><li><a href=#pack-%e6%96%87%e4%bb%b6 class=nav-pack-文件>Pack 文件</a></li><li><a href=#idx-%e6%96%87%e4%bb%b6 class=nav-idx-文件>Idx 文件</a></li></ul><li><a href=#%e4%bb%93%e5%ba%93%e5%a4%a7%e5%b0%8f%e9%99%90%e5%88%b6%e5%92%8c%e6%96%87%e4%bb%b6%e5%a4%a7%e5%b0%8f%e6%a3%80%e6%b5%8b class=nav-仓库大小限制和文件大小检测>仓库大小限制和文件大小检测</a></li><li><a href=#%e6%9c%80%e5%90%8e class=nav-最后>最后</a></li></ul></div></div></div></div></div><transition name=fade><div id=drawer-mask v-bind:class="{ 'single-column-drawer-mask': mounted }" v-if=isDrawerOpen v-on:click=toggleDrawer></div></transition><nav id=navBar class="navbar sticky-top navbar-light single-column-nav-container"><div id=navBackground class=nav-background></div><div class="container container-narrow nav-content"><button id=nav_dropdown_btn class=nav-dropdown-toggle type=button v-on:click=toggleDrawer>
+<i class=material-icons>menu
+</i></button>
+<a id=navTitle class=navbar-brand href=https://forcemz.net/>Charlie's Rethinking
+</a><button type=button class=nav-darkmode-toggle id=darkModeToggleButton2>
+<i class=material-icons id=darkModeToggleIcon2>dark_mode</i></button></div></nav><div class=single-column-header-container id=pageHead v-bind:style="{ transform: 'translateZ(0px) translateY('+.3*scrollY+'px)', opacity: 1-navOpacity }"><a href=https://forcemz.net/><div class=single-column-header-title>Charlie's Rethinking</div><div class=single-column-header-subtitle>Themed by Diary.</div></a></div><div id=content><div id=streamContainer class=stream-container><div class="post-list-container post-list-container-shadow"><div class=post><div class=post-head-wrapper-text-only><div class=post-title>Git 存储格式与运用<div class=post-meta><time itemprop=datePublished>2016-07-09 20:00
+</time><i class=material-icons>folder</i>
+<a href=/categories/git>git</a>
+&nbsp;</div></div></div><div class=post-body-wrapper><div class=post-body v-pre><h1 id=git-存储格式与运用>GIT 存储格式与运用</h1><p>在 GIT 的实现规范中，存储格式是非常简单而且高效的，一个代码托管平台通常需要基于这些特性实现一非常有意思的功能。
+在本文中，将介绍基于 GIT 存储库格式实现的仓库体积限制与大文件检查。</p><h2 id=存储库的布局>存储库的布局</h2><p>正常的 GIT 存储库布局应当遵循 GIT 规范 <a href=https://github.com/git/git/blob/master/Documentation/gitrepository-layout.txt>Git Repository Layout</a>
+一个 GIT 仓库包括如下两种风格：</p><ul><li><code>.git</code> 目录存在于工作目录的根目录中。</li><li><code>&lt;project>.git</code> 这种是一个裸仓库，没有工作目录，服务器上存储的就是这种。</li></ul><p>特别注意的是，如果是一个 <strong>子模块 （submodule）</strong> <code>.git</code> 会是一个文件，文件内容为 <code>gitdir:/path/to/gitdir</code></p><p>下文是一个表格，关于目录结构和描述信息。</p><table><thead><tr><th>路径</th><th>目录（D）\ 文件 （F）</th><th>描述</th></tr></thead><tbody><tr><td>objects</td><td>D</td><td>松散对象和包文件</td></tr><tr><td>refs</td><td>D</td><td>引用，包括头引用，标签引用，和远程引用</td></tr><tr><td>packed-refs</td><td>F</td><td>打包的引用，通常运行 <code>git gc</code> 后产生</td></tr><tr><td>HEAD</td><td>F</td><td>当前指向的引用或者 oid，例如 <code>ref: refs/heads/master</code></td></tr><tr><td>config</td><td>F</td><td>存储库的配置，可以覆盖全局配置</td></tr><tr><td>branches</td><td>D</td><td>-</td></tr><tr><td>hooks</td><td>D</td><td>请查看 Documentation/githooks.txt</td></tr><tr><td>index</td><td>F</td><td>git index file, Documentation/technical/index-format.txt</td></tr><tr><td><code>sharedindex.&lt;SHA-1></code></td><td>F</td><td>-</td></tr><tr><td>info</td><td>D</td><td>存储库信息,哑协议依赖 info/refs</td></tr><tr><td>remotes</td><td>D</td><td>-</td></tr><tr><td>logs</td><td>D</td><td>运行 git log 可以查看提交记录</td></tr><tr><td>shallow</td><td>F</td><td>-</td></tr><tr><td>commondir</td><td>D</td><td>-</td></tr><tr><td>modules</td><td>D</td><td>子模块的 git 目录</td></tr><tr><td>worktrees</td><td>D</td><td>工作目录，更新后的文档与 git 多个工作目录有关</td></tr></tbody></table><p>对于一些实际上使用非常少的路径，我就没有添加说明了。</p><h2 id=松散文件格式>松散文件格式</h2><p>在 objects 目录中，有 00,01,&mldr;ff 这样的目录，目录下存储着文件名长度为38的二进制文件，这些文件就是松散文件，
+git 创建提交时，修改的文件，更新的目录树，以及提交内容会被压缩后写入到这些目录中，成为一个个松散文件，
+当需要传输或者运行 gc 时，这些文件就会被写入到 pack 文件中。</p><p>对象文件使用的压缩算法是 deflate，增加一个新的对象文件时，先要计算这个文件的 hash 值（原始长度 20，16 进制长度 40 个字符），
+这个根据这个值查找文件是否存在这些个目录或者 pack 文件中，不存在则创建前缀目录（hash 值 16 进制字符串前两个），然后、
+将原始文件的类型以及长度信息以及内容一起压缩，写入到磁盘，文件名是 hash 值的 16 进制的后 38 个字符。</p><p>通过解压缩可以得到符合下面格式的文件：</p><blockquote><p>type SP digest NUL body</p></blockquote><p>其中类型是 commit blob tree 而长度则是 10 进制的数字，以字节为单位。后面的 body 就是各种类型文件的内容。</p><p>commit 内容是纯文本的，有 tree ，这个 tree 也就是根的 tree，然后有 一个 到多个 parent，这与 git merge 方向有关，
+还有作者，提交者，以及提交信息。这里的 oid 是 16 进制的。</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-sh data-lang=sh><span style=display:flex><span>tree bbe101c40b962d8b8977b34d0eb8bf12bb9e9679
+</span></span><span style=display:flex><span>parent 789808fe48670f2fce59da45a82a2a18f489e300
+</span></span><span style=display:flex><span>author Junio C Hamano &lt;gitster@pobox.com&gt; <span style=color:#a6be9d>1467837778</span> -0700
+</span></span><span style=display:flex><span>committer Junio C Hamano &lt;gitster@pobox.com&gt; <span style=color:#a6be9d>1467837778</span> -0700
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Third batch of topics <span style=color:#ff636f>for</span> 2.10
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Signed-off-by: Junio C Hamano &lt;gitster@pobox.com&gt;
+</span></span></code></pre></div><p>blob 就是真实的文件。</p><p>而 tree 就是将文件按目录结构和属性组织起来，在 tree 中每一个 tree entry 可能是 blob，
+也可能是 tree，也有可能是 commit，在有 submodule 的情况下就有 commit。commit 指向的是一个提交，
+仅通过此 commit 并不能获取完整的资源，在工作目录的根下，当项目存在 submodule 时，会有一个 <code>.gitmodules</code>
+git submodule 在先要注册到 git config 中，然后克隆到 <code>.git/modules</code> 目录，然后 git 依据 tree 中的 commit 检出。
+如果是新增的 submodule 将会检出对应仓库的 HEAD 指向的引用。</p><p>这里的 oid 是原始的。可执行的 blob 和普通的 blob 存储时并无大的差别，主要的差别体现在 tree 的 unix 目录项。</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-sh data-lang=sh><span style=display:flex><span><span style=color:#a6be9d>100644</span> blob 33d07c06bd90833ce56bc64c13bdc08c1997c3fb    .gitattributes
+</span></span><span style=display:flex><span><span style=color:#a6be9d>100644</span> blob 6483b21cbfc73601602d628a2c609d3ca84f9e53    .gitignore
+</span></span><span style=display:flex><span><span style=color:#a6be9d>100755</span> blob a88b6824b908d89ee185b84ed92b9c122b0118dd    GIT-VERSION-GEN
+</span></span><span style=display:flex><span><span style=color:#a6be9d>100644</span> blob 4f00bdd3d69babe8a58c4989406eaa6fb5f36a50    Makefile
+</span></span><span style=display:flex><span><span style=color:#a6be9d>100755</span> blob 4277f30c4116faf2788243af4ec23f1d077698e8    git-gui--askpass
+</span></span><span style=display:flex><span><span style=color:#a6be9d>100755</span> blob 11048c7a0e94f598b168de98d18fda9aea420c7d    git-gui.sh
+</span></span><span style=display:flex><span><span style=color:#a6be9d>040000</span> tree 1ead6a96af286100752067ea1849d49b35ce1d35    lib
+</span></span><span style=display:flex><span><span style=color:#a6be9d>040000</span> tree 452280d7fa4a155bd311a7cce7e327964267b792    macosx
+</span></span><span style=display:flex><span><span style=color:#a6be9d>040000</span> tree 2294a6a975b861ecdb5b03d091877c14ec696621    po
+</span></span><span style=display:flex><span><span style=color:#a6be9d>040000</span> tree ae99a38593d127e47f956d96abf3d6a40d3aff66    windows
+</span></span></code></pre></div><p>在 Git-SCM 中，有例图显示了这种结构：</p><p><img src=https://git-scm.com/book/en/v2/book/10-git-internals/images/data-model-1.png alt=Data-Model></p><p>如何解压对象文件？大多数语言都绑定了 zlib，放心去使用即可。</p><p>比如 C# 有 System.IO.Compression 有 System.IO.Compression.DeflateStream 类，就可以拿过来使用。
+如果是 C++ 直接使用 zlib 中 z_stream 即可，Linux Unix 都带了，然后 Visual Studio 可以使用 NuGet 安装到项目中，可以使用。</p><p>那么计算 HASH 呢？OpenSSL 提供了 hash 函数，大多数 Linux 和 Unix 都带了，可以使用，在 Windows 中也可以使用 OpenSSL,
+当然也可以使用 Windows 自带的加密算法动态库 bcrypt.dll，你也可以在网上找到一个 SHA-1 算法的实现。</p><h2 id=pack-文件格式>Pack 文件格式</h2><p>Pack 文件的设计使得 git 仓库可以更好的节省磁盘空间，有利于服务器之间传输数据。</p><h3 id=pack-文件>Pack 文件</h3><p>文档地址：<a href=https://github.com/git/git/blob/master/Documentation/technical/pack-format.txt>Git pack format</a></p><p>pack 文件的第一部分是签名 {&lsquo;P&rsquo;,&lsquo;A&rsquo;,&lsquo;C&rsquo;,&lsquo;K&rsquo;} 4 字节，正如 zip 文件带有 PK 一样。</p><p>第二部分是 4 字节（网络字节序）版本号，这里需要使用 ntohl 来转成本机的，x86\amd64 是小端的。</p><p>第三部分是 4 字节（网络字节序）对象数目。</p><p>然后就是对象条目，3 bit 类型，然后根据类型判断长度字符串的 bit 长度。然后计算长度。
+其中类型包括松散对象的所有类型，还包括</p><pre><code> (undeltified representation)
+ n-byte type and length (3-bit type, (n-1)*7+4-bit length)
+ compressed data
+
+ (deltified representation)
+ n-byte type and length (3-bit type, (n-1)*7+4-bit length)
+ 20-byte base object name if OBJ_REF_DELTA or a negative relative
+ offset from the delta object's position in the pack if this
+ is an OBJ_OFS_DELTA object
+ compressed delta data
+</code></pre><p>最后，是 20-byte SHA-1 校验码。</p><h3 id=idx-文件>Idx 文件</h3><p>如果直接去解析 pack 文件是很麻烦的一件事，而我们只需要将大文件扫描出来，并不需要做其他工作，
+所以，我们可以了解 idx 文件格式，然后做出一些取舍。</p><p>idx 文件的格式也在 pack 文件格式文档中。</p><p>idx 文件有两个版本，第一版基本不怎么使用了，所以这里讲的是第二版。</p><p>第一部分是 魔数 \377tOc 4-byte</p><p>第二部分是 版本号 网络字节序，目前是 2。</p><p>第三部分是 256 个扇出表 （fan-out table），这个与版本 1 一致。每一个是 4 byte 网络字节序。
+比如第一个代表 前缀 00 的 对象有多少个， 前 255 个都是对应的对象序号有多少个，并没有 ff 对应的有多少个对象，
+最后一项表示所有的对象数目。扇出表总共占用 256*4 字节。</p><p>第四部分是 按顺序排列的 20 字节对象 sha-1，每一个 占用 20-byte，共计 total*20-byte。</p><p>第五部分是 按顺序排列的 4 字节 crc 校验马，总共 total*4-byte。</p><p>第六部分是 按顺序排列的 4 字节 pack 偏移（网络字节序），总共 total*4-byte 这就意味着普通的 pack 文件无法存储超过 4 GB 大小的文件。</p><p>第七部分是 8 字节偏移条目，大多数不要参照此文件。</p><p>最后依然是校验码。</p><h2 id=仓库大小限制和文件大小检测>仓库大小限制和文件大小检测</h2><p>首先讲的是仓库大小，对于 git 而言，最重要的数据是 objects 和 refs，只要拥有这些数据，就可以恢复出一个完整的仓库。
+而对仓库做大小限制，则只需要检测 objects 目录大小即可。</p><p>通常来说在 linux 中，可以使用 du -sh 查看目录占用磁盘空间大小。在 Windows 中有多种方式，可以使用 Sysinternals 的 du 工具，
+运行 du -sh 一样 OK。 （Sysinternals 创始人之一 Mark Russinovich 现是 Microsoft Azure CTO）</p><p>这里值得注意的是在 Linux 中，目录同样占用空间，4096 字节，无论是目录还是文件，占用的的大小一定是块大小的整倍数。
+即 S_BLKSIZE，这里是 512。</p><p>下面有两段代码，分别是 unix like 和 Windows 扫描目录大小。</p><p>在 Unix/Linux 或者 Bash On Windows 中，可以使用下面这个例子</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-cpp data-lang=cpp><span style=display:flex><span><span style=color:#ff636f>class</span> <span style=color:#58a1dd>ScanningFolder</span> {
+</span></span><span style=display:flex><span><span style=color:#ff636f>public</span><span style=color:#ff636f>:</span>
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>bool</span> <span style=color:#58a1dd>FolderSizeResolve</span>(<span style=color:#ff636f>const</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>dir__</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>DIR</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>dir</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>opendir</span>(<span style=color:#58a1dd>dir__</span>.<span style=color:#58a1dd>c_str</span>());
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>dir</span> <span style=color:#ff636f>==</span> <span style=color:#ff636f>nullptr</span>) {
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>fprintf</span>(<span style=color:#58a1dd>stderr</span>, <span style=color:#a6be9d>&#34;opendir: %s</span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>&#34;</span>, <span style=color:#58a1dd>strerror</span>(<span style=color:#58a1dd>errno</span>));
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>    <span style=color:#828b96;font-style:italic>// folder self
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>    <span style=color:#58a1dd>size_</span> <span style=color:#ff636f>+=</span> <span style=color:#a6be9d>4096</span>;
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>dirent</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>dirent_</span> <span style=color:#ff636f>=</span> <span style=color:#ff636f>nullptr</span>;
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>while</span> ((<span style=color:#58a1dd>dirent_</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>readdir</span>(<span style=color:#58a1dd>dir</span>))) {
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>dirent_</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>d_type</span> <span style=color:#ff636f>&amp;</span> <span style=color:#58a1dd>DT_REG</span>) {
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span> <span style=color:#58a1dd>file</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>dir__</span> <span style=color:#ff636f>+</span> <span style=color:#a6be9d>&#34;/&#34;</span> <span style=color:#ff636f>+</span> <span style=color:#58a1dd>dirent_</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>d_name</span>;
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>struct</span> <span style=color:#58a1dd>stat</span> <span style=color:#58a1dd>stat_</span>;
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>stat</span>(<span style=color:#58a1dd>file</span>.<span style=color:#58a1dd>c_str</span>(), <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>stat_</span>) <span style=color:#ff636f>!=</span> <span style=color:#a6be9d>0</span>) {
+</span></span><span style=display:flex><span>          <span style=color:#58a1dd>fprintf</span>(<span style=color:#58a1dd>stderr</span>, <span style=color:#a6be9d>&#34;ERROR: %s</span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>&#34;</span>, <span style=color:#58a1dd>strerror</span>(<span style=color:#58a1dd>errno</span>));
+</span></span><span style=display:flex><span>          <span style=color:#58a1dd>closedir</span>(<span style=color:#58a1dd>dir</span>);
+</span></span><span style=display:flex><span>          <span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>        } <span style=color:#ff636f>else</span> {
+</span></span><span style=display:flex><span>          <span style=color:#828b96;font-style:italic>// S_BLKSIZE 512
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>          <span style=color:#58a1dd>size_</span> <span style=color:#ff636f>+=</span> <span style=color:#58a1dd>stat_</span>.<span style=color:#58a1dd>st_blocks</span> <span style=color:#ff636f>*</span> <span style=color:#58a1dd>S_BLKSIZE</span>;
+</span></span><span style=display:flex><span>        }
+</span></span><span style=display:flex><span>      } <span style=color:#ff636f>else</span> <span style=color:#58a1dd>if</span> (<span style=color:#58a1dd>dirent_</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>d_type</span> <span style=color:#ff636f>&amp;</span> <span style=color:#58a1dd>DT_DIR</span>) {
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>strcmp</span>(<span style=color:#58a1dd>dirent_</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>d_name</span>, <span style=color:#a6be9d>&#34;.&#34;</span>) <span style=color:#ff636f>==</span> <span style=color:#a6be9d>0</span> <span style=color:#ff636f>||</span>
+</span></span><span style=display:flex><span>            <span style=color:#58a1dd>strcmp</span>(<span style=color:#58a1dd>dirent_</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>d_name</span>, <span style=color:#a6be9d>&#34;..&#34;</span>) <span style=color:#ff636f>==</span> <span style=color:#a6be9d>0</span>) {
+</span></span><span style=display:flex><span>          <span style=color:#ff636f>continue</span>;
+</span></span><span style=display:flex><span>        }
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span> <span style=color:#58a1dd>newdir</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>dir__</span> <span style=color:#ff636f>+</span> <span style=color:#a6be9d>&#34;/&#34;</span> <span style=color:#ff636f>+</span> <span style=color:#58a1dd>dirent_</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>d_name</span>;
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>FolderSizeResolve</span>(<span style=color:#58a1dd>newdir</span>)) {
+</span></span><span style=display:flex><span>          <span style=color:#58a1dd>closedir</span>(<span style=color:#58a1dd>dir</span>);
+</span></span><span style=display:flex><span>          <span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>        }
+</span></span><span style=display:flex><span>      }
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>closedir</span>(<span style=color:#58a1dd>dir</span>);
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#58a1dd>true</span>;
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>uint64_t</span> <span style=color:#58a1dd>Size</span>() <span style=color:#ff636f>const</span> { <span style=color:#ff636f>return</span> <span style=color:#ff636f>this</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>size_</span>; }
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>private</span><span style=color:#ff636f>:</span>
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>uint64_t</span> <span style=color:#58a1dd>size_</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>};
+</span></span></code></pre></div><p>当然也可以使用 ftw 这样的函数，不过并不一定高效，比如 libc musl 就是使用 opendir 来
+实现的 ftw。这样一来性能反而下降了。</p><p>在 Windows 中，遍历目录可以使用 FindFirstFile/FindNextFile 这个两个 API。</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-cpp data-lang=cpp><span style=display:flex><span><span style=color:#ff636f>class</span> <span style=color:#58a1dd>FolderSize</span> {
+</span></span><span style=display:flex><span><span style=color:#ff636f>public</span><span style=color:#ff636f>:</span>
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>FolderSize</span>(<span style=color:#ff636f>const</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>dir</span>) <span style=color:#ff636f>:</span> <span style=color:#58a1dd>size_</span>(<span style=color:#ff636f>-</span><span style=color:#a6be9d>1</span>) {}
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>int64_t</span> <span style=color:#58a1dd>Size</span>() <span style=color:#ff636f>const</span> { <span style=color:#ff636f>return</span> <span style=color:#58a1dd>size_</span>; }
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>private</span><span style=color:#ff636f>:</span>
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>bool</span> <span style=color:#58a1dd>TraverseFolder</span>(<span style=color:#ff636f>const</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>dir</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>WIN32_FIND_DATAW</span> <span style=color:#58a1dd>find_data</span>;
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>HANDLE</span> <span style=color:#58a1dd>hFind</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>FindFirstFileW</span>(<span style=color:#58a1dd>dir</span>.<span style=color:#58a1dd>c_str</span>(), <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>find_data</span>);
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>hFind</span> <span style=color:#ff636f>==</span> <span style=color:#58a1dd>INVALID_HANDLE_VALUE</span>) {
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>while</span> (<span style=color:#58a1dd>true</span>) {
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>find_data</span>.<span style=color:#58a1dd>dwFileAttributes</span> <span style=color:#ff636f>&amp;</span> <span style=color:#58a1dd>FILE_ATTRIBUTE_DIRECTORY</span>) {
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>wcscmp</span>(<span style=color:#58a1dd>find_data</span>.<span style=color:#58a1dd>cFileName</span>, <span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;.&#34;</span>) <span style=color:#ff636f>!=</span> <span style=color:#a6be9d>0</span>) {
+</span></span><span style=display:flex><span>          <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#58a1dd>xdir</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>dir</span>;
+</span></span><span style=display:flex><span>          <span style=color:#58a1dd>xdir</span>.<span style=color:#58a1dd>push_back</span>(<span style=color:#a6be9d>&#39;\\&#39;</span>);
+</span></span><span style=display:flex><span>          <span style=color:#58a1dd>xdir</span>.<span style=color:#58a1dd>append</span>(<span style=color:#58a1dd>find_data</span>.<span style=color:#58a1dd>cFileName</span>);
+</span></span><span style=display:flex><span>          <span style=color:#58a1dd>TraverseFolder</span>(<span style=color:#58a1dd>xdir</span>);
+</span></span><span style=display:flex><span>        }
+</span></span><span style=display:flex><span>      } <span style=color:#ff636f>else</span> {
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>size_</span> <span style=color:#ff636f>+=</span>
+</span></span><span style=display:flex><span>            ((<span style=color:#ff636f>int64_t</span>)<span style=color:#58a1dd>find_data</span>.<span style=color:#58a1dd>nFileSizeHigh</span> <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#a6be9d>32</span> <span style=color:#ff636f>+</span> <span style=color:#58a1dd>find_data</span>.<span style=color:#58a1dd>nFileSizeLow</span>);
+</span></span><span style=display:flex><span>      }
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>if</span> (<span style=color:#ff636f>!::</span><span style=color:#58a1dd>FindNextFileW</span>(<span style=color:#58a1dd>hFind</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>find_data</span>)) {
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>break</span>;
+</span></span><span style=display:flex><span>      }
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>FindClose</span>(<span style=color:#58a1dd>hFind</span>);
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#58a1dd>true</span>;
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>int64_t</span> <span style=color:#58a1dd>size_</span>;
+</span></span><span style=display:flex><span>};
+</span></span></code></pre></div><p>然后就是文件大小检测，通常有两个指标，一个是压缩前的大小，一个是压缩后的大小。</p><p>对于松散文件，不依赖第三方库，我们可以使用 zlib 去查看松散对象的大小。如果只要检测压缩后的大小，
+实际上在遍历目录的时候就可以使用 stat 的 st_size 参数获得实际大小。</p><p>对于 pack 文件中的大小，通常计算起来比较麻烦，由于我们对文件大小的差异容忍度很高，我们实际上可以使用 idx 偏移值去计算。
+先取得 pack 文件大小，然后读取 idx 中所有的 sha 值与偏移值。然后对偏移值使用 sort 排序，由大到小，
+最后使用 前一个偏移值减去后一个偏移值即可得到近似大小。其中，第一个要使用 (packsize-20) 去减。比如码云限制文件大小，
+警告是 50M，错误时 100 M，由于 pack 得到的时压缩后的大小，实际上误差也就可以忽略不计了。如果需要使用原始大小可以使用 libgit2 去实现。</p><p>偏移值计算时，数据结构的使用非常重要，在 fan-out table 的最后一个中，已经得知所有对象的数目，便可以使用 vector 之类的容器，
+与 list 相比，笔者在扫描 2 GB 的 FreeBSD 仓库对象，共计 300 W 个对象，其中使用 list 是 7s，而 vector 是 3s，运行环境是 12 年笔记本。
+i3 处理器，机械硬盘。Windows（Bash On Windows）。</p><p>关于实际大小和压缩后的大小，zlib 的压缩可大可小，一般而言传输和存储时都是压缩后的文件，所以在实现代码托管业务时，
+限制大小的策略应当侧重于压缩后的大小。</p><h2 id=最后>最后</h2><p>关于 GIT 存储的研究是作为 Native-Hook 的一部分，与钩子相关的内容本次就没有写了。</p><hr width=100% id=EOF><p style=color:#777>Last modified on 2016-07-09</p></div></div><nav class=post-pagination><a class=newer-posts href=/posts/2016/2016-07-16-git-transport-implement/>Next<br>Git 传输协议实现
+</a><a class=older-posts href=/posts/2016/2016-06-04-windows-ssh-server/>Previous<br>Windows 10 原生 SSH 功能探索</a></nav><div class=post-comment-wrapper></div></div></div></div></div><div id=sideContainer class=side-container><a class="a-block nav-head false" href=https://forcemz.net/><div class=nav-title>Charlie's Rethinking</div><div class=nav-subtitle>Themed by Diary.</div></a><div class=nav-link-list><a class="a-block nav-link-item active" href=/posts>归档
+</a><a class="a-block nav-link-item false" href=/categories>分类
+</a><a class="a-block nav-link-item false" href=/tags>标签
+</a><a class="a-block nav-link-item false" href=/about>关于
+</a><a class="a-block nav-link-item false" href=/index.xml>RSS Feed</a></div><div class=nav-footer>Hugo Theme <a href=https://github.com/amazingrise/hugo-theme-diary>Diary</a> by <a href=https://risehere.net/>Rise</a><br>Ported from <a href=https://mak1t0.cc/ target=_blank rel="noreferrer noopener">Makito</a>'s <a href=https://github.com/SumiMakito/hexo-theme-journal/ target=_blank rel="noreferrer noopener">Journal.</a><br><br>&copy;
+Copyright (c) 2009-2024 J23</div></div><div id=extraContainer class=extra-container><div class=toc-wrapper><div class=toc><div class=toc-content><center>- CATALOG -</center><ul><li><a href=#git-%e5%ad%98%e5%82%a8%e6%a0%bc%e5%bc%8f%e4%b8%8e%e8%bf%90%e7%94%a8 class=nav-git-存储格式与运用>GIT 存储格式与运用</a></li><ul><li><a href=#%e5%ad%98%e5%82%a8%e5%ba%93%e7%9a%84%e5%b8%83%e5%b1%80 class=nav-存储库的布局>存储库的布局</a></li><li><a href=#%e6%9d%be%e6%95%a3%e6%96%87%e4%bb%b6%e6%a0%bc%e5%bc%8f class=nav-松散文件格式>松散文件格式</a></li><li><a href=#pack-%e6%96%87%e4%bb%b6%e6%a0%bc%e5%bc%8f class=nav-pack-文件格式>Pack 文件格式</a></li><ul><li><a href=#pack-%e6%96%87%e4%bb%b6 class=nav-pack-文件>Pack 文件</a></li><li><a href=#idx-%e6%96%87%e4%bb%b6 class=nav-idx-文件>Idx 文件</a></li></ul><li><a href=#%e4%bb%93%e5%ba%93%e5%a4%a7%e5%b0%8f%e9%99%90%e5%88%b6%e5%92%8c%e6%96%87%e4%bb%b6%e5%a4%a7%e5%b0%8f%e6%a3%80%e6%b5%8b class=nav-仓库大小限制和文件大小检测>仓库大小限制和文件大小检测</a></li><li><a href=#%e6%9c%80%e5%90%8e class=nav-最后>最后</a></li></ul></div></div></div><div class=pagination><a id=globalBackToTop class="pagination-action animated-visibility" href=#top :class="{ invisible: scrollY == 0 }"><i class="material-icons pagination-action-icon">keyboard_arrow_up
+</i></a><a type=button class=pagination-action id=darkModeToggleButton><span class="material-icons pagination-action-icon" id=darkModeToggleIcon>dark_mode</span></a></div></div><div id=single-column-footer>Hugo Theme <a href=https://github.com/amazingrise/hugo-theme-diary>Diary</a> by <a href=https://risehere.net/>Rise</a><br>Ported from <a href=https://mak1t0.cc/ target=_blank rel="noreferrer noopener">Makito</a>'s <a href=https://github.com/SumiMakito/hexo-theme-journal/ target=_blank rel="noreferrer noopener">Journal.</a><br><br>&copy;
+Copyright (c) 2009-2024 J23</div></div><script src=/js/journal.js></script></body></html>

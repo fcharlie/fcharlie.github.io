@@ -1,0 +1,649 @@
+<!doctype html><html lang=en><head><title>基于清单的启动器的实现</title>
+<meta charset=utf-8><meta name=X-UA-Compatible content="IE=edge"><meta name=google-site-verification content><meta content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=5" name=viewport><meta content="telephone=no" name=format-detection><meta name=description content><meta name=renderer content="webkit"><meta name=theme-color content="#ffffff"><script src=/js/toc.js></script><link type=text/css rel=stylesheet href=/vendor/css/bootstrap.min.css><link rel=stylesheet href=/scss/dark-mode.min.cb53f1bee2b8900cb4f082afbf00175d6618f281cf9a2fe8619e3b52d20b5721.css integrity="sha256-y1PxvuK4kAy08IKvvwAXXWYY8oHPmi/oYZ47UtILVyE=" media=screen><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Material+Icons"></head><body><div id=app><div class=single-column-drawer-container id=drawer v-bind:class="{ 'single-column-drawer-container-active': isDrawerOpen }"><div class=drawer-content><div class=drawer-menu><a class="a-block drawer-menu-item active" href=/posts>归档
+</a><a class="a-block drawer-menu-item false" href=/categories>分类
+</a><a class="a-block drawer-menu-item false" href=/tags>标签
+</a><a class="a-block drawer-menu-item false" href=/about>关于
+</a><a class="a-block drawer-menu-item false" href=/index.xml>RSS Feed</a><div class=toc><div class=toc-content><center>- CATALOG -</center><ul><li><a href=#launcher class=nav-launcher>Launcher</a></li><ul><li><a href=#ld-%e8%a1%a5%e5%85%a8%e7%9a%84-launcher class=nav-ld-补全的-launcher>LD 补全的 Launcher</a></li><ul><li><a href=#toml-%e6%a0%bc%e5%bc%8f%e6%b8%85%e5%8d%95 class=nav-toml-格式清单>TOML 格式清单</a></li><li><a href=#%e6%b8%85%e5%8d%95%e7%9a%84%e7%8e%af%e5%a2%83%e5%8f%98%e9%87%8f%e8%a7%a3%e6%9e%90 class=nav-清单的环境变量解析>清单的环境变量解析</a></li><li><a href=#%e5%90%af%e5%8a%a8%e5%99%a8%e7%9a%84%e5%ae%9e%e7%8e%b0 class=nav-启动器的实现>启动器的实现</a></li></ul><li><a href=#java-service-native-launcher class=nav-java-service-native-launcher>Java Service Native Launcher</a></li><ul><li><a href=#java-service-manifest class=nav-java-service-manifest>Java Service Manifest</a></li><li><a href=#jvm-%e7%9a%84%e5%90%af%e5%8a%a8%e6%b5%81%e7%a8%8b class=nav-jvm-的启动流程>JVM 的启动流程</a></li></ul></div></div></div></div></div><transition name=fade><div id=drawer-mask v-bind:class="{ 'single-column-drawer-mask': mounted }" v-if=isDrawerOpen v-on:click=toggleDrawer></div></transition><nav id=navBar class="navbar sticky-top navbar-light single-column-nav-container"><div id=navBackground class=nav-background></div><div class="container container-narrow nav-content"><button id=nav_dropdown_btn class=nav-dropdown-toggle type=button v-on:click=toggleDrawer>
+<i class=material-icons>menu
+</i></button>
+<a id=navTitle class=navbar-brand href=https://forcemz.net/>Charlie's Rethinking
+</a><button type=button class=nav-darkmode-toggle id=darkModeToggleButton2>
+<i class=material-icons id=darkModeToggleIcon2>dark_mode</i></button></div></nav><div class=single-column-header-container id=pageHead v-bind:style="{ transform: 'translateZ(0px) translateY('+.3*scrollY+'px)', opacity: 1-navOpacity }"><a href=https://forcemz.net/><div class=single-column-header-title>Charlie's Rethinking</div><div class=single-column-header-subtitle>Themed by Diary.</div></a></div><div id=content><div id=streamContainer class=stream-container><div class="post-list-container post-list-container-shadow"><div class=post><div class=post-head-wrapper-text-only><div class=post-title>基于清单的启动器的实现<div class=post-meta><time itemprop=datePublished>2015-11-27 21:30
+</time><i class=material-icons>folder</i>
+<a href=/categories/toolset>toolset</a>
+&nbsp;</div></div></div><div class=post-body-wrapper><div class=post-body v-pre><h1 id=launcher>Launcher</h1><p>Launcher (启动器) 是一类非常有用的工具，这类工具的意义就在于设置好特定的环境以特定的参数启动特定的进程。
+很多软件也用到了 launcher, 比如 Chrome，还有 Android Studio, 在 Windows 平台上，可见的是 studio.exe,
+事实上，Android Studio 是基于 Intellij IDEA 开发的，IDE 代码是基于 Java 的，所谓的 studio.exe 其实就是个启动器，加载 jvm.dll 罢了。
+IDEA WinLauncher 在 Github 上可以看到源码： <a href=https://github.com/JetBrains/intellij-community/tree/master/native/WinLauncher>WinLauncher</a><br>Manifest 清单是一类记录程序运行需求的文件，比如 Chrome 就有启动清单：</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-xml data-lang=xml><span style=display:flex><span><span style=color:#58a1dd>&lt;Application&gt;</span>
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>&lt;VisualElements</span>
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>DisplayName=</span><span style=color:#a6be9d>&#39;Google Chrome&#39;</span>
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>Logo=</span><span style=color:#a6be9d>&#39;46.0.2490.80\VisualElements\Logo.png&#39;</span>
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>SmallLogo=</span><span style=color:#a6be9d>&#39;46.0.2490.80\VisualElements\SmallLogo.png&#39;</span>
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>ForegroundText=</span><span style=color:#a6be9d>&#39;light&#39;</span>
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>BackgroundColor=</span><span style=color:#a6be9d>&#39;#323232&#39;</span><span style=color:#58a1dd>&gt;</span>
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>&lt;DefaultTile</span> <span style=color:#58a1dd>ShowName=</span><span style=color:#a6be9d>&#39;allLogos&#39;</span><span style=color:#58a1dd>/&gt;</span>
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>&lt;SplashScreen</span> <span style=color:#58a1dd>Image=</span><span style=color:#a6be9d>&#39;46.0.2490.80\VisualElements\splash-620x300.png&#39;</span><span style=color:#58a1dd>/&gt;</span>
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>&lt;/VisualElements&gt;</span>
+</span></span><span style=display:flex><span><span style=color:#58a1dd>&lt;/Application&gt;</span>
+</span></span></code></pre></div><p>Chrome 的清单主要是设置了启动画面以及 Logo 信息。</p><p>从 Windows XP 开启，Windows 引入了 manifest 文件，格式基于 XML,记录了一些 依赖组件，隔离信息等，比如下面的一个清单，
+requestedPrivileges 表示运行的权限，asInvoker 表示同父进程一样，如果是 requireAdministrator，如果父进程不是管理员则需触发 UAC 提权。
+而 dpiAware 则是 DPI 缩放所需，实际上很多 Windows 应用开发商对这个一无所知。assemblyIdentity 则是一些依赖组件的信息了，
+这里要求一些基本的控件，如 MessageBox Button, Edit, Combbox 等需要支持 Vista 以后的风格。</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-xml data-lang=xml><span style=display:flex><span><span style=color:#828b96;font-style:italic>&lt;?xml version=&#34;1.0&#34; encoding=&#34;UTF-8&#34; standalone=&#34;yes&#34;?&gt;</span>
+</span></span><span style=display:flex><span><span style=color:#58a1dd>&lt;assembly</span> <span style=color:#58a1dd>xmlns=</span><span style=color:#a6be9d>&#34;urn:schemas-microsoft-com:asm.v1&#34;</span> <span style=color:#58a1dd>manifestVersion=</span><span style=color:#a6be9d>&#34;1.0&#34;</span><span style=color:#58a1dd>&gt;</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>&lt;noInherit&gt;&lt;/noInherit&gt;</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>&lt;assemblyIdentity</span> <span style=color:#58a1dd>processorArchitecture=</span><span style=color:#a6be9d>&#34;*&#34;</span> <span style=color:#58a1dd>type=</span><span style=color:#a6be9d>&#34;win32&#34;</span> <span style=color:#58a1dd>name=</span><span style=color:#a6be9d>&#34;Force.Charlie.OSChina.Robot&#34;</span> <span style=color:#58a1dd>version=</span><span style=color:#a6be9d>&#34;1.0.0.0&#34;</span><span style=color:#58a1dd>&gt;&lt;/assemblyIdentity&gt;</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>&lt;description&gt;</span>Robot<span style=color:#58a1dd>&lt;/description&gt;</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>&lt;trustInfo</span> <span style=color:#58a1dd>xmlns=</span><span style=color:#a6be9d>&#34;urn:schemas-microsoft-com:asm.v3&#34;</span><span style=color:#58a1dd>&gt;</span>
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>&lt;security&gt;</span>
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>&lt;requestedPrivileges&gt;</span>
+</span></span><span style=display:flex><span>				<span style=color:#58a1dd>&lt;requestedExecutionLevel</span> <span style=color:#58a1dd>level=</span><span style=color:#a6be9d>&#34;asInvoker&#34;</span> <span style=color:#58a1dd>uiAccess=</span><span style=color:#a6be9d>&#34;false&#34;</span><span style=color:#58a1dd>&gt;&lt;/requestedExecutionLevel&gt;</span>
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>&lt;/requestedPrivileges&gt;</span>
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>&lt;/security&gt;</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>&lt;/trustInfo&gt;</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>&lt;asmv3:application</span> <span style=color:#58a1dd>xmlns:asmv3=</span><span style=color:#a6be9d>&#34;urn:schemas-microsoft-com:asm.v3&#34;</span><span style=color:#58a1dd>&gt;</span>
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>&lt;asmv3:windowsSettings</span> <span style=color:#58a1dd>xmlns=</span><span style=color:#a6be9d>&#34;http://schemas.microsoft.com/SMI/2005/WindowsSettings&#34;</span><span style=color:#58a1dd>&gt;</span>
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>&lt;dpiAware&gt;</span>true<span style=color:#58a1dd>&lt;/dpiAware&gt;</span>
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>&lt;/asmv3:windowsSettings&gt;</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>&lt;/asmv3:application&gt;</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>&lt;dependency</span> <span style=color:#58a1dd>optional=</span><span style=color:#a6be9d>&#34;yes&#34;</span><span style=color:#58a1dd>&gt;</span>
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>&lt;dependentAssembly&gt;</span>
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>&lt;assemblyIdentity</span> <span style=color:#58a1dd>type=</span><span style=color:#a6be9d>&#34;win32&#34;</span> <span style=color:#58a1dd>name=</span><span style=color:#a6be9d>&#34;Microsoft.Windows.Common-Controls&#34;</span> <span style=color:#58a1dd>version=</span><span style=color:#a6be9d>&#34;6.0.1.0&#34;</span> <span style=color:#58a1dd>publicKeyToken=</span><span style=color:#a6be9d>&#34;6595b64144ccf1df&#34;</span> <span style=color:#58a1dd>language=</span><span style=color:#a6be9d>&#34;*&#34;</span> <span style=color:#58a1dd>processorArchitecture=</span><span style=color:#a6be9d>&#34;*&#34;</span><span style=color:#58a1dd>&gt;&lt;/assemblyIdentity&gt;</span>
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>&lt;/dependentAssembly&gt;</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>&lt;/dependency&gt;</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>&lt;compatibility</span> <span style=color:#58a1dd>xmlns=</span><span style=color:#a6be9d>&#34;urn:schemas-microsoft-com:compatibility.v1&#34;</span><span style=color:#58a1dd>&gt;</span>
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>&lt;application&gt;</span>
+</span></span><span style=display:flex><span>			<span style=color:#828b96;font-style:italic>&lt;!--The ID below indicates application support for Windows 7 --&gt;</span>
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>&lt;supportedOS</span> <span style=color:#58a1dd>Id=</span><span style=color:#a6be9d>&#34;{35138b9a-5d96-4fbd-8e2d-a2440225f93a}&#34;</span><span style=color:#58a1dd>&gt;&lt;/supportedOS&gt;</span>
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>&lt;/application&gt;</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>&lt;/compatibility&gt;</span>
+</span></span><span style=display:flex><span><span style=color:#58a1dd>&lt;/assembly&gt;</span>
+</span></span></code></pre></div><p>还有 .NET 应用程序，常常带有 app.exe.config 这类应该说是混合清单了，.config 文件除了保留了清单功能，（比如这里有指定 .NET 版本）
+还支持配置信息，应用程序可以通过 ConfigurationManager 读取配置信息。</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-xml data-lang=xml><span style=display:flex><span><span style=color:#828b96;font-style:italic>&lt;?xml version =&#34;1.0&#34;?&gt;</span>
+</span></span><span style=display:flex><span><span style=color:#58a1dd>&lt;configuration&gt;</span>
+</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>&lt;!--
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>		Mixed mode assemblies (C++/CLI) will not load into a newer CLR by default. Expression disables this
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>		so user projects can load when they have mixed mode dependencies that target older frameworks.
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>	--&gt;</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>&lt;startup</span> <span style=color:#58a1dd>useLegacyV2RuntimeActivationPolicy=</span><span style=color:#a6be9d>&#34;true&#34;</span><span style=color:#58a1dd>&gt;</span>
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>&lt;supportedRuntime</span> <span style=color:#58a1dd>version=</span><span style=color:#a6be9d>&#34;v4.0&#34;</span> <span style=color:#58a1dd>sku=</span><span style=color:#a6be9d>&#34;.NETFramework,Version=v4.5&#34;</span><span style=color:#58a1dd>/&gt;</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>&lt;/startup&gt;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>&lt;runtime&gt;</span>
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>&lt;designerNamespaceResolution</span> <span style=color:#58a1dd>enabled=</span><span style=color:#a6be9d>&#34;true&#34;</span> <span style=color:#58a1dd>/&gt;</span>
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>&lt;assemblyBinding</span> <span style=color:#58a1dd>xmlns=</span><span style=color:#a6be9d>&#34;urn:schemas-microsoft-com:asm.v1&#34;</span><span style=color:#58a1dd>&gt;</span>
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>&lt;probing</span> <span style=color:#58a1dd>privatePath=</span><span style=color:#a6be9d>&#34;PublicAssemblies;PrivateAssemblies&#34;</span> <span style=color:#58a1dd>/&gt;</span>
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>&lt;/assemblyBinding&gt;</span>
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>&lt;/runtime&gt;</span>
+</span></span><span style=display:flex><span><span style=color:#58a1dd>&lt;/configuration&gt;</span>
+</span></span></code></pre></div><p><a href=https://msdn.microsoft.com/zh-cn/library/system.configuration.configurationmanager>ConfigurationManager</a><br><a href=http://blogs.msdn.com/b/aspnetue/archive/2008/10/02/system-configuration-configurationmanager-source-c.aspx>Using System.Configuration.ConfigurationManager Example (C#)</a></p><h2 id=ld-补全的-launcher>LD 补全的 Launcher</h2><p>一般而言，Linux 进程依赖的 so 文件，如果不是通过 dlopen 动态加载的，都需要放到默认的 library 目录，也就是 /usr/lib, /usr/local/lib,
+或者是通过 export 命令设置 LD PATH，然后从 Shell 或 Shell 脚本启动进程。</p><blockquote><p>export LD_LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/lib</p></blockquote><p>比如 google chrome , p4merge 等大多是写一个 launcher 脚本。新的启动器基于 C++ 实现，使用 TOML 格式文件作为清单文件。</p><h3 id=toml-格式清单>TOML 格式清单</h3><p>TOML (Tom&rsquo;s Obvious, Minimal Language) 是 Github 联合创始人 Tom Preston-Werner 设计的一种极简的配置文件，格式类似于 ini, 但比 ini 严格，
+支持整数，浮点，字符串，数组，布尔值，表格，时间日期。解析起来非常方便。主页 <a href=https://github.com/toml-lang/toml>Github TOML</a></p><p>TOML 格式清单如下：</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-toml data-lang=toml><span style=display:flex><span><span style=color:#828b96;font-style:italic>#launcher.manifest</span>
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic># OWNERDIR is process image directory</span>
+</span></span><span style=display:flex><span>[<span style=color:#58a1dd>Launcher</span>]
+</span></span><span style=display:flex><span><span style=color:#58a1dd>LibraryPath</span>=<span style=color:#a6be9d>&#34;/opt/boost/lib&#34;</span>
+</span></span><span style=display:flex><span><span style=color:#58a1dd>Path</span>=<span style=color:#a6be9d>&#34;${OWNERDIR}/../bin&#34;</span>
+</span></span><span style=display:flex><span><span style=color:#58a1dd>Binary</span>=<span style=color:#a6be9d>&#34;launcher_child&#34;</span>
+</span></span></code></pre></div><p>这里只设置了 LibraryPath Path Binary 。</p><h3 id=清单的环境变量解析>清单的环境变量解析</h3><p>在上面的清单中，Path="${OWNERDIR}/../bin", 这需要解析，OWNERDIR 代表一个环境变量，这里是内置的，表示程序 launcher 自身的目录。
+环境变量的解析如下：</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-cpp data-lang=cpp><span style=display:flex><span><span style=color:#828b96;font-style:italic>/**
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>*
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>*
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>**/</span>
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;stdlib.h&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;stdio.h&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;unistd.h&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;string.h&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;unordered_map&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>bool</span> <span style=color:#58a1dd>GetProcessImageFilePath</span>(<span style=color:#ff636f>char</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>buffer</span>, <span style=color:#58a1dd>size_t</span> <span style=color:#58a1dd>bufSize</span>) {
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>auto</span> <span style=color:#58a1dd>sz</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>readlink</span>(<span style=color:#a6be9d>&#34;/proc/self/exe&#34;</span>, <span style=color:#58a1dd>buffer</span>, <span style=color:#58a1dd>bufSize</span> <span style=color:#ff636f>-</span> <span style=color:#a6be9d>1</span>);
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>sz</span> <span style=color:#ff636f>==</span> <span style=color:#a6be9d>0</span>)
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>buffer</span>[<span style=color:#58a1dd>sz</span>] <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>return</span> <span style=color:#58a1dd>true</span>;
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>bool</span> <span style=color:#58a1dd>GetProcessImageFileFolder</span>(<span style=color:#ff636f>char</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>buffer</span>, <span style=color:#58a1dd>size_t</span> <span style=color:#58a1dd>bufSize</span>) {
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>auto</span> <span style=color:#58a1dd>sz</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>readlink</span>(<span style=color:#a6be9d>&#34;/proc/self/exe&#34;</span>, <span style=color:#58a1dd>buffer</span>, <span style=color:#58a1dd>bufSize</span> <span style=color:#ff636f>-</span> <span style=color:#a6be9d>1</span>);
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>sz</span> <span style=color:#ff636f>==</span> <span style=color:#a6be9d>0</span>)
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>buffer</span>[<span style=color:#58a1dd>sz</span>] <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>while</span> (<span style=color:#ff636f>--</span><span style=color:#58a1dd>sz</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>buffer</span>[<span style=color:#58a1dd>sz</span>] <span style=color:#ff636f>==</span> <span style=color:#a6be9d>&#39;/&#39;</span>) {
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>sz</span> <span style=color:#ff636f>==</span> <span style=color:#a6be9d>0</span>)
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>buffer</span>[<span style=color:#a6be9d>1</span>] <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>else</span>
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>buffer</span>[<span style=color:#58a1dd>sz</span>] <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>return</span> <span style=color:#58a1dd>true</span>;
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>buffer</span>[<span style=color:#a6be9d>1</span>] <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>return</span> <span style=color:#58a1dd>true</span>;
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>/*
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>* Match Resolve and Replace profile support environment value
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>*/</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>enum</span> <span style=color:#58a1dd>KEnvStateMachine</span> <span style=color:#ff636f>:</span> <span style=color:#ff636f>int</span> {
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>kClearReset</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>,
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>kEscapeAllow</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>1</span>,
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>kMarkAllow</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>2</span>,
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>kBlockBegin</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>3</span>,
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>kBlockEnd</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>4</span>
+</span></span><span style=display:flex><span>};
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>class</span> <span style=color:#58a1dd>EnvironmentValues</span> {
+</span></span><span style=display:flex><span><span style=color:#ff636f>private</span><span style=color:#ff636f>:</span>
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>unordered_map</span><span style=color:#ff636f>&lt;</span><span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span>, <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span><span style=color:#ff636f>&gt;</span> <span style=color:#58a1dd>ev</span>;
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>EnvironmentValues</span>() {
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>char</span> <span style=color:#58a1dd>buffer</span>[<span style=color:#a6be9d>4096</span>];
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>GetProcessImageFileFolder</span>(<span style=color:#58a1dd>buffer</span>, <span style=color:#a6be9d>4096</span>)) {
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>ev</span>.<span style=color:#58a1dd>insert</span>(
+</span></span><span style=display:flex><span>          <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>pair</span><span style=color:#ff636f>&lt;</span><span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span>, <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span><span style=color:#ff636f>&gt;</span>(<span style=color:#a6be9d>&#34;OWNERDIR&#34;</span>, <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span>(<span style=color:#58a1dd>buffer</span>)));
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>ev</span>.<span style=color:#58a1dd>insert</span>(<span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>pair</span><span style=color:#ff636f>&lt;</span><span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span>, <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span><span style=color:#ff636f>&gt;</span>(<span style=color:#a6be9d>&#34;SEPARATOR&#34;</span>, <span style=color:#a6be9d>&#34;/&#34;</span>));
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>ev</span>.<span style=color:#58a1dd>insert</span>(<span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>pair</span><span style=color:#ff636f>&lt;</span><span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span>, <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span><span style=color:#ff636f>&gt;</span>(<span style=color:#a6be9d>&#34;TMP&#34;</span>, <span style=color:#a6be9d>&#34;/tmp&#34;</span>));
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>public</span><span style=color:#ff636f>:</span>
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>bool</span> <span style=color:#58a1dd>Push</span>(<span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span> <span style=color:#58a1dd>key</span>, <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span> <span style=color:#58a1dd>value</span>, <span style=color:#ff636f>bool</span> <span style=color:#58a1dd>over</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>false</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>over</span>) {
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>ev</span>.<span style=color:#58a1dd>find</span>(<span style=color:#58a1dd>key</span>) <span style=color:#ff636f>!=</span> <span style=color:#58a1dd>ev</span>.<span style=color:#58a1dd>end</span>())
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>ev</span>.<span style=color:#58a1dd>insert</span>(<span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>pair</span><span style=color:#ff636f>&lt;</span><span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span>, <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span><span style=color:#ff636f>&gt;</span>(<span style=color:#58a1dd>key</span>, <span style=color:#58a1dd>value</span>));
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#58a1dd>true</span>;
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>EnvironmentValues</span> <span style=color:#ff636f>&amp;</span><span style=color:#ff636f>operator</span><span style=color:#ff636f>=</span>(<span style=color:#ff636f>const</span> <span style=color:#58a1dd>EnvironmentValues</span> <span style=color:#ff636f>&amp;</span>) <span style=color:#ff636f>=</span> <span style=color:#ff636f>delete</span>;
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>EnvironmentValues</span>(<span style=color:#ff636f>const</span> <span style=color:#58a1dd>EnvironmentValues</span> <span style=color:#ff636f>&amp;</span>) <span style=color:#ff636f>=</span> <span style=color:#ff636f>delete</span>;
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>static</span> <span style=color:#58a1dd>EnvironmentValues</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>Instance</span>() {
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>static</span> <span style=color:#58a1dd>EnvironmentValues</span> <span style=color:#58a1dd>env</span>;
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#58a1dd>env</span>;
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>const</span> <span style=color:#58a1dd>decltype</span>(<span style=color:#58a1dd>ev</span>) <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>get</span>() { <span style=color:#ff636f>return</span> <span style=color:#58a1dd>ev</span>; }
+</span></span><span style=display:flex><span>};
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// ${HOME}/${USER}/sss/dir
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>bool</span> <span style=color:#58a1dd>OverwriterEnvironmentKv</span>(<span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span> <span style=color:#58a1dd>k</span>, <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span> <span style=color:#58a1dd>v</span>) {
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>return</span> <span style=color:#58a1dd>EnvironmentValues</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>Instance</span>().<span style=color:#58a1dd>Push</span>(<span style=color:#58a1dd>k</span>, <span style=color:#58a1dd>v</span>, <span style=color:#58a1dd>true</span>);
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>bool</span> <span style=color:#58a1dd>PushEnvironmentKv</span>(<span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span> <span style=color:#58a1dd>k</span>, <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span> <span style=color:#58a1dd>v</span>) {
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>return</span> <span style=color:#58a1dd>EnvironmentValues</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>Instance</span>().<span style=color:#58a1dd>Push</span>(<span style=color:#58a1dd>k</span>, <span style=color:#58a1dd>v</span>);
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>static</span> <span style=color:#ff636f>bool</span> <span style=color:#58a1dd>ResolveEnvironment</span>(<span style=color:#ff636f>const</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>k</span>, <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>v</span>) {
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>for</span> (<span style=color:#ff636f>auto</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>i</span> : <span style=color:#58a1dd>EnvironmentValues</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>Instance</span>().<span style=color:#58a1dd>get</span>()) {
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>i</span>.<span style=color:#58a1dd>first</span>.<span style=color:#58a1dd>compare</span>(<span style=color:#58a1dd>k</span>) <span style=color:#ff636f>==</span> <span style=color:#a6be9d>0</span>) {
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>v</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>i</span>.<span style=color:#58a1dd>second</span>;
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>return</span> <span style=color:#58a1dd>true</span>;
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>const</span> <span style=color:#ff636f>char</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>s</span> <span style=color:#ff636f>=</span> <span style=color:#ff636f>nullptr</span>;
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> ((<span style=color:#58a1dd>s</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>getenv</span>(<span style=color:#58a1dd>k</span>.<span style=color:#58a1dd>c_str</span>())) <span style=color:#ff636f>!=</span> <span style=color:#ff636f>nullptr</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>v</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>s</span>;
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#58a1dd>true</span>;
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>bool</span> <span style=color:#58a1dd>BaseEnvironmentExpend</span>(<span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>va</span>) {
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>va</span>.<span style=color:#58a1dd>empty</span>())
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span> <span style=color:#58a1dd>ns</span>, <span style=color:#58a1dd>ks</span>;
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>auto</span> <span style=color:#58a1dd>p</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>va</span>.<span style=color:#58a1dd>c_str</span>();
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>auto</span> <span style=color:#58a1dd>n</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>va</span>.<span style=color:#58a1dd>size</span>();
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>int</span> <span style=color:#58a1dd>pre</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>size_t</span> <span style=color:#58a1dd>i</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>KEnvStateMachine</span> <span style=color:#58a1dd>state</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>kClearReset</span>;
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>for</span> (; <span style=color:#58a1dd>i</span> <span style=color:#ff636f>&lt;</span> <span style=color:#58a1dd>n</span>; <span style=color:#58a1dd>i</span><span style=color:#ff636f>++</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>switch</span> (<span style=color:#58a1dd>p</span>[<span style=color:#58a1dd>i</span>]) {
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>case</span> <span style=color:#a6be9d>&#39;`&#39;</span><span style=color:#ff636f>:</span> {
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>switch</span> (<span style=color:#58a1dd>state</span>) {
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>case</span> <span style=color:#58a1dd>kClearReset</span>:
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>state</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>kEscapeAllow</span>;
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>break</span>;
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>case</span> <span style=color:#58a1dd>kEscapeAllow</span>:
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>ns</span>.<span style=color:#58a1dd>push_back</span>(<span style=color:#a6be9d>&#39;`&#39;</span>);
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>state</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>kClearReset</span>;
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>break</span>;
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>case</span> <span style=color:#58a1dd>kMarkAllow</span>:
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>state</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>kEscapeAllow</span>;
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>ns</span>.<span style=color:#58a1dd>push_back</span>(<span style=color:#a6be9d>&#39;$&#39;</span>);
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>break</span>;
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>case</span> <span style=color:#58a1dd>kBlockBegin</span>:
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>continue</span>;
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>default</span><span style=color:#ff636f>:</span>
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>ns</span>.<span style=color:#58a1dd>push_back</span>(<span style=color:#a6be9d>&#39;`&#39;</span>);
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>continue</span>;
+</span></span><span style=display:flex><span>      }
+</span></span><span style=display:flex><span>    } <span style=color:#ff636f>break</span>;
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>case</span> <span style=color:#a6be9d>&#39;$&#39;</span><span style=color:#ff636f>:</span> {
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>switch</span> (<span style=color:#58a1dd>state</span>) {
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>case</span> <span style=color:#58a1dd>kClearReset</span>:
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>state</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>kMarkAllow</span>;
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>break</span>;
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>case</span> <span style=color:#58a1dd>kEscapeAllow</span>:
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>ns</span>.<span style=color:#58a1dd>push_back</span>(<span style=color:#a6be9d>&#39;$&#39;</span>);
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>state</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>kClearReset</span>;
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>break</span>;
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>case</span> <span style=color:#58a1dd>kMarkAllow</span>:
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>ns</span>.<span style=color:#58a1dd>push_back</span>(<span style=color:#a6be9d>&#39;$&#39;</span>);
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>state</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>kClearReset</span>;
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>break</span>;
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>case</span> <span style=color:#58a1dd>kBlockBegin</span>:
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>case</span> <span style=color:#58a1dd>kBlockEnd</span>:
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>default</span><span style=color:#ff636f>:</span>
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>ns</span>.<span style=color:#58a1dd>push_back</span>(<span style=color:#a6be9d>&#39;$&#39;</span>);
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>continue</span>;
+</span></span><span style=display:flex><span>      }
+</span></span><span style=display:flex><span>    } <span style=color:#ff636f>break</span>;
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>case</span> <span style=color:#a6be9d>&#39;{&#39;</span><span style=color:#ff636f>:</span> {
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>switch</span> (<span style=color:#58a1dd>state</span>) {
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>case</span> <span style=color:#58a1dd>kClearReset</span>:
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>case</span> <span style=color:#58a1dd>kEscapeAllow</span>:
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>ns</span>.<span style=color:#58a1dd>push_back</span>(<span style=color:#a6be9d>&#39;{&#39;</span>);
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>state</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>kClearReset</span>;
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>break</span>;
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>case</span> <span style=color:#58a1dd>kMarkAllow</span>: {
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>state</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>kBlockBegin</span>;
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>pre</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>i</span>;
+</span></span><span style=display:flex><span>      } <span style=color:#ff636f>break</span>;
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>case</span> <span style=color:#58a1dd>kBlockBegin</span>:
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>ns</span>.<span style=color:#58a1dd>push_back</span>(<span style=color:#a6be9d>&#39;{&#39;</span>);
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>break</span>;
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>default</span><span style=color:#ff636f>:</span>
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>continue</span>;
+</span></span><span style=display:flex><span>      }
+</span></span><span style=display:flex><span>    } <span style=color:#ff636f>break</span>;
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>case</span> <span style=color:#a6be9d>&#39;}&#39;</span><span style=color:#ff636f>:</span> {
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>switch</span> (<span style=color:#58a1dd>state</span>) {
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>case</span> <span style=color:#58a1dd>kClearReset</span>:
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>case</span> <span style=color:#58a1dd>kEscapeAllow</span>:
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>ns</span>.<span style=color:#58a1dd>push_back</span>(<span style=color:#a6be9d>&#39;}&#39;</span>);
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>state</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>kClearReset</span>;
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>break</span>;
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>case</span> <span style=color:#58a1dd>kMarkAllow</span>:
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>state</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>kClearReset</span>;
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>ns</span>.<span style=color:#58a1dd>push_back</span>(<span style=color:#a6be9d>&#39;$&#39;</span>);
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>ns</span>.<span style=color:#58a1dd>push_back</span>(<span style=color:#a6be9d>&#39;}&#39;</span>);
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>break</span>;
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>case</span> <span style=color:#58a1dd>kBlockBegin</span>: {
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>ks</span>.<span style=color:#58a1dd>assign</span>(<span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>p</span>[<span style=color:#58a1dd>pre</span> <span style=color:#ff636f>+</span> <span style=color:#a6be9d>1</span>], <span style=color:#58a1dd>i</span> <span style=color:#ff636f>-</span> <span style=color:#58a1dd>pre</span> <span style=color:#ff636f>-</span> <span style=color:#a6be9d>1</span>);
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span> <span style=color:#58a1dd>v</span>;
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>ResolveEnvironment</span>(<span style=color:#58a1dd>ks</span>, <span style=color:#58a1dd>v</span>))
+</span></span><span style=display:flex><span>          <span style=color:#58a1dd>ns</span>.<span style=color:#58a1dd>append</span>(<span style=color:#58a1dd>v</span>);
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>state</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>kClearReset</span>;
+</span></span><span style=display:flex><span>      } <span style=color:#ff636f>break</span>;
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>default</span><span style=color:#ff636f>:</span>
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>continue</span>;
+</span></span><span style=display:flex><span>      }
+</span></span><span style=display:flex><span>    } <span style=color:#ff636f>break</span>;
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>default</span><span style=color:#ff636f>:</span> {
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>switch</span> (<span style=color:#58a1dd>state</span>) {
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>case</span> <span style=color:#58a1dd>kClearReset</span>:
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>ns</span>.<span style=color:#58a1dd>push_back</span>(<span style=color:#58a1dd>p</span>[<span style=color:#58a1dd>i</span>]);
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>break</span>;
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>case</span> <span style=color:#58a1dd>kEscapeAllow</span>:
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>ns</span>.<span style=color:#58a1dd>push_back</span>(<span style=color:#a6be9d>&#39;`&#39;</span>);
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>ns</span>.<span style=color:#58a1dd>push_back</span>(<span style=color:#58a1dd>p</span>[<span style=color:#58a1dd>i</span>]);
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>state</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>kClearReset</span>;
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>break</span>;
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>case</span> <span style=color:#58a1dd>kMarkAllow</span>:
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>ns</span>.<span style=color:#58a1dd>push_back</span>(<span style=color:#a6be9d>&#39;$&#39;</span>);
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>ns</span>.<span style=color:#58a1dd>push_back</span>(<span style=color:#58a1dd>p</span>[<span style=color:#58a1dd>i</span>]);
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>state</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>kClearReset</span>;
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>break</span>;
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>case</span> <span style=color:#58a1dd>kBlockBegin</span>:
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>default</span><span style=color:#ff636f>:</span>
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>continue</span>;
+</span></span><span style=display:flex><span>      }
+</span></span><span style=display:flex><span>    } <span style=color:#ff636f>break</span>;
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>va</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>ns</span>;
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>return</span> <span style=color:#58a1dd>true</span>;
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><h3 id=启动器的实现>启动器的实现</h3><p>启动器启动后，查找清单文件，清单文件文件名为 launcher.manifest , 要作为其他进程的启动器，只需要重命名和修改清单文件即可。<br>Launcher 随后解析清单文件，并读取 LibraryPath, Path, Binray 等属性，设置好环境变量，最后通过 execvp 启动进程，输入的参数就是启动器的全部参数。</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-cpp data-lang=cpp><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;stdio.h&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;stdlib.h&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;string.h&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;unistd.h&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;string&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;sys/types.h&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;dirent.h&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;iostream&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;cpptoml.h&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>bool</span> <span style=color:#58a1dd>GetProcessImageFilePath</span>(<span style=color:#ff636f>char</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>buffer</span>, <span style=color:#58a1dd>size_t</span> <span style=color:#58a1dd>bufSize</span>);
+</span></span><span style=display:flex><span><span style=color:#ff636f>bool</span> <span style=color:#58a1dd>BaseEnvironmentExpend</span>(<span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>va</span>);
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>bool</span> <span style=color:#58a1dd>AppendEnvironment</span>(<span style=color:#ff636f>const</span> <span style=color:#ff636f>char</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>name</span>, <span style=color:#ff636f>const</span> <span style=color:#ff636f>char</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>value</span>,
+</span></span><span style=display:flex><span>                       <span style=color:#ff636f>bool</span> <span style=color:#58a1dd>front</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>false</span>) {
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>name</span> <span style=color:#ff636f>==</span> <span style=color:#ff636f>nullptr</span> <span style=color:#ff636f>||</span> <span style=color:#58a1dd>value</span> <span style=color:#ff636f>==</span> <span style=color:#ff636f>nullptr</span>)
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>const</span> <span style=color:#ff636f>char</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>ev</span> <span style=color:#ff636f>=</span> <span style=color:#ff636f>nullptr</span>;
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> ((<span style=color:#58a1dd>ev</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>getenv</span>(<span style=color:#58a1dd>name</span>)) <span style=color:#ff636f>==</span> <span style=color:#ff636f>nullptr</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>setenv</span>(<span style=color:#58a1dd>name</span>, <span style=color:#58a1dd>value</span>, <span style=color:#a6be9d>1</span>);
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#58a1dd>true</span>;
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>auto</span> <span style=color:#58a1dd>l</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>strlen</span>(<span style=color:#58a1dd>value</span>) <span style=color:#ff636f>+</span> <span style=color:#58a1dd>strlen</span>(<span style=color:#58a1dd>ev</span>) <span style=color:#ff636f>+</span> <span style=color:#a6be9d>2</span>;
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>auto</span> <span style=color:#58a1dd>s</span> <span style=color:#ff636f>=</span> <span style=color:#ff636f>new</span> <span style=color:#ff636f>char</span>[<span style=color:#58a1dd>l</span>];
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>front</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>strcpy</span>(<span style=color:#58a1dd>s</span>, <span style=color:#58a1dd>value</span>);
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>strcat</span>(<span style=color:#58a1dd>s</span>, <span style=color:#a6be9d>&#34;:&#34;</span>);
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>strcat</span>(<span style=color:#58a1dd>s</span>, <span style=color:#58a1dd>ev</span>);
+</span></span><span style=display:flex><span>  } <span style=color:#ff636f>else</span> {
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>strcpy</span>(<span style=color:#58a1dd>s</span>, <span style=color:#58a1dd>ev</span>);
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>strcat</span>(<span style=color:#58a1dd>s</span>, <span style=color:#a6be9d>&#34;:&#34;</span>);
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>strcat</span>(<span style=color:#58a1dd>s</span>, <span style=color:#58a1dd>value</span>);
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>setenv</span>(<span style=color:#58a1dd>name</span>, <span style=color:#58a1dd>s</span>, <span style=color:#a6be9d>1</span>);
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>delete</span>[] <span style=color:#58a1dd>s</span>;
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>return</span> <span style=color:#58a1dd>true</span>;
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>bool</span> <span style=color:#58a1dd>Pathcombine</span>(<span style=color:#ff636f>const</span> <span style=color:#ff636f>char</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>folder</span>, <span style=color:#ff636f>const</span> <span style=color:#ff636f>char</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>path</span>, <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>cmd</span>) {
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>folder</span> <span style=color:#ff636f>==</span> <span style=color:#ff636f>nullptr</span> <span style=color:#ff636f>||</span> <span style=color:#58a1dd>path</span> <span style=color:#ff636f>==</span> <span style=color:#ff636f>nullptr</span>)
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#ff636f>*</span><span style=color:#58a1dd>path</span> <span style=color:#ff636f>==</span> <span style=color:#a6be9d>&#39;/&#39;</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>access</span>(<span style=color:#58a1dd>path</span>, <span style=color:#58a1dd>R_OK</span>) <span style=color:#ff636f>!=</span> <span style=color:#a6be9d>0</span>)
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>cmd</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>path</span>;
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#58a1dd>true</span>;
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>cmd</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span>(<span style=color:#58a1dd>folder</span>);
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>cmd</span>.<span style=color:#58a1dd>back</span>() <span style=color:#ff636f>!=</span> <span style=color:#a6be9d>&#39;/&#39;</span> <span style=color:#ff636f>&amp;&amp;</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>path</span> <span style=color:#ff636f>!=</span> <span style=color:#a6be9d>&#39;/&#39;</span>)
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>cmd</span>.<span style=color:#58a1dd>push_back</span>(<span style=color:#a6be9d>&#39;/&#39;</span>);
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>cmd</span>.<span style=color:#58a1dd>append</span>(<span style=color:#58a1dd>path</span>);
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>access</span>(<span style=color:#58a1dd>cmd</span>.<span style=color:#58a1dd>c_str</span>(), <span style=color:#58a1dd>R_OK</span>) <span style=color:#ff636f>==</span> <span style=color:#a6be9d>0</span>)
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#58a1dd>true</span>;
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>bool</span> <span style=color:#58a1dd>PathRemoveFileSpec</span>(<span style=color:#ff636f>char</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>dir</span>) {
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>auto</span> <span style=color:#58a1dd>sz</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>strlen</span>(<span style=color:#ff636f>const_cast</span><span style=color:#ff636f>&lt;</span><span style=color:#ff636f>const</span> <span style=color:#ff636f>char</span> <span style=color:#ff636f>*&gt;</span>(<span style=color:#58a1dd>dir</span>));
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>while</span> (<span style=color:#ff636f>--</span><span style=color:#58a1dd>sz</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>dir</span>[<span style=color:#58a1dd>sz</span>] <span style=color:#ff636f>==</span> <span style=color:#a6be9d>&#39;/&#39;</span>) {
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>sz</span> <span style=color:#ff636f>==</span> <span style=color:#a6be9d>0</span>)
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>dir</span>[<span style=color:#a6be9d>1</span>] <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>else</span>
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>dir</span>[<span style=color:#58a1dd>sz</span>] <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>return</span> <span style=color:#58a1dd>true</span>;
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>dir</span>[<span style=color:#a6be9d>1</span>] <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>return</span> <span style=color:#58a1dd>true</span>;
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>//// launcher must find default
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span><span style=color:#ff636f>bool</span> <span style=color:#58a1dd>SearchManifest</span>(<span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>cmd</span>) {
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>char</span> <span style=color:#58a1dd>selfPath</span>[<span style=color:#a6be9d>4096</span>];
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>GetProcessImageFilePath</span>(<span style=color:#58a1dd>selfPath</span>, <span style=color:#a6be9d>4096</span>))
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span> <span style=color:#58a1dd>manifest</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span>(<span style=color:#58a1dd>selfPath</span>) <span style=color:#ff636f>+</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span>(<span style=color:#a6be9d>&#34;.manifest&#34;</span>);
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>PathRemoveFileSpec</span>(<span style=color:#58a1dd>selfPath</span>)) {
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>cout</span> <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#a6be9d>&#34;cannot resolve path &#34;</span> <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#58a1dd>selfPath</span> <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>endl</span>;
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>access</span>(<span style=color:#58a1dd>manifest</span>.<span style=color:#58a1dd>c_str</span>(), <span style=color:#58a1dd>R_OK</span>) <span style=color:#ff636f>!=</span> <span style=color:#a6be9d>0</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>cerr</span> <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#a6be9d>&#34;Not found launcher manifest, path is: &#34;</span> <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#58a1dd>manifest</span>
+</span></span><span style=display:flex><span>              <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>endl</span>;
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>shared_ptr</span><span style=color:#ff636f>&lt;</span><span style=color:#58a1dd>cpptoml</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>table</span><span style=color:#ff636f>&gt;</span> <span style=color:#58a1dd>g</span>;
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>try</span> {
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>g</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>cpptoml</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>parse_file</span>(<span style=color:#58a1dd>manifest</span>);
+</span></span><span style=display:flex><span>  } <span style=color:#ff636f>catch</span> (<span style=color:#ff636f>const</span> <span style=color:#58a1dd>cpptoml</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>parse_exception</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>e</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>cerr</span> <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#a6be9d>&#34;Failed to parse manifest: &#34;</span> <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#58a1dd>manifest</span> <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#a6be9d>&#34;: &#34;</span> <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#58a1dd>e</span>.<span style=color:#58a1dd>what</span>()
+</span></span><span style=display:flex><span>              <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>endl</span>;
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>auto</span> <span style=color:#58a1dd>insider</span> <span style=color:#ff636f>=</span> [<span style=color:#ff636f>&amp;</span>](<span style=color:#ff636f>const</span> <span style=color:#ff636f>char</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>key</span>, <span style=color:#ff636f>const</span> <span style=color:#ff636f>char</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>evar</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>g</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>contains_qualified</span>(<span style=color:#58a1dd>key</span>))
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>return</span>;
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>auto</span> <span style=color:#58a1dd>s</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>g</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>get_qualified</span>(<span style=color:#58a1dd>key</span>)<span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>as</span><span style=color:#ff636f>&lt;</span><span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span><span style=color:#ff636f>&gt;</span>()<span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>get</span>();
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>BaseEnvironmentExpend</span>(<span style=color:#58a1dd>s</span>)) {
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>cout</span> <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#a6be9d>&#34;cannot resolve env: &#34;</span> <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#58a1dd>s</span> <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>endl</span>;
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>return</span>;
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>AppendEnvironment</span>(<span style=color:#58a1dd>evar</span>, <span style=color:#58a1dd>s</span>.<span style=color:#58a1dd>c_str</span>(), <span style=color:#58a1dd>true</span>))
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>cout</span> <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#a6be9d>&#34;cannot append &#34;</span> <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#58a1dd>s</span> <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#a6be9d>&#34; to env &#34;</span> <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#58a1dd>evar</span> <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>endl</span>;
+</span></span><span style=display:flex><span>    <span style=color:#828b96;font-style:italic>// std::cout&lt;&lt;&#34;Append success &#34;&lt;&lt;s&lt;&lt;&#34; to env &#34;&lt;&lt;evar&lt;&lt;std::endl;
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>    <span style=color:#828b96;font-style:italic>// std::cout&lt;&lt;getenv(evar)&lt;&lt;std::endl;
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>  };
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>insider</span>(<span style=color:#a6be9d>&#34;Launcher.Path&#34;</span>, <span style=color:#a6be9d>&#34;PATH&#34;</span>);
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>insider</span>(<span style=color:#a6be9d>&#34;Launcher.LibraryPath&#34;</span>, <span style=color:#a6be9d>&#34;LD_LIBRARY_PATH&#34;</span>);
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>g</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>contains_qualified</span>(<span style=color:#a6be9d>&#34;Launcher.Binary&#34;</span>))
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>auto</span> <span style=color:#58a1dd>sbinary</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>g</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>get_qualified</span>(<span style=color:#a6be9d>&#34;Launcher.Binary&#34;</span>)<span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>as</span><span style=color:#ff636f>&lt;</span><span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span><span style=color:#ff636f>&gt;</span>()<span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>get</span>();
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>BaseEnvironmentExpend</span>(<span style=color:#58a1dd>sbinary</span>))
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>Pathcombine</span>(<span style=color:#58a1dd>selfPath</span>, <span style=color:#58a1dd>sbinary</span>.<span style=color:#58a1dd>c_str</span>(), <span style=color:#58a1dd>cmd</span>)) {
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>cout</span> <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#a6be9d>&#34;Cannot found path: &#34;</span> <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#58a1dd>cmd</span> <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>endl</span>;
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>return</span> <span style=color:#58a1dd>true</span>;
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>int</span> <span style=color:#58a1dd>main</span>(<span style=color:#ff636f>int</span> <span style=color:#58a1dd>argc</span>, <span style=color:#ff636f>char</span> <span style=color:#ff636f>*</span><span style=color:#ff636f>const</span> <span style=color:#58a1dd>argv</span>[]) {
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span> <span style=color:#58a1dd>cmd</span>;
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>SearchManifest</span>(<span style=color:#58a1dd>cmd</span>))
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#ff636f>-</span><span style=color:#a6be9d>1</span>;
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>auto</span> <span style=color:#58a1dd>ret</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>execvp</span>(<span style=color:#58a1dd>cmd</span>.<span style=color:#58a1dd>c_str</span>(), <span style=color:#58a1dd>argv</span>);
+</span></span><span style=display:flex><span>  <span style=color:#828b96;font-style:italic>// std::cout&lt;&lt;&#34;Command is: &#34;&lt;&lt;cmd&lt;&lt;std::endl;
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>  <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>cout</span> <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#a6be9d>&#34;Subprocess result is: &#34;</span> <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#58a1dd>ret</span> <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>endl</span>;
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>return</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><h2 id=java-service-native-launcher>Java Service Native Launcher</h2><p>由于工作需要，我曾经写过一个 Shell 的 Java 服务启动器。如果不用第三方启动器，直接使用 JVM 官方启动器 java，
+需要输入很长的命令。比如运行 hello.jar 并传递参数，如下：</p><blockquote><p>java -jar hello.jar world</p></blockquote><p>如果运行的是一些服务，则可能是这样的：</p><blockquote><p>java -server -Xms512m -Xmx512m -jar com.fuck.service.jar &ndash;poolsize=24 &ndash;ip=192.168.1.12</p></blockquote><p>很多时候，Java 开发者会使用 shell(batch) 脚本，或者第三方启动器来规避这些麻烦。</p><h3 id=java-service-manifest>Java Service Manifest</h3><p>绝大多数人并不喜欢冗长的命令，我也不例外。<br>在设计 Java Launcher 的时候，我采用 TOML 格式作为启动器清单格式，文件格式如下</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-toml data-lang=toml><span style=display:flex><span><span style=color:#828b96;font-style:italic>#Launcher</span>
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic># OWNERDIR is process image directory</span>
+</span></span><span style=display:flex><span>[<span style=color:#58a1dd>Runing</span>]
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic># limit 16 bytes</span>
+</span></span><span style=display:flex><span><span style=color:#58a1dd>Title</span>=<span style=color:#a6be9d>&#34;JSrv&#34;</span>
+</span></span><span style=display:flex><span><span style=color:#58a1dd>IsService</span>=<span style=color:#ff636f>true</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>[<span style=color:#58a1dd>Runtime</span>]
+</span></span><span style=display:flex><span><span style=color:#58a1dd>JDKPath</span>=<span style=color:#a6be9d>&#34;/opt/jdk&#34;</span>
+</span></span><span style=display:flex><span><span style=color:#58a1dd>Package</span>=<span style=color:#a6be9d>&#34;${OWNERDIR}/app.jar&#34;</span>
+</span></span><span style=display:flex><span><span style=color:#58a1dd>VMOptions</span>=[<span style=color:#a6be9d>&#34;-Xms512m&#34;</span>,<span style=color:#a6be9d>&#34;-Xmx512m&#34;</span>]
+</span></span><span style=display:flex><span><span style=color:#58a1dd>ClassPath</span>=[<span style=color:#a6be9d>&#34;vendors&#34;</span>]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>[<span style=color:#58a1dd>Service</span>]
+</span></span><span style=display:flex><span><span style=color:#58a1dd>IsDaemon</span>=<span style=color:#ff636f>false</span>
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic># default -s --signal support stop restart</span>
+</span></span><span style=display:flex><span><span style=color:#58a1dd>EnableSignal</span>=<span style=color:#ff636f>true</span>
+</span></span><span style=display:flex><span><span style=color:#58a1dd>PidFile</span>=<span style=color:#a6be9d>&#34;/tmp/jsrv.pids&#34;</span>
+</span></span><span style=display:flex><span><span style=color:#58a1dd>Stdout</span>=<span style=color:#a6be9d>&#34;/opt/jsrv.stdout.log&#34;</span>
+</span></span><span style=display:flex><span><span style=color:#58a1dd>Stderr</span>=<span style=color:#a6be9d>&#34;/opt/jsrv.stderr.log&#34;</span>
+</span></span><span style=display:flex><span><span style=color:#58a1dd>DefaultArgs</span>=[<span style=color:#a6be9d>&#34;--config&#34;</span>,<span style=color:#a6be9d>&#34;config.example&#34;</span>,<span style=color:#a6be9d>&#34;--show-config&#34;</span>]
+</span></span></code></pre></div><p>在这个清单文件中，我设计了两种模式，第一个是<strong>基础模式</strong>，也就是 IsService 为 false 的时候，这个时候，程序只会读取 Runtime 一节
+的所有配置信息。</p><ul><li>JDKPath 读取 jdk 所在目录，并查找到 libjvm.so 的位置。</li><li>Package 是运行的 Jar 包的路径，也就是 MainClass 所在的Jar 包。</li><li>VMoptions 是 Java 虚拟机 运行参数， ClassPath 是 Jar 包所在目录。</li></ul><p>在 基础模式中，所有输入的参数除了 Argv~0, 其他的参数都会被传递给 Java MainClass 。</p><blockquote><p>jsrv helloworld</p></blockquote><p>假如 Package 是 hello.jar, 等价于：</p><blockquote><p>java -Xms512m -Xmx512m -jar hello.jar helloworld</p></blockquote><p>另一种是 <strong>服务模式</strong> ，这种模式并不支持从命令行输入参数。当 IsService 为 true 时，启动器读取 Service 节的信息.</p><ul><li>IsDaemon 表示启动器是否以 守护进程的模式运行</li><li>EnableSignal 表示开启 -s stop -s restart 参数</li><li>PidFile 是记录守护进程 pid 的临时文件</li><li>Stdout 是 stdout 重定向。</li><li>Stderr 是 stderr 重定向</li><li>DefaultArgs 这个数组是要传给 MainClass 的参数。</li></ul><p>启动一个进程作为守护进程时，你需要将日志输出到文件。</p><p>一般而言，启动一个守护进程，先需要 fork 出一个子进程，然后退出父进程。
+通过 setsid() 函数调用，让 init 进程收养它，使用 umask 设置默认权限，后面重定向标准输入输出，关闭文件句柄即可.</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-cpp data-lang=cpp><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;stdio.h&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;stdlib.h&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;unistd.h&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;stdint.h&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;signal.h&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;stdarg.h&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;string.h&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;fcntl.h&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>int</span> <span style=color:#58a1dd>create_daemon</span>() {
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>int</span> <span style=color:#58a1dd>fd</span>;
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>switch</span> (<span style=color:#58a1dd>fork</span>()) {
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>case</span> <span style=color:#ff636f>-</span><span style=color:#a6be9d>1</span><span style=color:#ff636f>:</span>
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>printf</span>(<span style=color:#a6be9d>&#34;fork() failed</span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>&#34;</span>);
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#ff636f>-</span><span style=color:#a6be9d>1</span>;
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>case</span> <span style=color:#a6be9d>0</span><span style=color:#ff636f>:</span>
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>break</span>;
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>default</span><span style=color:#ff636f>:</span>
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>exit</span>(<span style=color:#a6be9d>0</span>);
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>setsid</span>() <span style=color:#ff636f>==</span> <span style=color:#ff636f>-</span><span style=color:#a6be9d>1</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#ff636f>-</span><span style=color:#a6be9d>1</span>;
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>umask</span>(<span style=color:#a6be9d>0</span>);
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>fd</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>open</span>(<span style=color:#a6be9d>&#34;/dev/null&#34;</span>, <span style=color:#58a1dd>O_RDWR</span>);
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>fd</span> <span style=color:#ff636f>==</span> <span style=color:#ff636f>-</span><span style=color:#a6be9d>1</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#828b96;font-style:italic>// open /dev/null failed
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>    <span style=color:#ff636f>return</span> <span style=color:#ff636f>-</span><span style=color:#a6be9d>1</span>;
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>dup2</span>(<span style=color:#58a1dd>fd</span>, <span style=color:#58a1dd>STDIN_FILENO</span>) <span style=color:#ff636f>==</span> <span style=color:#ff636f>-</span><span style=color:#a6be9d>1</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#828b96;font-style:italic>// dup2(STDIN) failed
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>    <span style=color:#ff636f>return</span> <span style=color:#ff636f>-</span><span style=color:#a6be9d>1</span>;
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>dup2</span>(<span style=color:#58a1dd>fd</span>, <span style=color:#58a1dd>STDOUT_FILENO</span>) <span style=color:#ff636f>==</span> <span style=color:#ff636f>-</span><span style=color:#a6be9d>1</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#828b96;font-style:italic>// dup2(STDOUT) failed
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>    <span style=color:#ff636f>return</span> <span style=color:#ff636f>-</span><span style=color:#a6be9d>1</span>;
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>fd</span> <span style=color:#ff636f>&gt;</span> <span style=color:#58a1dd>STDERR_FILENO</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>close</span>(<span style=color:#58a1dd>fd</span>) <span style=color:#ff636f>==</span> <span style=color:#ff636f>-</span><span style=color:#a6be9d>1</span>) {
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>return</span> <span style=color:#ff636f>-</span><span style=color:#a6be9d>1</span>;
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>return</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>如果在 Windows 上运行一个守护进程，除了作为一个 Windows Service 还可以通过 WinMain 启动，在后台运行，如果从 main 启动，
+就需要关闭控制台，代码如下：</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-cpp data-lang=cpp><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;cstdio&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;Windows.h&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>int</span> <span style=color:#58a1dd>create_daemon</span>()
+</span></span><span style=display:flex><span>{
+</span></span><span style=display:flex><span>  <span style=color:#828b96;font-style:italic>//do some thing and set io
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>  <span style=color:#58a1dd>FILE</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>fp</span>;
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span>(<span style=color:#58a1dd>freopen_s</span>(<span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>fp</span>,<span style=color:#a6be9d>&#34;nul&#34;</span>,<span style=color:#a6be9d>&#34;w+b&#34;</span>,<span style=color:#58a1dd>stdout</span>)<span style=color:#ff636f>!=</span><span style=color:#a6be9d>0</span>)
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#ff636f>-</span><span style=color:#a6be9d>1</span>;
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>fclose</span>(<span style=color:#58a1dd>fp</span>);
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span>(<span style=color:#58a1dd>freopen_s</span>(<span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>fp</span>,<span style=color:#a6be9d>&#34;nul&#34;</span>,<span style=color:#a6be9d>&#34;w+b&#34;</span>,<span style=color:#58a1dd>stderr</span>)<span style=color:#ff636f>!=</span><span style=color:#a6be9d>0</span>)
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#ff636f>-</span><span style=color:#a6be9d>1</span>;
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>fclose</span>(<span style=color:#58a1dd>fp</span>);
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>FreeConsole</span>();
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>return</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>启动器的处理流程可以借鉴上面的 LD 补全 启动器，在读取清单时，解析完 Runtime 一节后，读取 Runing.IsService 的信息，
+如果不为真，则返回，这时候执行的是基础模式，否则，继续读取 Service 一节的信息。<br>返回值如下：</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-cpp data-lang=cpp><span style=display:flex><span><span style=color:#ff636f>enum</span> <span style=color:#58a1dd>KLauncherChannel</span> {
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>kBasicVMRuntime</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>,
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>kServiceVMRuntime</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>1</span>,
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>kUnknownVMRuntime</span>
+</span></span><span style=display:flex><span>};
+</span></span></code></pre></div><p>如果是服务模式还需要解析命令行参数，参数帮助信息如下：</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-cpp data-lang=cpp><span style=display:flex><span><span style=color:#ff636f>static</span> <span style=color:#ff636f>const</span> <span style=color:#ff636f>char</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>kUsage</span> <span style=color:#ff636f>=</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6be9d>&#34;Usage: %s [options] &lt;input&gt; </span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>&#34;</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6be9d>&#34;    Flags:</span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>&#34;</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6be9d>&#34;        -h [-?|--help]</span><span style=color:#a6be9d>\t</span><span style=color:#a6be9d>print jsrv usage information and exit</span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>&#34;</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6be9d>&#34;        -v [--version]</span><span style=color:#a6be9d>\t</span><span style=color:#a6be9d>print jsrv version and exit</span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>&#34;</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6be9d>&#34;        -s [--signal]</span><span style=color:#a6be9d>\t</span><span style=color:#a6be9d>send a signal to jsrv,argument: stop|restart  &#34;</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6be9d>&#34;</span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>&#34;</span>;
+</span></span></code></pre></div><p>解析完毕后，最后启动 JVM,执行代码并没有多少不同，执行 MainClass 的函数分别如下：</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-cpp data-lang=cpp><span style=display:flex><span> <span style=color:#ff636f>int</span> <span style=color:#58a1dd>Exe</span>(<span style=color:#ff636f>int</span> <span style=color:#58a1dd>Argc</span>, <span style=color:#ff636f>char</span> <span style=color:#ff636f>**</span><span style=color:#58a1dd>Argv</span>); <span style=color:#828b96;font-style:italic>/// Base mode
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span> <span style=color:#ff636f>int</span> <span style=color:#58a1dd>Exe</span>(<span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>vector</span><span style=color:#ff636f>&lt;</span><span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span><span style=color:#ff636f>&gt;</span> <span style=color:#58a1dd>Args</span>); <span style=color:#828b96;font-style:italic>/// Service mode
+</span></span></span></code></pre></div><h3 id=jvm-的启动流程>JVM 的启动流程</h3><p>各个平台上的 java 以及 Windows 平台的 javaw 依然也只是 JVM 的一个启动器，这类程序需要通过调用 jvm.dll 或者 libjvm.so 导出的
+函数来启动 JVM。</p><p>清单中设置了 JDKPath 信息，在 Linux 中，以 jdk8 为例，64位系统 libjvm.so 是 $JDKPath/jre/lib/amd64/server/libjvm.so，
+如果找不到 libjvm.so, 启动器还会从 /usr/lib/libjvm.so 。</p><p>找到 libjvm.so 后，可以使用 dlopen 打开一个动态库句柄，dlsym 查找 Symbol, 获得函数地址，在 Windows 中 分别是 LoadLibrary 和 GetProcAddress<br>函数大致如下：</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-cpp data-lang=cpp><span style=display:flex><span><span style=color:#ff636f>typedef</span> <span style=color:#58a1dd>jint</span> (<span style=color:#ff636f>*</span><span style=color:#58a1dd>VMInitMethord</span>)(<span style=color:#58a1dd>JavaVM</span> <span style=color:#ff636f>**</span><span style=color:#58a1dd>pvm</span>, <span style=color:#58a1dd>JNIEnv</span> <span style=color:#ff636f>**</span><span style=color:#58a1dd>env</span>, <span style=color:#ff636f>void</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>args</span>);
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>static</span> <span style=color:#ff636f>bool</span> <span style=color:#58a1dd>SearchJDKPath</span>(<span style=color:#ff636f>const</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>jdkPath</span>, <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>libjvm</span>) {
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#ifdef __x86_64__
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>  <span style=color:#58a1dd>libjvm</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>jdkPath</span> <span style=color:#ff636f>+</span> <span style=color:#a6be9d>&#34;/jre/lib/amd64/server/libjvm.so&#34;</span>;
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#else
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>  <span style=color:#58a1dd>libjvm</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>jdkPath</span> <span style=color:#ff636f>+</span> <span style=color:#a6be9d>&#34;/jre/lib/server/libjvm.so&#34;</span>;
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#endif
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>  <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>access</span>(<span style=color:#58a1dd>libjvm</span>.<span style=color:#58a1dd>c_str</span>(), <span style=color:#58a1dd>X_OK</span>) <span style=color:#ff636f>==</span> <span style=color:#a6be9d>0</span>)
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#58a1dd>true</span>;
+</span></span><span style=display:flex><span> <span style=color:#828b96;font-style:italic>// JDK9
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span><span style=color:#828b96;font-style:italic>#ifdef __x86_64__
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>  <span style=color:#58a1dd>libjvm</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>jdkPath</span> <span style=color:#ff636f>+</span> <span style=color:#a6be9d>&#34;/lib/amd64/server/libjvm.so&#34;</span>;
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#else
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>  <span style=color:#58a1dd>libjvm</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>jdkPath</span> <span style=color:#ff636f>+</span> <span style=color:#a6be9d>&#34;/lib/server/libjvm.so&#34;</span>;
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#endif
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>  <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>access</span>(<span style=color:#58a1dd>libjvm</span>.<span style=color:#58a1dd>c_str</span>(), <span style=color:#58a1dd>X_OK</span>) <span style=color:#ff636f>==</span> <span style=color:#a6be9d>0</span>)
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#58a1dd>true</span>;
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>access</span>(<span style=color:#a6be9d>&#34;/usr/lib/libjvm.so&#34;</span>, <span style=color:#58a1dd>X_OK</span>) <span style=color:#ff636f>!=</span> <span style=color:#a6be9d>0</span>)
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>libjvm</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>&#34;/usr/lib/libjvm.so&#34;</span>;
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>return</span> <span style=color:#58a1dd>true</span>;
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>bool</span> <span style=color:#58a1dd>VMRuntime</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>VMRuntimeBind</span>() {
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span> <span style=color:#58a1dd>libjvm</span>;
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>SearchJDKPath</span>(<span style=color:#58a1dd>rc_</span>.<span style=color:#58a1dd>jdkdir</span>, <span style=color:#58a1dd>libjvm</span>)) {
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>cerr</span> <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#a6be9d>&#34;Cannot found libjvm.so, jdk path is: &#34;</span> <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#58a1dd>rc_</span>.<span style=color:#58a1dd>jdkdir</span>
+</span></span><span style=display:flex><span>              <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>endl</span>;
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> ((<span style=color:#58a1dd>vmHandle</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>dlopen</span>(<span style=color:#58a1dd>libjvm</span>.<span style=color:#58a1dd>c_str</span>(), <span style=color:#58a1dd>RTLD_NOW</span> <span style=color:#ff636f>+</span> <span style=color:#58a1dd>RTLD_GLOBAL</span>)) <span style=color:#ff636f>==</span> <span style=color:#ff636f>nullptr</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>cerr</span> <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#a6be9d>&#34;Failure: dlopen open libjvm.so failed. &#34;</span> <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>endl</span>;
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> ((<span style=color:#58a1dd>vmcall</span> <span style=color:#ff636f>=</span> (<span style=color:#58a1dd>VMInitMethord</span>)<span style=color:#58a1dd>dlsym</span>(<span style=color:#58a1dd>vmHandle</span>, <span style=color:#a6be9d>&#34;JNI_CreateJavaVM&#34;</span>)) <span style=color:#ff636f>==</span>
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>nullptr</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>cerr</span> <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#a6be9d>&#34;Failure: cannot resolve JNI_CreateJavaVM !&#34;</span> <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>endl</span>;
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>dlclose</span>(<span style=color:#58a1dd>vmHandle</span>);
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>vmHandle</span> <span style=color:#ff636f>=</span> <span style=color:#ff636f>nullptr</span>;
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>return</span> <span style=color:#58a1dd>true</span>;
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>成功得到 JNI_CreateJavaVM 函数指针后，就该设置 JavaVMOption 类型变量，上面的 清单中的 VMOptions 要依次绑定到 JavaVMOption,
+ClassPath 目录下的 jar 包，以及 Package 要绑定到 -Djava.class.path 上， 然后调用 JNI_CreateJavaVM 函数指针，获得一个 JavaVM 对象和
+JNIEnv 对象。</p><p>Jar 包是基于 zip 格式的文件，内部的 META-INF/MANIFEST.MF 这一清单文件记录了 清单版本，Main-Class 以及 Class-Path, 可以从 Jar 包里面读取
+MainClass 。<br>我使用了 Github 用户 slyfoxza <a href=https://github.com/slyfoxza/minecraftd/blob/master/src/JarReader.cpp>slyfoxza/minecraftd</a> 的 JarReader来获取
+MainClass,不过遗憾的是，通过 JarReader 得到的 MainClass 是用 &lsquo;.&rsquo; 区分的，而 FindClass 需要 &lsquo;/&rsquo; 区分。 我是用了一个帮助函数来替换所有的 点。</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-cpp data-lang=cpp><span style=display:flex><span><span style=color:#ff636f>static</span> <span style=color:#ff636f>void</span> <span style=color:#58a1dd>Replace</span>(<span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>s</span>, <span style=color:#ff636f>char</span> <span style=color:#58a1dd>c1</span>, <span style=color:#ff636f>char</span> <span style=color:#58a1dd>c2</span>) {
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>for</span> (<span style=color:#ff636f>auto</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>c</span> : <span style=color:#58a1dd>s</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>c</span> <span style=color:#ff636f>==</span> <span style=color:#58a1dd>c1</span>)
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>c</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>c2</span>;
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>使用 env->FindClass 获取 MainClass, 类型为 jclass, 使用 env->GetStaticMethodID 获取 MainClass 的方法 main, 后面就是将 参数转成 JVM String[] 类型
+随后调用静态方法即可， 大致如下：</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-cpp data-lang=cpp><span style=display:flex><span><span style=color:#ff636f>int</span> <span style=color:#58a1dd>VMRuntime</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>Exe</span>(<span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>vector</span><span style=color:#ff636f>&lt;</span><span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span><span style=color:#ff636f>&gt;</span> <span style=color:#58a1dd>Args</span>) {
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>InitVMEnv</span>()) {
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>cout</span> <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#a6be9d>&#34;Initialize VM failed !&#34;</span> <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>endl</span>;
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#a6be9d>1</span>;
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>JarReader</span> <span style=color:#58a1dd>jarReader</span>(<span style=color:#58a1dd>rc_</span>.<span style=color:#58a1dd>package</span>);
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>auto</span> <span style=color:#58a1dd>mainClassString</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>jarReader</span>.<span style=color:#58a1dd>getMainClassName</span>();
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>Replace</span>(<span style=color:#58a1dd>mainClassString</span>, <span style=color:#a6be9d>&#39;.&#39;</span>, <span style=color:#a6be9d>&#39;/&#39;</span>);
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>jclass</span> <span style=color:#58a1dd>mainClass</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>env</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>FindClass</span>(<span style=color:#58a1dd>mainClassString</span>.<span style=color:#58a1dd>c_str</span>());
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>mainClass</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>cout</span> <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#58a1dd>__LINE__</span> <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#a6be9d>&#34; Cannot find MainClass: &#34;</span> <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#58a1dd>mainClassString</span>
+</span></span><span style=display:flex><span>              <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>endl</span>;
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#a6be9d>2</span>;
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>jmethodID</span> <span style=color:#58a1dd>mainMethod</span> <span style=color:#ff636f>=</span>
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>env</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>GetStaticMethodID</span>(<span style=color:#58a1dd>mainClass</span>, <span style=color:#a6be9d>&#34;main&#34;</span>, <span style=color:#a6be9d>&#34;([Ljava/lang/String;)V&#34;</span>);
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>mainMethod</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>cout</span> <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#58a1dd>__LINE__</span> <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#a6be9d>&#34;Cannot GetStaticMetodID &#34;</span> <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>endl</span>;
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#a6be9d>3</span>;
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>jclass</span> <span style=color:#58a1dd>stringClass</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>env</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>FindClass</span>(<span style=color:#a6be9d>&#34;java/lang/String&#34;</span>);
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>jobjectArray</span> <span style=color:#58a1dd>args</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>env</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>NewObjectArray</span>(<span style=color:#58a1dd>Args</span>.<span style=color:#58a1dd>size</span>(), <span style=color:#58a1dd>stringClass</span>, <span style=color:#58a1dd>NULL</span>);
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>int</span> <span style=color:#58a1dd>i</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>for</span> (<span style=color:#ff636f>auto</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>Arg</span> : <span style=color:#58a1dd>Args</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>jstring</span> <span style=color:#58a1dd>jni_arg</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>env</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>NewStringUTF</span>(<span style=color:#58a1dd>Arg</span>.<span style=color:#58a1dd>c_str</span>());
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>env</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>SetObjectArrayElement</span>(<span style=color:#58a1dd>args</span>, <span style=color:#58a1dd>i</span><span style=color:#ff636f>++</span>, <span style=color:#58a1dd>jni_arg</span>);
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>env</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>DeleteLocalRef</span>(<span style=color:#58a1dd>jni_arg</span>);
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>env</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>CallStaticVoidMethod</span>(<span style=color:#58a1dd>mainClass</span>, <span style=color:#58a1dd>mainMethod</span>, <span style=color:#58a1dd>args</span>);
+</span></span><span style=display:flex><span>  <span style=color:#828b96;font-style:italic>// env-&gt;ExceptionDescribe();
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>  <span style=color:#58a1dd>jthrowable</span> <span style=color:#58a1dd>exc</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>env</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>ExceptionOccurred</span>();
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>exc</span>) {
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>env</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>ExceptionDescribe</span>();
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>env</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>ExceptionClear</span>();
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>jclass</span> <span style=color:#58a1dd>newExcCls</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>env</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>FindClass</span>(<span style=color:#a6be9d>&#34;java/lang/IllegalArgumentException&#34;</span>);
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>newExcCls</span>) {
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>env</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>ThrowNew</span>(<span style=color:#58a1dd>newExcCls</span>, <span style=color:#a6be9d>&#34;Throw Exception&#34;</span>);
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#a6be9d>4</span>;
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>return</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>程序退出的时候需要析构这些对象。</p><p>实际上一个大致的 JVM Launcher 也就这样了。</p><hr width=100% id=EOF><p style=color:#777>Last modified on 2015-11-27</p></div></div><nav class=post-pagination><a class=newer-posts href=/posts/2016/2016-04-23-windows-containers/>Next<br>Windows Containers 与 Project Centennial
+</a><a class=older-posts href=/posts/2015/2015-10-16-dev-vcs/>Previous<br>Subversion 和 GIT 开发者演进之 2015</a></nav><div class=post-comment-wrapper></div></div></div></div></div><div id=sideContainer class=side-container><a class="a-block nav-head false" href=https://forcemz.net/><div class=nav-title>Charlie's Rethinking</div><div class=nav-subtitle>Themed by Diary.</div></a><div class=nav-link-list><a class="a-block nav-link-item active" href=/posts>归档
+</a><a class="a-block nav-link-item false" href=/categories>分类
+</a><a class="a-block nav-link-item false" href=/tags>标签
+</a><a class="a-block nav-link-item false" href=/about>关于
+</a><a class="a-block nav-link-item false" href=/index.xml>RSS Feed</a></div><div class=nav-footer>Hugo Theme <a href=https://github.com/amazingrise/hugo-theme-diary>Diary</a> by <a href=https://risehere.net/>Rise</a><br>Ported from <a href=https://mak1t0.cc/ target=_blank rel="noreferrer noopener">Makito</a>'s <a href=https://github.com/SumiMakito/hexo-theme-journal/ target=_blank rel="noreferrer noopener">Journal.</a><br><br>&copy;
+Copyright (c) 2009-2024 J23</div></div><div id=extraContainer class=extra-container><div class=toc-wrapper><div class=toc><div class=toc-content><center>- CATALOG -</center><ul><li><a href=#launcher class=nav-launcher>Launcher</a></li><ul><li><a href=#ld-%e8%a1%a5%e5%85%a8%e7%9a%84-launcher class=nav-ld-补全的-launcher>LD 补全的 Launcher</a></li><ul><li><a href=#toml-%e6%a0%bc%e5%bc%8f%e6%b8%85%e5%8d%95 class=nav-toml-格式清单>TOML 格式清单</a></li><li><a href=#%e6%b8%85%e5%8d%95%e7%9a%84%e7%8e%af%e5%a2%83%e5%8f%98%e9%87%8f%e8%a7%a3%e6%9e%90 class=nav-清单的环境变量解析>清单的环境变量解析</a></li><li><a href=#%e5%90%af%e5%8a%a8%e5%99%a8%e7%9a%84%e5%ae%9e%e7%8e%b0 class=nav-启动器的实现>启动器的实现</a></li></ul><li><a href=#java-service-native-launcher class=nav-java-service-native-launcher>Java Service Native Launcher</a></li><ul><li><a href=#java-service-manifest class=nav-java-service-manifest>Java Service Manifest</a></li><li><a href=#jvm-%e7%9a%84%e5%90%af%e5%8a%a8%e6%b5%81%e7%a8%8b class=nav-jvm-的启动流程>JVM 的启动流程</a></li></ul></div></div></div><div class=pagination><a id=globalBackToTop class="pagination-action animated-visibility" href=#top :class="{ invisible: scrollY == 0 }"><i class="material-icons pagination-action-icon">keyboard_arrow_up
+</i></a><a type=button class=pagination-action id=darkModeToggleButton><span class="material-icons pagination-action-icon" id=darkModeToggleIcon>dark_mode</span></a></div></div><div id=single-column-footer>Hugo Theme <a href=https://github.com/amazingrise/hugo-theme-diary>Diary</a> by <a href=https://risehere.net/>Rise</a><br>Ported from <a href=https://mak1t0.cc/ target=_blank rel="noreferrer noopener">Makito</a>'s <a href=https://github.com/SumiMakito/hexo-theme-journal/ target=_blank rel="noreferrer noopener">Journal.</a><br><br>&copy;
+Copyright (c) 2009-2024 J23</div></div><script src=/js/journal.js></script></body></html>

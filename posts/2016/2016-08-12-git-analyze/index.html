@@ -1,0 +1,384 @@
+<!doctype html><html lang=en><head><title>Git Analyze 工具实现与原理</title>
+<meta charset=utf-8><meta name=X-UA-Compatible content="IE=edge"><meta name=google-site-verification content><meta content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=5" name=viewport><meta content="telephone=no" name=format-detection><meta name=description content><meta name=renderer content="webkit"><meta name=theme-color content="#ffffff"><script src=/js/toc.js></script><link type=text/css rel=stylesheet href=/vendor/css/bootstrap.min.css><link rel=stylesheet href=/scss/dark-mode.min.cb53f1bee2b8900cb4f082afbf00175d6618f281cf9a2fe8619e3b52d20b5721.css integrity="sha256-y1PxvuK4kAy08IKvvwAXXWYY8oHPmi/oYZ47UtILVyE=" media=screen><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Material+Icons"></head><body><div id=app><div class=single-column-drawer-container id=drawer v-bind:class="{ 'single-column-drawer-container-active': isDrawerOpen }"><div class=drawer-content><div class=drawer-menu><a class="a-block drawer-menu-item active" href=/posts>归档
+</a><a class="a-block drawer-menu-item false" href=/categories>分类
+</a><a class="a-block drawer-menu-item false" href=/tags>标签
+</a><a class="a-block drawer-menu-item false" href=/about>关于
+</a><a class="a-block drawer-menu-item false" href=/index.xml>RSS Feed</a><div class=toc><div class=toc-content><center>- CATALOG -</center><ul><li><a href=#%e5%89%8d%e8%a8%80 class=nav-前言>前言</a></li><ul><li><a href=#analyze class=nav-analyze>Analyze</a></li><ul><li><a href=#cmake class=nav-cmake>CMake</a></li><li><a href=#timer class=nav-timer>Timer</a></li></ul><li><a href=#rollback class=nav-rollback>Rollback</a></li><li><a href=#compatibility class=nav-compatibility>Compatibility</a></li></ul></div></div></div></div></div><transition name=fade><div id=drawer-mask v-bind:class="{ 'single-column-drawer-mask': mounted }" v-if=isDrawerOpen v-on:click=toggleDrawer></div></transition><nav id=navBar class="navbar sticky-top navbar-light single-column-nav-container"><div id=navBackground class=nav-background></div><div class="container container-narrow nav-content"><button id=nav_dropdown_btn class=nav-dropdown-toggle type=button v-on:click=toggleDrawer>
+<i class=material-icons>menu
+</i></button>
+<a id=navTitle class=navbar-brand href=https://forcemz.net/>Charlie's Rethinking
+</a><button type=button class=nav-darkmode-toggle id=darkModeToggleButton2>
+<i class=material-icons id=darkModeToggleIcon2>dark_mode</i></button></div></nav><div class=single-column-header-container id=pageHead v-bind:style="{ transform: 'translateZ(0px) translateY('+.3*scrollY+'px)', opacity: 1-navOpacity }"><a href=https://forcemz.net/><div class=single-column-header-title>Charlie's Rethinking</div><div class=single-column-header-subtitle>Themed by Diary.</div></a></div><div id=content><div id=streamContainer class=stream-container><div class="post-list-container post-list-container-shadow"><div class=post><div class=post-head-wrapper-text-only><div class=post-title>Git Analyze 工具实现与原理<div class=post-meta><time itemprop=datePublished>2016-08-11 20:00
+</time><i class=material-icons>folder</i>
+<a href=/categories/git>git</a>
+&nbsp;</div></div></div><div class=post-body-wrapper><div class=post-body v-pre><h1 id=前言>前言</h1><p>作为一个提供免费私有仓库的代码托管平台，码云要考虑利用现有的硬件资源支持更多的用户，一些用户占用较多的硬件资源实际上是对其他用户用户体验的一种损害，因此码云对用户的存储库大小有一定的限制。</p><p>码云对 git 仓库的大小限制为 1GB，用户在本地可以使用如下命令查看存储库的大小。</p><blockquote><p>du -sh .git/objects</p></blockquote><p>这个命令在 Git for Windows 中可以找到，也可以使用 <a href=https://www.sysinternals.com>www.sysinternals.com</a> 提供的 du （Directory disk usage reporter）工具。</p><p>码云上单文件大小的限制为 100 MB，一旦超过 50 MB 会发出警告。</p><p>一部分用户可能没有注意到将生成的二进制文件添加到版本控制之中，一旦将存储库推送到码云上时就被拒绝推送了。对于这些用户而言，如何去发现是从什么时候将大文件添加到存储库中的，这是一件比较困难的事情。笔者开发 git-analyze 的目的也就是为了解决这些用户的烦恼。</p><h2 id=analyze>Analyze</h2><p>git-analyze 此工具的设计上是根据用户的输入，扫描存储库特定分支从哪次提交引入了体积超出限制的文件。</p><p>git 有多种实现，比如 Linus 的 git（官方 git），libgit2，jgit 等等，官方 git 是一个由多个子命令组成的程序集合。
+但是，如果要新增一个工具到 git 官方还是比较麻烦，定制的 git 也容易带来兼容性问题，不利于用户体验。
+JGIT 是 Java 实现的 git 类库，如果要实现这些工具，还要用户安装 JRE 或者携带 JRE，并且 Java 也不擅长做跨平台命令。
+libgit2 是 C 实现的一个跨平台 git 协议实现库，并且提供多种语言的 banding，所以用 libgit2 再合适不过。</p><p>git-analyze 支持参数：</p><ul><li>&ndash;limitsize 设置超限大小，可选，单位 MB,默认为 100，例如 &ndash;limitsize=72 或者 &ndash;limitsize 72。</li><li>&ndash;warnsize 设置警告大小，可选，单位 MB,默认为 50。</li><li>&ndash;timeout 设置超时大小，可选，默认未开启。</li><li>&ndash;all 检查所有分支</li><li>&ndash;who 显示超限文件提交信息和提交者</li></ul><p>git-analyze 仓库参数为:</p><blockquote><p>git-analyze /path/to/repo master # 也可以是 引用全名，二者的相对顺序必须是先路径后引用，标签参数不做要求。</p></blockquote><p>git-analyze 在用户输入参数后，使用 libgit2 打开存储库。目前只支持工作目录的根目录和 .git 目录。</p><p>git 的每一次提交都是文件快照，并不像 Subversion 一样每一个文件都有版本号。如果要知道是否有新的文件被添加或者是被修改，
+则需要与上一个提交进行比较，通常就是当前的 commit 与 parent commit 比较，在 libgit2 中，并不能直接比较，
+需要比较 commit 的根 tree。使用 git_commit_tree 得到 tree 对象，git_diff_tree_to_tree 比较 tree，git_diff_foreach
+去遍历 diff 的内容，这里由于我们只需要查看文件修改，所以，git_diff_foreach binary_cb hunk_cb line_cb callback 设置 为空即可，
+git_diff_foreach 的 API 在下面：</p><p><a href=https://libgit2.github.com/libgit2/#HEAD/group/diff/git_diff_foreach>libgit2 API git_diff_foreach</a></p><p>我们在 回调函数中，只响应 diff 类型为新增和修改的文件类型。</p><p>当出现合并时，我们的策略是，只比较第一个 parent commit，大文件引入行为归咎与合并者。</p><p>当遍历到初始提交时，parent commit 也就不存在了，所以，我们要使用 treewalk 遍历所有的文件，检测引入的大文件。</p><p>当使用 &ndash;all 参数时，git-analyze 会忽略引用参数，直接遍历所有本地分支对应的引用，然后逐一检测。</p><h3 id=cmake>CMake</h3><p>libgit2 使用 CMake 作为构建文件，CMake 能够根据不同的平台生成不同类型的项目文件，如 Visual Studio 的 msbuild
+项目文件，Makefile 文件 等，然后支持自动打包，例如下面的一些代码就可以支持生成 Windows 安装程序，Ubuntu DEB 包</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-cmake data-lang=cmake><span style=display:flex><span><span style=color:#58a1dd>set</span>(<span style=color:#a6be9d>CMAKE_INSTALL_RPATH</span> <span style=color:#a6be9d>&#34;${CMAKE_INSTALL_PREFIX}/lib&#34;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#58a1dd>set</span>(<span style=color:#a6be9d>CPACK_PACKAGE_NAME</span> <span style=color:#a6be9d>&#34;git-analyze&#34;</span>)
+</span></span><span style=display:flex><span><span style=color:#58a1dd>set</span>(<span style=color:#a6be9d>CPACK_PACKAGE_VENDOR</span> <span style=color:#a6be9d>&#34;OSChina.NET&#34;</span>)
+</span></span><span style=display:flex><span><span style=color:#58a1dd>set</span>(<span style=color:#a6be9d>CPACK_PACKAGE_DESCRIPTION</span> <span style=color:#a6be9d>&#34;This is git analyze tools&#34;</span>)
+</span></span><span style=display:flex><span><span style=color:#58a1dd>set</span>(<span style=color:#a6be9d>CPACK_PACKAGE_DESCRIPTION_SUMMARY</span> <span style=color:#a6be9d>&#34;GIT Analyze&#34;</span>)
+</span></span><span style=display:flex><span><span style=color:#58a1dd>set</span>(<span style=color:#a6be9d>CPACK_PACKAGE_INSTALL_DIRECTORY</span> <span style=color:#a6be9d>&#34;git-analyze&#34;</span>)
+</span></span><span style=display:flex><span><span style=color:#58a1dd>set</span>(<span style=color:#a6be9d>CPACK_PACKAGE_VERSION_MAJOR</span> <span style=color:#ff636f>${</span><span style=color:#58a1dd>GITANALYZE_VERSION_MAJOR</span><span style=color:#ff636f>}</span>)
+</span></span><span style=display:flex><span><span style=color:#58a1dd>set</span>(<span style=color:#a6be9d>CPACK_PACKAGE_VERSION_MINOR</span> <span style=color:#ff636f>${</span><span style=color:#58a1dd>GITANALYZE_VERSION_MINOR</span><span style=color:#ff636f>}</span>)
+</span></span><span style=display:flex><span><span style=color:#58a1dd>set</span>(<span style=color:#a6be9d>CPACK_PACKAGE_VERSION_PATCH</span> <span style=color:#ff636f>${</span><span style=color:#58a1dd>GITANALYZE_VERSION_PATCH</span><span style=color:#ff636f>}</span>)
+</span></span><span style=display:flex><span><span style=color:#58a1dd>set</span>(<span style=color:#a6be9d>CPACK_PACKAGE_VERSION</span> <span style=color:#ff636f>${</span><span style=color:#58a1dd>PACKAGE_VERSION</span><span style=color:#ff636f>}</span>)
+</span></span><span style=display:flex><span><span style=color:#58a1dd>set</span>(<span style=color:#a6be9d>CPACK_RESOURCE_FILE_LICENSE</span> <span style=color:#a6be9d>&#34;${CMAKE_CURRENT_SOURCE_DIR}/LICENSE&#34;</span>)
+</span></span><span style=display:flex><span><span style=color:#58a1dd>set</span>(<span style=color:#a6be9d>CPACK_PACKAGE_DESCRIPTION</span> <span style=color:#a6be9d>&#34;Git Analyze&#34;</span>)
+</span></span><span style=display:flex><span><span style=color:#58a1dd>set</span>(<span style=color:#a6be9d>CPACK_DEBIAN_PACKAGE_DEPENDS</span> <span style=color:#a6be9d>&#34;libc6 (&gt;= 2.3.1-6)&#34;</span>)
+</span></span><span style=display:flex><span><span style=color:#58a1dd>set</span>(<span style=color:#a6be9d>CPACK_PACKAGE_CONTACT</span> <span style=color:#a6be9d>&#34;admin@oschina.cn&#34;</span>)
+</span></span><span style=display:flex><span><span style=color:#58a1dd>set</span>(<span style=color:#a6be9d>CPACK_DEBIAN_PACKAGE_SECTION</span> <span style=color:#a6be9d>T</span>)
+</span></span><span style=display:flex><span><span style=color:#58a1dd>if</span>(<span style=color:#a6be9d>WIN32</span> <span style=color:#a6be9d>AND</span> <span style=color:#a6be9d>NOT</span> <span style=color:#a6be9d>UNIX</span>)
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>set</span>(<span style=color:#a6be9d>CPACK_PACKAGE_INSTALL_REGISTRY_KEY</span> <span style=color:#a6be9d>&#34;GitAnalyze&#34;</span>)
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>set</span>(<span style=color:#a6be9d>CPACK_NSIS_MUI_ICON</span> <span style=color:#a6be9d>&#34;${CMAKE_CURRENT_SOURCE_DIR}\\\\cmake\\\\git.ico&#34;</span>)
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>set</span>(<span style=color:#a6be9d>CPACK_NSIS_MUI_UNIICON</span> <span style=color:#a6be9d>&#34;${CMAKE_CURRENT_SOURCE_DIR}\\\\cmake\\\\git.ico&#34;</span>)
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>set</span>(<span style=color:#a6be9d>CPACK_NSIS_MODIFY_PATH</span> <span style=color:#a6be9d>&#34;ON&#34;</span>)
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>set</span>(<span style=color:#a6be9d>CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL</span> <span style=color:#a6be9d>&#34;ON&#34;</span>)
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>if</span>( <span style=color:#a6be9d>CMAKE_CL_64</span> )
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>set</span>(<span style=color:#a6be9d>CPACK_NSIS_INSTALL_ROOT</span> <span style=color:#a6be9d>&#34;$PROGRAMFILES64&#34;</span>)
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>endif</span>()
+</span></span><span style=display:flex><span><span style=color:#58a1dd>endif</span>()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#58a1dd>include</span>(<span style=color:#a6be9d>CPack</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#58a1dd>if</span>(<span style=color:#a6be9d>WIN32</span>)
+</span></span><span style=display:flex><span><span style=color:#58a1dd>include</span>(<span style=color:#a6be9d>InstallRequiredSystemLibraries</span>)
+</span></span><span style=display:flex><span><span style=color:#58a1dd>endif</span>()
+</span></span><span style=display:flex><span><span style=color:#58a1dd>install</span>(<span style=color:#a6be9d>TARGETS</span> <span style=color:#a6be9d>git-analyze</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6be9d>DESTINATION</span> <span style=color:#a6be9d>bin</span>
+</span></span><span style=display:flex><span>)
+</span></span></code></pre></div><p>CMake 也能自动识别程序资源源文件 (.rc 文件),程序清单 (.manifest) 。</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-cmake data-lang=cmake><span style=display:flex><span><span style=color:#828b96;font-style:italic>#C++ Based hook command
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
+</span></span><span style=display:flex><span><span style=color:#58a1dd>if</span>(<span style=color:#a6be9d>WIN32</span>)
+</span></span><span style=display:flex><span><span style=color:#58a1dd>add_executable</span>(<span style=color:#a6be9d>git-analyze</span>
+</span></span><span style=display:flex><span>  <span style=color:#a6be9d>driver.cc</span>
+</span></span><span style=display:flex><span>  <span style=color:#a6be9d>analyze.cc</span>
+</span></span><span style=display:flex><span>  <span style=color:#a6be9d>environment.cc</span>
+</span></span><span style=display:flex><span>  <span style=color:#a6be9d>git-analyze.rc</span>
+</span></span><span style=display:flex><span>  <span style=color:#a6be9d>git-analyze.manifest</span>
+</span></span><span style=display:flex><span>)
+</span></span><span style=display:flex><span><span style=color:#58a1dd>else</span>()
+</span></span><span style=display:flex><span><span style=color:#58a1dd>add_executable</span>(<span style=color:#a6be9d>git-analyze</span>
+</span></span><span style=display:flex><span>  <span style=color:#a6be9d>driver.cc</span>
+</span></span><span style=display:flex><span>  <span style=color:#a6be9d>analyze.cc</span>
+</span></span><span style=display:flex><span>  <span style=color:#a6be9d>environment.cc</span>
+</span></span><span style=display:flex><span>)
+</span></span><span style=display:flex><span><span style=color:#58a1dd>endif</span>()
+</span></span></code></pre></div><p>将 libgit2 作为一个依赖加入项目中，只需要在 CMakeLists.txt 中添加 <strong>add_subdirectory(vendor/libgit2)</strong> 可。</p><h3 id=timer>Timer</h3><p>UNIX® 系统支持信号 SIGALRM ，注册信号后, 然后可以使用 alarm 激活定时器，git-analyze 在非 Windows 平台
+是同 alarm 实现定时器，不过 alarm 精度不高，如果要使用更高精度的可以使用 ualarm 。</p><p>WINDOW­S ® 系统的定时器有 CreateWaitableTimer timeSetEvent CreateTimerQueueTimer 等，分别应对不同的场景。
+比如 timeSetEvent 实际上是使用 Windows Event 对象实现，内部还是开了线程，git-analyze 实现的 Timer 功能是启动一个新的线程，
+然后 Sleep 后，运行 exit 退出进程，调用 exit 后会调用 ExitProcess 所以进程会退出，然后主进程结束时也会调用 ExitProcess 退出。</p><h2 id=rollback>Rollback</h2><p>在 Git 中， 有 revert 和 reset 命令，而 git-rollback 实现 git 特定分支的回滚， 只是一个直观简单的替代。
+需要使用高级功能可以使用 git reset 或者 revert。</p><p>支持参数：</p><ul><li>&ndash;git-dir</li><li>&ndash;backid</li><li>&ndash;backrev</li><li>&ndash;refname</li><li>&ndash;force</li></ul><p>使用 &ndash;backid 参数时，git-rollback 先需要回溯检测 commit 是否在分支上，存在的时候会设置 refname (这个支持分支名和引用全名) 的
+commit 为 &ndash;backid 的值，然后运行 git gc ，当添加 &ndash;force 时会清理掉那些悬空对象。</p><p>使用 &ndash;backrev 时， git-rollback 会回溯 commit，然后当回溯次数与 &ndash;backrev 值一致时，将当前 commit 的 oid 设置到引用上，与
+&ndash;backid 的策略一致即可。</p><p>由于 libgit2 暂时并未提供 GC 功能，我们调用的是原生命令，在 UNIX 类系统中，我们先获得环境变量 PATH,然后遍历这些目录是否存在 git ，
+存在后，使用 fork-execvp-wait 一系列 API 运行 git GC。</p><p>在 Windows 中，我们从 git-rollback 的当前目录，以及 git-rollback 进程所在目录，以及 PATH 中查找 git，如果没有找到，
+则从注册表中查找 Git for Windows 的安装路径。部分的代码如下：</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-cpp data-lang=cpp><span style=display:flex><span><span style=color:#ff636f>class</span> <span style=color:#58a1dd>WCharacters</span> {
+</span></span><span style=display:flex><span><span style=color:#ff636f>private</span><span style=color:#ff636f>:</span>
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>wchar_t</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>wstr</span>;
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>public</span><span style=color:#ff636f>:</span>
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>WCharacters</span>(<span style=color:#ff636f>const</span> <span style=color:#ff636f>char</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>str</span>) <span style=color:#ff636f>:</span> <span style=color:#58a1dd>wstr</span>(<span style=color:#ff636f>nullptr</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>str</span> <span style=color:#ff636f>==</span> <span style=color:#ff636f>nullptr</span>)
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>return</span>;
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>int</span> <span style=color:#58a1dd>unicodeLen</span> <span style=color:#ff636f>=</span> <span style=color:#ff636f>::</span><span style=color:#58a1dd>MultiByteToWideChar</span>(<span style=color:#58a1dd>CP_UTF8</span>, <span style=color:#a6be9d>0</span>, <span style=color:#58a1dd>str</span>, <span style=color:#ff636f>-</span><span style=color:#a6be9d>1</span>, <span style=color:#58a1dd>NULL</span>, <span style=color:#a6be9d>0</span>);
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>unicodeLen</span> <span style=color:#ff636f>==</span> <span style=color:#a6be9d>0</span>)
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>return</span>;
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>wstr</span> <span style=color:#ff636f>=</span> <span style=color:#ff636f>new</span> <span style=color:#ff636f>wchar_t</span>[<span style=color:#58a1dd>unicodeLen</span> <span style=color:#ff636f>+</span> <span style=color:#a6be9d>1</span>];
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>wstr</span> <span style=color:#ff636f>==</span> <span style=color:#ff636f>nullptr</span>)
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>return</span>;
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>wstr</span>[<span style=color:#58a1dd>unicodeLen</span>] <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>::</span><span style=color:#58a1dd>MultiByteToWideChar</span>(<span style=color:#58a1dd>CP_UTF8</span>, <span style=color:#a6be9d>0</span>, <span style=color:#58a1dd>str</span>, <span style=color:#ff636f>-</span><span style=color:#a6be9d>1</span>, (<span style=color:#58a1dd>LPWSTR</span>)<span style=color:#58a1dd>wstr</span>, <span style=color:#58a1dd>unicodeLen</span>);
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>const</span> <span style=color:#ff636f>wchar_t</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>Get</span>() {
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>wstr</span>)
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>return</span> <span style=color:#ff636f>nullptr</span>;
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#ff636f>const_cast</span><span style=color:#ff636f>&lt;</span><span style=color:#ff636f>const</span> <span style=color:#ff636f>wchar_t</span> <span style=color:#ff636f>*&gt;</span>(<span style=color:#58a1dd>wstr</span>);
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>~</span><span style=color:#58a1dd>WCharacters</span>() {
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>wstr</span>)
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>delete</span>[] <span style=color:#58a1dd>wstr</span>;
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>};
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>inline</span> <span style=color:#ff636f>bool</span> <span style=color:#58a1dd>PathFileIsExistsU</span>(<span style=color:#ff636f>const</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>path</span>) {
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>auto</span> <span style=color:#58a1dd>i</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>GetFileAttributesW</span>(<span style=color:#58a1dd>path</span>.<span style=color:#58a1dd>c_str</span>());
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>return</span> <span style=color:#58a1dd>INVALID_FILE_ATTRIBUTES</span> <span style=color:#ff636f>!=</span> <span style=color:#58a1dd>i</span>;
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>inline</span> <span style=color:#ff636f>bool</span> <span style=color:#58a1dd>PathRemoveFileSpecU</span>(<span style=color:#ff636f>wchar_t</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>begin</span>, <span style=color:#ff636f>wchar_t</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>end</span>) {
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>for</span> (; <span style=color:#58a1dd>end</span> <span style=color:#ff636f>&gt;</span> <span style=color:#58a1dd>begin</span>; <span style=color:#58a1dd>end</span><span style=color:#ff636f>--</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>if</span> (<span style=color:#ff636f>*</span><span style=color:#58a1dd>end</span> <span style=color:#ff636f>==</span> <span style=color:#a6be9d>&#39;/&#39;</span> <span style=color:#ff636f>||</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>end</span> <span style=color:#ff636f>==</span> <span style=color:#a6be9d>&#39;\\&#39;</span>) {
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>*</span><span style=color:#58a1dd>end</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>return</span> <span style=color:#58a1dd>true</span>;
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>typedef</span> <span style=color:#58a1dd>BOOL</span>(<span style=color:#58a1dd>WINAPI</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>LPFN_ISWOW64PROCESS</span>)(<span style=color:#58a1dd>HANDLE</span>, <span style=color:#58a1dd>PBOOL</span>);
+</span></span><span style=display:flex><span><span style=color:#58a1dd>BOOL</span> <span style=color:#58a1dd>IsRunOnWin64</span>() {
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>BOOL</span> <span style=color:#58a1dd>bIsWow64</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>FALSE</span>;
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>LPFN_ISWOW64PROCESS</span> <span style=color:#58a1dd>fnIsWow64Process</span> <span style=color:#ff636f>=</span> (<span style=color:#58a1dd>LPFN_ISWOW64PROCESS</span>)<span style=color:#58a1dd>GetProcAddress</span>(
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>GetModuleHandleW</span>(<span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;kernel32&#34;</span>), <span style=color:#a6be9d>&#34;IsWow64Process&#34;</span>);
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>NULL</span> <span style=color:#ff636f>!=</span> <span style=color:#58a1dd>fnIsWow64Process</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>fnIsWow64Process</span>(<span style=color:#58a1dd>GetCurrentProcess</span>(), <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>bIsWow64</span>)) {
+</span></span><span style=display:flex><span>      <span style=color:#828b96;font-style:italic>// handle error
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>    }
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>return</span> <span style=color:#58a1dd>bIsWow64</span>;
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span><span style=color:#58a1dd>BOOL</span> <span style=color:#58a1dd>WINAPI</span> <span style=color:#58a1dd>FindGitInstallationLocation</span>(<span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>location</span>) {
+</span></span><span style=display:flex><span>  <span style=color:#828b96;font-style:italic>// HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Git_is1
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>  <span style=color:#828b96;font-style:italic>// InstallLocation
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>  <span style=color:#58a1dd>HKEY</span> <span style=color:#58a1dd>hInst</span> <span style=color:#ff636f>=</span> <span style=color:#ff636f>nullptr</span>;
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>LSTATUS</span> <span style=color:#58a1dd>result</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>ERROR_SUCCESS</span>;
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>const</span> <span style=color:#ff636f>wchar_t</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>git4win</span> <span style=color:#ff636f>=</span>
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>LR</span><span style=color:#a6be9d>&#34;(SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Git_is1)&#34;</span>;
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>const</span> <span style=color:#ff636f>wchar_t</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>installKey</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;InstallLocation&#34;</span>;
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>WCHAR</span> <span style=color:#58a1dd>buffer</span>[<span style=color:#a6be9d>4096</span>] <span style=color:#ff636f>=</span> {<span style=color:#a6be9d>0</span>};
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#if defined(_M_X64)
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>  <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>RegOpenKeyExW</span>(<span style=color:#58a1dd>HKEY_LOCAL_MACHINE</span>, <span style=color:#58a1dd>git4win</span>, <span style=color:#a6be9d>0</span>, <span style=color:#58a1dd>KEY_READ</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>hInst</span>) <span style=color:#ff636f>!=</span>
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>ERROR_SUCCESS</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>RegOpenKeyExW</span>(<span style=color:#58a1dd>HKEY_LOCAL_MACHINE</span>, <span style=color:#58a1dd>git4win</span>, <span style=color:#a6be9d>0</span>,
+</span></span><span style=display:flex><span>                      <span style=color:#58a1dd>KEY_READ</span> <span style=color:#ff636f>|</span> <span style=color:#58a1dd>KEY_WOW64_32KEY</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>hInst</span>) <span style=color:#ff636f>!=</span> <span style=color:#58a1dd>ERROR_SUCCESS</span>) {
+</span></span><span style=display:flex><span>      <span style=color:#828b96;font-style:italic>// Cannot found msysgit or Git for Windows install
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>      <span style=color:#ff636f>return</span> <span style=color:#58a1dd>FALSE</span>;
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#else
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>  <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>IsRunOnWin64</span>()) {
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>RegOpenKeyExW</span>(<span style=color:#58a1dd>HKEY_LOCAL_MACHINE</span>, <span style=color:#58a1dd>git4win</span>, <span style=color:#a6be9d>0</span>,
+</span></span><span style=display:flex><span>                      <span style=color:#58a1dd>KEY_READ</span> <span style=color:#ff636f>|</span> <span style=color:#58a1dd>KEY_WOW64_64KEY</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>hInst</span>) <span style=color:#ff636f>!=</span> <span style=color:#58a1dd>ERROR_SUCCESS</span>) {
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>RegOpenKeyExW</span>(<span style=color:#58a1dd>HKEY_LOCAL_MACHINE</span>, <span style=color:#58a1dd>git4win</span>, <span style=color:#a6be9d>0</span>, <span style=color:#58a1dd>KEY_READ</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>hInst</span>) <span style=color:#ff636f>!=</span>
+</span></span><span style=display:flex><span>          <span style=color:#58a1dd>ERROR_SUCCESS</span>) {
+</span></span><span style=display:flex><span>        <span style=color:#828b96;font-style:italic>// Cannot found msysgit or Git for Windows install
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>        <span style=color:#ff636f>return</span> <span style=color:#58a1dd>FALSE</span>;
+</span></span><span style=display:flex><span>      }
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>  } <span style=color:#ff636f>else</span> {
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>RegOpenKeyExW</span>(<span style=color:#58a1dd>HKEY_LOCAL_MACHINE</span>, <span style=color:#58a1dd>git4win</span>, <span style=color:#a6be9d>0</span>, <span style=color:#58a1dd>KEY_READ</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>hInst</span>) <span style=color:#ff636f>!=</span>
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>ERROR_SUCCESS</span>) {
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>return</span> <span style=color:#58a1dd>FALSE</span>;
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#endif
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>  <span style=color:#58a1dd>DWORD</span> <span style=color:#58a1dd>type</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>DWORD</span> <span style=color:#58a1dd>dwSize</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>4096</span> <span style=color:#ff636f>*</span> <span style=color:#ff636f>sizeof</span>(<span style=color:#ff636f>wchar_t</span>);
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>result</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>RegGetValueW</span>(<span style=color:#58a1dd>hInst</span>, <span style=color:#ff636f>nullptr</span>, <span style=color:#58a1dd>installKey</span>, <span style=color:#58a1dd>RRF_RT_REG_SZ</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>type</span>,
+</span></span><span style=display:flex><span>                        <span style=color:#58a1dd>buffer</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>dwSize</span>);
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>result</span> <span style=color:#ff636f>==</span> <span style=color:#58a1dd>ERROR_SUCCESS</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>location</span>.<span style=color:#58a1dd>assign</span>(<span style=color:#58a1dd>buffer</span>);
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>RegCloseKey</span>(<span style=color:#58a1dd>hInst</span>);
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>return</span> <span style=color:#58a1dd>result</span> <span style=color:#ff636f>==</span> <span style=color:#58a1dd>ERROR_SUCCESS</span>;
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>////
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// ////
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// bool search_git_from_path(std::wstring &amp;gitbin) {
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>//   ///
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>//   WCHAR buffer[4096] = {0};
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>//   DWORD dwLength = 0;
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>//   ////
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>//   if ((dwLength =
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>//            SearchPathW(nullptr, L&#34;git&#34;, L&#34;.exe&#34;, 4096, buffer, nullptr)) &gt; 0)
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>//            {
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>//     gitbin.assign(buffer, dwLength);
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>//     return true;
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>//   }
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>//   return false;
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// }
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>bool</span> <span style=color:#58a1dd>SearchGitForWindowsInstall</span>(<span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>gitbin</span>) {
+</span></span><span style=display:flex><span>  <span style=color:#828b96;font-style:italic>//
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>  <span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>FindGitInstallationLocation</span>(<span style=color:#58a1dd>gitbin</span>))
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>gitbin</span>.<span style=color:#58a1dd>push_back</span>(<span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#39;\\&#39;</span>);
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>gitbin</span>.<span style=color:#58a1dd>append</span>(<span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;git.exe&#34;</span>);
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>PathFileIsExistsU</span>(<span style=color:#58a1dd>gitbin</span>))
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#58a1dd>true</span>;
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>//
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span><span style=color:#ff636f>bool</span> <span style=color:#58a1dd>GitExecutePathSearchAuto</span>(<span style=color:#ff636f>const</span> <span style=color:#ff636f>wchar_t</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>cmd</span>, <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>gitbin</span>) {
+</span></span><span style=display:flex><span>  <span style=color:#828b96;font-style:italic>//// Self , Path Env,
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>  <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>PathFileIsExistsU</span>(<span style=color:#58a1dd>cmd</span>)) {
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>gitbin</span>.<span style=color:#58a1dd>assign</span>(<span style=color:#58a1dd>cmd</span>);
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#58a1dd>true</span>;
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#58a1dd>Path</span>;
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>Path</span>.<span style=color:#58a1dd>reserve</span>(<span style=color:#a6be9d>0x8000</span>); <span style=color:#828b96;font-style:italic>/// 32767
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>  <span style=color:#828b96;font-style:italic>///
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>  <span style=color:#ff636f>auto</span> <span style=color:#58a1dd>len</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>GetModuleFileNameW</span>(<span style=color:#ff636f>nullptr</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>Path</span>[<span style=color:#a6be9d>0</span>], <span style=color:#a6be9d>32767</span>);
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>len</span> <span style=color:#ff636f>&gt;</span> <span style=color:#a6be9d>0</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>auto</span> <span style=color:#58a1dd>end</span> <span style=color:#ff636f>=</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>Path</span>[<span style=color:#a6be9d>0</span>] <span style=color:#ff636f>+</span> <span style=color:#58a1dd>len</span>;
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>PathRemoveFileSpecU</span>(<span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>Path</span>[<span style=color:#a6be9d>0</span>], <span style=color:#58a1dd>end</span>);
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>gitbin</span>.<span style=color:#58a1dd>assign</span>(<span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>Path</span>[<span style=color:#a6be9d>0</span>]);
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>gitbin</span>.<span style=color:#58a1dd>push_back</span>(<span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#39;\\&#39;</span>);
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>gitbin</span>.<span style=color:#58a1dd>append</span>(<span style=color:#58a1dd>cmd</span>);
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>PathFileIsExistsU</span>(<span style=color:#58a1dd>gitbin</span>))
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>return</span> <span style=color:#58a1dd>true</span>;
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>gitbin</span>.<span style=color:#58a1dd>clear</span>();
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#828b96;font-style:italic>///
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>  <span style=color:#58a1dd>GetEnvironmentVariableW</span>(<span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;PATH&#34;</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>Path</span>[<span style=color:#a6be9d>0</span>], <span style=color:#a6be9d>32767</span>);
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>auto</span> <span style=color:#58a1dd>iter</span> <span style=color:#ff636f>=</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>Path</span>[<span style=color:#a6be9d>0</span>];
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>for</span> (; <span style=color:#ff636f>*</span><span style=color:#58a1dd>iter</span>; <span style=color:#58a1dd>iter</span><span style=color:#ff636f>++</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>if</span> (<span style=color:#ff636f>*</span><span style=color:#58a1dd>iter</span> <span style=color:#ff636f>==</span> <span style=color:#a6be9d>&#39;;&#39;</span>) {
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>gitbin</span>.<span style=color:#58a1dd>push_back</span>(<span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#39;\\&#39;</span>);
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>gitbin</span>.<span style=color:#58a1dd>append</span>(<span style=color:#58a1dd>cmd</span>);
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>PathFileIsExistsU</span>(<span style=color:#58a1dd>gitbin</span>)) {
+</span></span><span style=display:flex><span>        <span style=color:#ff636f>return</span> <span style=color:#58a1dd>true</span>;
+</span></span><span style=display:flex><span>      }
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>gitbin</span>.<span style=color:#58a1dd>clear</span>();
+</span></span><span style=display:flex><span>    } <span style=color:#ff636f>else</span> {
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>gitbin</span>.<span style=color:#58a1dd>push_back</span>(<span style=color:#ff636f>*</span><span style=color:#58a1dd>iter</span>);
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>/// First search git from path.
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span><span style=color:#ff636f>bool</span> <span style=color:#58a1dd>GitGCInvoke</span>(<span style=color:#ff636f>const</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>dir</span>, <span style=color:#ff636f>bool</span> <span style=color:#58a1dd>forced</span>) {
+</span></span><span style=display:flex><span>  <span style=color:#828b96;font-style:italic>///
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>  <span style=color:#58a1dd>WCharacters</span> <span style=color:#58a1dd>wstr</span>(<span style=color:#58a1dd>dir</span>.<span style=color:#58a1dd>c_str</span>()); <span style=color:#828b96;font-style:italic>/// convert to UTF16
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>  <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#58a1dd>gitbin</span>;
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>GitExecutePathSearchAuto</span>(<span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;git.exe&#34;</span>, <span style=color:#58a1dd>gitbin</span>)) {
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>SearchGitForWindowsInstall</span>(<span style=color:#58a1dd>gitbin</span>)) {
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>BaseErrorMessagePrint</span>(
+</span></span><span style=display:flex><span>          <span style=color:#a6be9d>&#34;Not Found git in your PATH environemnt variable and Registry !&#34;</span>);
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#828b96;font-style:italic>/////////////////////////////////////////////////////////
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>  <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#58a1dd>cmdline</span>;
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>cmdline</span>.<span style=color:#58a1dd>reserve</span>(<span style=color:#a6be9d>0x8000</span>);
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>_snwprintf_s</span>(<span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>cmdline</span>[<span style=color:#a6be9d>0</span>], <span style=color:#a6be9d>32767</span>, <span style=color:#a6be9d>32767</span>, <span style=color:#58a1dd>LR</span><span style=color:#a6be9d>&#34;(&#34;</span><span style=color:#ff636f>%</span><span style=color:#58a1dd>s</span><span style=color:#a6be9d>&#34; gc )&#34;</span>, <span style=color:#58a1dd>gitbin</span>.<span style=color:#58a1dd>c_str</span>());
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>forced</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>wcscat_s</span>(<span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>cmdline</span>[<span style=color:#a6be9d>0</span>], <span style=color:#a6be9d>32767</span>, <span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;--prune=now --force&#34;</span>);
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>STARTUPINFOW</span> <span style=color:#58a1dd>si</span>;
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>PROCESS_INFORMATION</span> <span style=color:#58a1dd>pi</span>;
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>ZeroMemory</span>(<span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>si</span>, <span style=color:#ff636f>sizeof</span>(<span style=color:#58a1dd>si</span>));
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>ZeroMemory</span>(<span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>pi</span>, <span style=color:#ff636f>sizeof</span>(<span style=color:#58a1dd>pi</span>));
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>si</span>.<span style=color:#58a1dd>cb</span> <span style=color:#ff636f>=</span> <span style=color:#ff636f>sizeof</span>(<span style=color:#58a1dd>si</span>);
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>CreateProcessW</span>(<span style=color:#ff636f>nullptr</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>cmdline</span>[<span style=color:#a6be9d>0</span>], <span style=color:#ff636f>nullptr</span>, <span style=color:#ff636f>nullptr</span>, <span style=color:#58a1dd>FALSE</span>, <span style=color:#a6be9d>0</span>, <span style=color:#ff636f>nullptr</span>,
+</span></span><span style=display:flex><span>                      <span style=color:#58a1dd>wstr</span>.<span style=color:#58a1dd>Get</span>(), <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>si</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>pi</span>)) {
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>bool</span> <span style=color:#58a1dd>result</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>WaitForSingleObject</span>(<span style=color:#58a1dd>pi</span>.<span style=color:#58a1dd>hProcess</span>, <span style=color:#58a1dd>INFINITE</span>) <span style=color:#ff636f>==</span> <span style=color:#58a1dd>WAIT_OBJECT_0</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>DWORD</span> <span style=color:#58a1dd>dwExit</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>GetExitCodeProcess</span>(<span style=color:#58a1dd>pi</span>.<span style=color:#58a1dd>hProcess</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>dwExit</span>) <span style=color:#ff636f>&amp;&amp;</span> <span style=color:#58a1dd>dwExit</span> <span style=color:#ff636f>==</span> <span style=color:#a6be9d>0</span>) {
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>result</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>true</span>;
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>CloseHandle</span>(<span style=color:#58a1dd>pi</span>.<span style=color:#58a1dd>hThread</span>);
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>CloseHandle</span>(<span style=color:#58a1dd>pi</span>.<span style=color:#58a1dd>hProcess</span>);
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>return</span> <span style=color:#58a1dd>result</span>;
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><h2 id=compatibility>Compatibility</h2><p>libgit2 使用的是 UTF-8 编码,在 Windows 中转变为 UTF16 编码,使用 Windows API 完成一系列操作.</p><p>如果按照默认的 main 传递命令行参数,那么可能会发生错误,在 Windows 中, 创建进程是通过 CreateProcess 这样的 API 实现的,
+NT 内核将命令行参数写入的进程的 PEB 中, CRT 初始化时,根据启动函数类型执行不同的策略 (WinMain wWinMain main wmain) ,
+比如 main , CRT 通过 GetCommandLineA 获得命令行参数,然后将 LPCSTR 转变成 char * Argv[] 的形式.
+GetCommandLineA 获得的命令行参数也是由 PEB 的命令行参数转换编码过来的. main 命令行参数的编码即当前代码页的编码,也就是 CP_ACP ,
+比如 Windows 下常见的 936 GBK。</p><p>这样一来,libgit2 传入非 西文字符 就会操作失败, 为了支持 Windows 平台,笔者使用 wmain ,然后将命令行参数依次转变为 UTF-8,
+这样就可以解决不支持非西文字符的问题。然后 POSIX 平台依然使用 main。</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-cpp data-lang=cpp><span style=display:flex><span><span style=color:#828b96;font-style:italic>#if defined(_WIN32) &amp;&amp; !defined(__CYGWIN__)
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;Windows.h&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span><span style=color:#828b96;font-style:italic>//// To convert Utf8
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span><span style=color:#ff636f>char</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>CopyToUtf8</span>(<span style=color:#ff636f>const</span> <span style=color:#ff636f>wchar_t</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>wstr</span>) {
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>auto</span> <span style=color:#58a1dd>l</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>WideCharToMultiByte</span>(<span style=color:#58a1dd>CP_UTF8</span>, <span style=color:#a6be9d>0</span>, <span style=color:#58a1dd>wstr</span>, <span style=color:#ff636f>-</span><span style=color:#a6be9d>1</span>, <span style=color:#58a1dd>NULL</span>, <span style=color:#a6be9d>0</span>, <span style=color:#58a1dd>NULL</span>, <span style=color:#58a1dd>NULL</span>);
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>char</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>buf</span> <span style=color:#ff636f>=</span> (<span style=color:#ff636f>char</span> <span style=color:#ff636f>*</span>)<span style=color:#58a1dd>malloc</span>(<span style=color:#ff636f>sizeof</span>(<span style=color:#ff636f>char</span>) <span style=color:#ff636f>*</span> <span style=color:#58a1dd>l</span> <span style=color:#ff636f>+</span> <span style=color:#a6be9d>1</span>);
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>buf</span> <span style=color:#ff636f>==</span> <span style=color:#ff636f>nullptr</span>)
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>throw</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>runtime_error</span>(<span style=color:#a6be9d>&#34;Out of Memory &#34;</span>);
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>WideCharToMultiByte</span>(<span style=color:#58a1dd>CP_UTF8</span>, <span style=color:#a6be9d>0</span>, <span style=color:#58a1dd>wstr</span>, <span style=color:#ff636f>-</span><span style=color:#a6be9d>1</span>, <span style=color:#58a1dd>buf</span>, <span style=color:#58a1dd>l</span>, <span style=color:#58a1dd>NULL</span>, <span style=color:#58a1dd>NULL</span>);
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>return</span> <span style=color:#58a1dd>buf</span>;
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span><span style=color:#ff636f>int</span> <span style=color:#58a1dd>wmain</span>(<span style=color:#ff636f>int</span> <span style=color:#58a1dd>argc</span>, <span style=color:#ff636f>wchar_t</span> <span style=color:#ff636f>**</span><span style=color:#58a1dd>argv</span>) {
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>vector</span><span style=color:#ff636f>&lt;</span><span style=color:#ff636f>char</span> <span style=color:#ff636f>*&gt;</span> <span style=color:#58a1dd>Argv_</span>;
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>auto</span> <span style=color:#58a1dd>Release</span> <span style=color:#ff636f>=</span> [<span style=color:#ff636f>&amp;</span>]() {
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>for</span> (<span style=color:#ff636f>auto</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>a</span> : <span style=color:#58a1dd>Argv_</span>) {
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>free</span>(<span style=color:#58a1dd>a</span>);
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>  };
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>try</span> {
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>for</span> (<span style=color:#ff636f>int</span> <span style=color:#58a1dd>i</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>; <span style=color:#58a1dd>i</span> <span style=color:#ff636f>&lt;</span> <span style=color:#58a1dd>argc</span>; <span style=color:#58a1dd>i</span><span style=color:#ff636f>++</span>) {
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>Argv_</span>.<span style=color:#58a1dd>push_back</span>(<span style=color:#58a1dd>CopyToUtf8</span>(<span style=color:#58a1dd>argv</span>[<span style=color:#58a1dd>i</span>]));
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>  } <span style=color:#ff636f>catch</span> (<span style=color:#ff636f>const</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>exception</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>e</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>BaseErrorMessagePrint</span>(<span style=color:#a6be9d>&#34;Exception: %s</span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>&#34;</span>, <span style=color:#58a1dd>e</span>.<span style=color:#58a1dd>what</span>());
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>Release</span>();
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#ff636f>-</span><span style=color:#a6be9d>1</span>;
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>AnalyzeArgs</span> <span style=color:#58a1dd>analyzeArgs</span>;
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>ProcessArgv</span>((<span style=color:#ff636f>int</span>)<span style=color:#58a1dd>Argv_</span>.<span style=color:#58a1dd>size</span>(), <span style=color:#58a1dd>Argv_</span>.<span style=color:#58a1dd>data</span>(), <span style=color:#58a1dd>analyzeArgs</span>);
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>ProcessAnalyzeTask</span>(<span style=color:#58a1dd>analyzeArgs</span>)) {
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>BaseConsoleWrite</span>(<span style=color:#a6be9d>&#34;git-analyze: Operation completed !</span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>&#34;</span>);
+</span></span><span style=display:flex><span>  } <span style=color:#ff636f>else</span> {
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>BaseErrorMessagePrint</span>(<span style=color:#a6be9d>&#34;git-analyze: Operation aborted !</span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>&#34;</span>);
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>Release</span>();
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>return</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#else
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>int</span> <span style=color:#58a1dd>main</span>(<span style=color:#ff636f>int</span> <span style=color:#58a1dd>argc</span>, <span style=color:#ff636f>char</span> <span style=color:#ff636f>**</span><span style=color:#58a1dd>argv</span>) {
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>AnalyzeArgs</span> <span style=color:#58a1dd>analyzeArgs</span>;
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>ProcessArgv</span>(<span style=color:#58a1dd>argc</span>, <span style=color:#58a1dd>argv</span>, <span style=color:#58a1dd>analyzeArgs</span>);
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>ProcessAnalyzeTask</span>(<span style=color:#58a1dd>analyzeArgs</span>)) {
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>BaseConsoleWrite</span>(<span style=color:#a6be9d>&#34;git-analyze: Operation completed !</span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>&#34;</span>);
+</span></span><span style=display:flex><span>  } <span style=color:#ff636f>else</span> {
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>BaseErrorMessagePrint</span>(<span style=color:#a6be9d>&#34;git-analyze: Operation aborted !</span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>&#34;</span>);
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>return</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#endif
+</span></span></span></code></pre></div><p>另外一个问题，由于参数和 libgit2 都是使用的 UTF8 编码，默认情况下，Windows 控制台的代码页在输出 UTF8 编码
+字符的情况下可能会乱码，libgit2 并没有去调整，而控制台的代码页如果手动调整，可能会导致其他程序乱码。
+当然可以调用 SetConsoleOutputCP 去修改代码页，笔者并未测试，笔者采用的是和 git 官方一样的策略，
+检测程序当前的标准输出标准错误是否是字符设备，这个可以使用 _isatty 来检测，当然也可以使用下面的代码来实现检测：</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-cpp data-lang=cpp><span style=display:flex><span><span style=color:#ff636f>bool</span> <span style=color:#58a1dd>IsUnderConhost</span>(<span style=color:#58a1dd>FILE</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>fp</span>) {
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>HANDLE</span> <span style=color:#58a1dd>hStderr</span> <span style=color:#ff636f>=</span> <span style=color:#ff636f>reinterpret_cast</span><span style=color:#ff636f>&lt;</span><span style=color:#58a1dd>HANDLE</span><span style=color:#ff636f>&gt;</span>(<span style=color:#58a1dd>_get_osfhandle</span>(<span style=color:#58a1dd>_fileno</span>(<span style=color:#58a1dd>fp</span>)));
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>return</span> <span style=color:#58a1dd>GetFileType</span>(<span style=color:#58a1dd>hStderr</span>) <span style=color:#ff636f>==</span> <span style=color:#58a1dd>FILE_TYPE_CHAR</span>;
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>但是，重要的一点，MSYS2 的终端模拟器 Mintty 编码是 UTF8 ，_isatty 并不会将 Mintty 识别为字符设备，这是由于
+MSYS2 或者 Cygwin 中，使用的是管道的方式读取程序的输出渲染到 Mintty，不过 MSYS2 的环境变量中会存在 TERM
+这样的变量，就可以用下面的代码去识别：</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-cpp data-lang=cpp><span style=display:flex><span><span style=color:#ff636f>bool</span> <span style=color:#58a1dd>IsWindowsTTY</span>() {
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>GetEnvironmentVariableW</span>(<span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;TERM&#34;</span>, <span style=color:#58a1dd>NULL</span>, <span style=color:#a6be9d>0</span>) <span style=color:#ff636f>==</span> <span style=color:#a6be9d>0</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>GetLastError</span>() <span style=color:#ff636f>==</span> <span style=color:#58a1dd>ERROR_ENVVAR_NOT_FOUND</span>)
+</span></span><span style=display:flex><span>      <span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>return</span> <span style=color:#58a1dd>true</span>;
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>在输出错误的时候，我们可以修改输出颜色，在控制台中，可以使用 SetConsoleTextAttribute，使用 GetConsoleScreenBufferInfo
+获得控制台的颜色，控制台是 256 色的，其中高 4位是背景色，低四位是前景色，所以可以使用下面的代码实现色彩输出：</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-cpp data-lang=cpp><span style=display:flex><span><span style=color:#ff636f>int</span> <span style=color:#58a1dd>BaseErrorWriteConhost</span>(<span style=color:#ff636f>const</span> <span style=color:#ff636f>char</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>buf</span>, <span style=color:#58a1dd>size_t</span> <span style=color:#58a1dd>len</span>) {
+</span></span><span style=display:flex><span>  <span style=color:#828b96;font-style:italic>// TO set Foreground color
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>  <span style=color:#58a1dd>HANDLE</span> <span style=color:#58a1dd>hConsole</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>GetStdHandle</span>(<span style=color:#58a1dd>STD_ERROR_HANDLE</span>);
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>CONSOLE_SCREEN_BUFFER_INFO</span> <span style=color:#58a1dd>csbi</span>;
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>GetConsoleScreenBufferInfo</span>(<span style=color:#58a1dd>hConsole</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>csbi</span>);
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>WORD</span> <span style=color:#58a1dd>oldColor</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>csbi</span>.<span style=color:#58a1dd>wAttributes</span>;
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>WORD</span> <span style=color:#58a1dd>newColor</span> <span style=color:#ff636f>=</span> (<span style=color:#58a1dd>oldColor</span> <span style=color:#ff636f>&amp;</span> <span style=color:#a6be9d>0xF0</span>) <span style=color:#ff636f>|</span> <span style=color:#58a1dd>FOREGROUND_INTENSITY</span> <span style=color:#ff636f>|</span> <span style=color:#58a1dd>FOREGROUND_RED</span>;
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>SetConsoleTextAttribute</span>(<span style=color:#58a1dd>hConsole</span>, <span style=color:#58a1dd>newColor</span>);
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>DWORD</span> <span style=color:#58a1dd>dwWrite</span>;
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>WCharacters</span> <span style=color:#58a1dd>wstr</span>(<span style=color:#58a1dd>buf</span>, <span style=color:#58a1dd>len</span>);
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>WriteConsoleW</span>(<span style=color:#58a1dd>hConsole</span>, <span style=color:#58a1dd>wstr</span>.<span style=color:#58a1dd>Get</span>(), <span style=color:#58a1dd>wstr</span>.<span style=color:#58a1dd>Length</span>(), <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>dwWrite</span>, <span style=color:#ff636f>nullptr</span>);
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>SetConsoleTextAttribute</span>(<span style=color:#58a1dd>hConsole</span>, <span style=color:#58a1dd>oldColor</span>);
+</span></span><span style=display:flex><span>  <span style=color:#ff636f>return</span> <span style=color:#58a1dd>dwWrite</span>;
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>在 Unix 或者 MSYS2 中，可以在输出中加入 <strong>\e[31m</strong> (GCC) <strong>\33[31m</strong> (MSVC) 这样的字符控制终端文字颜色。</p><p>更多的代码请查看 <a href=http://git.oschina.net/oscstudio/git-analyze/blob/master/lib/Pal/Console.cc>git-analyze</a></p><p><strong>Update 2016-12-31</strong></p><p>目前 git-analyze 增加了一些有意思的工具，比如 pre-commit 这个作为客户端的钩子，能够帮助用户阻止提交超出大小限制的文件。
+并且可以在误操作添加了特定后缀名的文件后，检测并组织提交。</p><p>git-cheat 可以在当前分支的最新 commit 上创建一个无历史纪录的提交，对于一些特别的开源项目有一定的帮助。
+而 git-complete 工具则能够在制定分支上创建整整一年的提交，当然用户可以决定是否需要重新创建分支。</p><hr width=100% id=EOF><p style=color:#777>Last modified on 2016-08-11</p></div></div><nav class=post-pagination><a class=newer-posts href=/posts/2016/2016-11-03-win32-download-feature/>Next<br>Windows 下载功能的实现 - C++ 篇
+</a><a class=older-posts href=/posts/2016/2016-07-16-git-transport-implement/>Previous<br>Git 传输协议实现</a></nav><div class=post-comment-wrapper></div></div></div></div></div><div id=sideContainer class=side-container><a class="a-block nav-head false" href=https://forcemz.net/><div class=nav-title>Charlie's Rethinking</div><div class=nav-subtitle>Themed by Diary.</div></a><div class=nav-link-list><a class="a-block nav-link-item active" href=/posts>归档
+</a><a class="a-block nav-link-item false" href=/categories>分类
+</a><a class="a-block nav-link-item false" href=/tags>标签
+</a><a class="a-block nav-link-item false" href=/about>关于
+</a><a class="a-block nav-link-item false" href=/index.xml>RSS Feed</a></div><div class=nav-footer>Hugo Theme <a href=https://github.com/amazingrise/hugo-theme-diary>Diary</a> by <a href=https://risehere.net/>Rise</a><br>Ported from <a href=https://mak1t0.cc/ target=_blank rel="noreferrer noopener">Makito</a>'s <a href=https://github.com/SumiMakito/hexo-theme-journal/ target=_blank rel="noreferrer noopener">Journal.</a><br><br>&copy;
+Copyright (c) 2009-2024 J23</div></div><div id=extraContainer class=extra-container><div class=toc-wrapper><div class=toc><div class=toc-content><center>- CATALOG -</center><ul><li><a href=#%e5%89%8d%e8%a8%80 class=nav-前言>前言</a></li><ul><li><a href=#analyze class=nav-analyze>Analyze</a></li><ul><li><a href=#cmake class=nav-cmake>CMake</a></li><li><a href=#timer class=nav-timer>Timer</a></li></ul><li><a href=#rollback class=nav-rollback>Rollback</a></li><li><a href=#compatibility class=nav-compatibility>Compatibility</a></li></ul></div></div></div><div class=pagination><a id=globalBackToTop class="pagination-action animated-visibility" href=#top :class="{ invisible: scrollY == 0 }"><i class="material-icons pagination-action-icon">keyboard_arrow_up
+</i></a><a type=button class=pagination-action id=darkModeToggleButton><span class="material-icons pagination-action-icon" id=darkModeToggleIcon>dark_mode</span></a></div></div><div id=single-column-footer>Hugo Theme <a href=https://github.com/amazingrise/hugo-theme-diary>Diary</a> by <a href=https://risehere.net/>Rise</a><br>Ported from <a href=https://mak1t0.cc/ target=_blank rel="noreferrer noopener">Makito</a>'s <a href=https://github.com/SumiMakito/hexo-theme-journal/ target=_blank rel="noreferrer noopener">Journal.</a><br><br>&copy;
+Copyright (c) 2009-2024 J23</div></div><script src=/js/journal.js></script></body></html>

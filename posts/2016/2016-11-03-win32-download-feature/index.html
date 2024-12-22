@@ -1,0 +1,598 @@
+<!doctype html><html lang=en><head><title>Windows 下载功能的实现 - C++ 篇</title>
+<meta charset=utf-8><meta name=X-UA-Compatible content="IE=edge"><meta name=google-site-verification content><meta content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=5" name=viewport><meta content="telephone=no" name=format-detection><meta name=description content><meta name=renderer content="webkit"><meta name=theme-color content="#ffffff"><script src=/js/toc.js></script><link type=text/css rel=stylesheet href=/vendor/css/bootstrap.min.css><link rel=stylesheet href=/scss/dark-mode.min.cb53f1bee2b8900cb4f082afbf00175d6618f281cf9a2fe8619e3b52d20b5721.css integrity="sha256-y1PxvuK4kAy08IKvvwAXXWYY8oHPmi/oYZ47UtILVyE=" media=screen><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Material+Icons"></head><body><div id=app><div class=single-column-drawer-container id=drawer v-bind:class="{ 'single-column-drawer-container-active': isDrawerOpen }"><div class=drawer-content><div class=drawer-menu><a class="a-block drawer-menu-item active" href=/posts>归档
+</a><a class="a-block drawer-menu-item false" href=/categories>分类
+</a><a class="a-block drawer-menu-item false" href=/tags>标签
+</a><a class="a-block drawer-menu-item false" href=/about>关于
+</a><a class="a-block drawer-menu-item false" href=/index.xml>RSS Feed</a><div class=toc><div class=toc-content><center>- CATALOG -</center><ul><li><a href=#%e5%89%8d%e8%a8%80 class=nav-前言>前言</a></li><ul><li><a href=#urldownloadtofile class=nav-urldownloadtofile>URLDownloadToFile</a></li><li><a href=#httpclient class=nav-httpclient>HttpClient</a></li><li><a href=#background-intelligent-transfer-service class=nav-background-intelligent-transfer-service>Background Intelligent Transfer Service</a></li><li><a href=#winhttp class=nav-winhttp>WinHTTP</a></li><ul><li><a href=#http2-%e6%94%af%e6%8c%81 class=nav-http2-支持>HTTP2 支持</a></li></ul><li><a href=#wininet class=nav-wininet>Wininet</a></li><ul><li><a href=#http2-%e6%94%af%e6%8c%81-1 class=nav-http2-支持-1>HTTP2 支持</a></li></ul></ul><li><a href=#%e5%a6%82%e4%bd%95%e9%80%89%e6%8b%a9 class=nav-如何选择>如何选择</a></li></ul></div></div></div></div></div><transition name=fade><div id=drawer-mask v-bind:class="{ 'single-column-drawer-mask': mounted }" v-if=isDrawerOpen v-on:click=toggleDrawer></div></transition><nav id=navBar class="navbar sticky-top navbar-light single-column-nav-container"><div id=navBackground class=nav-background></div><div class="container container-narrow nav-content"><button id=nav_dropdown_btn class=nav-dropdown-toggle type=button v-on:click=toggleDrawer>
+<i class=material-icons>menu
+</i></button>
+<a id=navTitle class=navbar-brand href=https://forcemz.net/>Charlie's Rethinking
+</a><button type=button class=nav-darkmode-toggle id=darkModeToggleButton2>
+<i class=material-icons id=darkModeToggleIcon2>dark_mode</i></button></div></nav><div class=single-column-header-container id=pageHead v-bind:style="{ transform: 'translateZ(0px) translateY('+.3*scrollY+'px)', opacity: 1-navOpacity }"><a href=https://forcemz.net/><div class=single-column-header-title>Charlie's Rethinking</div><div class=single-column-header-subtitle>Themed by Diary.</div></a></div><div id=content><div id=streamContainer class=stream-container><div class="post-list-container post-list-container-shadow"><div class=post><div class=post-head-wrapper-text-only><div class=post-title>Windows 下载功能的实现 - C++ 篇<div class=post-meta><time itemprop=datePublished>2016-11-03 20:00
+</time><i class=material-icons>folder</i>
+<a href=/categories/windows>windows</a>
+&nbsp;</div></div></div><div class=post-body-wrapper><div class=post-body v-pre><h1 id=前言>前言</h1><p>笔者计划开发一个自用的包管理工具，需要支持下载功能，笔者尝试了多种 Windows 下载 API，这里分享出来。</p><h2 id=urldownloadtofile>URLDownloadToFile</h2><p>自 Internet Explorer 3.0 开始，Urlmon.dll 中开始提供 URLDownloadToFile，支持从远程服务器上下载文件到本地。
+URLDownloadToFile 会先将文件下载到 IE 缓存目录，然后再复制到设置的输出目录，如果第二次下载，就省去了下载时间。
+Urlmon 还提供了下载到缓存目录的函数 URLDownloadToCacheFile，正因为 URLDownloadToFile 先下载到缓存目录，
+就会出现缓存问题，可以使用 Wininet 中的 DeleteUrlCacheEntry 删除缓存。</p><p>使用 URLDownloadToFile 下载文件，下面有个简单的例子：</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-cpp data-lang=cpp><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&#34;stdafx.h&#34;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;string&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;Urlmon.h&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;functional&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#pragma comment(lib,&#34;Urlmon&#34;)
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>class</span> <span style=color:#58a1dd>DownloadStatus</span> <span style=color:#ff636f>:</span><span style=color:#ff636f>public</span> <span style=color:#58a1dd>IBindStatusCallback</span> {
+</span></span><span style=display:flex><span><span style=color:#ff636f>public</span><span style=color:#ff636f>:</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>ULONG</span> <span style=color:#58a1dd>presize</span>{ <span style=color:#a6be9d>0</span> };
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>STDMETHOD</span>(<span style=color:#58a1dd>OnStartBinding</span>)(
+</span></span><span style=display:flex><span>		<span style=color:#828b96;font-style:italic>/* [in] */</span> <span style=color:#58a1dd>DWORD</span> <span style=color:#58a1dd>dwReserved</span>,
+</span></span><span style=display:flex><span>		<span style=color:#828b96;font-style:italic>/* [in] */</span> <span style=color:#58a1dd>IBinding</span> <span style=color:#58a1dd>__RPC_FAR</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>pib</span>)
+</span></span><span style=display:flex><span>	{
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#58a1dd>E_NOTIMPL</span>;
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>STDMETHOD</span>(<span style=color:#58a1dd>GetPriority</span>)(
+</span></span><span style=display:flex><span>		<span style=color:#828b96;font-style:italic>/* [out] */</span> <span style=color:#58a1dd>LONG</span> <span style=color:#58a1dd>__RPC_FAR</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>pnPriority</span>)
+</span></span><span style=display:flex><span>	{
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#58a1dd>E_NOTIMPL</span>;
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>STDMETHOD</span>(<span style=color:#58a1dd>OnLowResource</span>)(
+</span></span><span style=display:flex><span>		<span style=color:#828b96;font-style:italic>/* [in] */</span> <span style=color:#58a1dd>DWORD</span> <span style=color:#58a1dd>reserved</span>)
+</span></span><span style=display:flex><span>	{
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#58a1dd>E_NOTIMPL</span>;
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>STDMETHOD</span>(<span style=color:#58a1dd>OnProgress</span>)(
+</span></span><span style=display:flex><span>		<span style=color:#828b96;font-style:italic>/* [in] */</span> <span style=color:#58a1dd>ULONG</span> <span style=color:#58a1dd>ulProgress</span>,
+</span></span><span style=display:flex><span>		<span style=color:#828b96;font-style:italic>/* [in] */</span> <span style=color:#58a1dd>ULONG</span> <span style=color:#58a1dd>ulProgressMax</span>,
+</span></span><span style=display:flex><span>		<span style=color:#828b96;font-style:italic>/* [in] */</span> <span style=color:#58a1dd>ULONG</span> <span style=color:#58a1dd>ulStatusCode</span>,
+</span></span><span style=display:flex><span>		<span style=color:#828b96;font-style:italic>/* [in] */</span> <span style=color:#58a1dd>LPCWSTR</span> <span style=color:#58a1dd>wszStatusText</span>);
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>STDMETHOD</span>(<span style=color:#58a1dd>OnStopBinding</span>)(
+</span></span><span style=display:flex><span>		<span style=color:#828b96;font-style:italic>/* [in] */</span> <span style=color:#58a1dd>HRESULT</span> <span style=color:#58a1dd>hresult</span>,
+</span></span><span style=display:flex><span>		<span style=color:#828b96;font-style:italic>/* [unique][in] */</span> <span style=color:#58a1dd>LPCWSTR</span> <span style=color:#58a1dd>szError</span>)
+</span></span><span style=display:flex><span>	{
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#58a1dd>E_NOTIMPL</span>;
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>STDMETHOD</span>(<span style=color:#58a1dd>GetBindInfo</span>)(
+</span></span><span style=display:flex><span>		<span style=color:#828b96;font-style:italic>/* [out] */</span> <span style=color:#58a1dd>DWORD</span> <span style=color:#58a1dd>__RPC_FAR</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>grfBINDF</span>,
+</span></span><span style=display:flex><span>		<span style=color:#828b96;font-style:italic>/* [unique][out][in] */</span> <span style=color:#58a1dd>BINDINFO</span> <span style=color:#58a1dd>__RPC_FAR</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>pbindinfo</span>)
+</span></span><span style=display:flex><span>	{
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#58a1dd>E_NOTIMPL</span>;
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>STDMETHOD</span>(<span style=color:#58a1dd>OnDataAvailable</span>)(
+</span></span><span style=display:flex><span>		<span style=color:#828b96;font-style:italic>/* [in] */</span> <span style=color:#58a1dd>DWORD</span> <span style=color:#58a1dd>grfBSCF</span>,
+</span></span><span style=display:flex><span>		<span style=color:#828b96;font-style:italic>/* [in] */</span> <span style=color:#58a1dd>DWORD</span> <span style=color:#58a1dd>dwSize</span>,
+</span></span><span style=display:flex><span>		<span style=color:#828b96;font-style:italic>/* [in] */</span> <span style=color:#58a1dd>FORMATETC</span> <span style=color:#58a1dd>__RPC_FAR</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>pformatetc</span>,
+</span></span><span style=display:flex><span>		<span style=color:#828b96;font-style:italic>/* [in] */</span> <span style=color:#58a1dd>STGMEDIUM</span> <span style=color:#58a1dd>__RPC_FAR</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>pstgmed</span>)
+</span></span><span style=display:flex><span>	{
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#58a1dd>E_NOTIMPL</span>;
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>STDMETHOD</span>(<span style=color:#58a1dd>OnObjectAvailable</span>)(
+</span></span><span style=display:flex><span>		<span style=color:#828b96;font-style:italic>/* [in] */</span> <span style=color:#58a1dd>REFIID</span> <span style=color:#58a1dd>riid</span>,
+</span></span><span style=display:flex><span>		<span style=color:#828b96;font-style:italic>/* [iid_is][in] */</span> <span style=color:#58a1dd>IUnknown</span> <span style=color:#58a1dd>__RPC_FAR</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>punk</span>)
+</span></span><span style=display:flex><span>	{
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#58a1dd>E_NOTIMPL</span>;
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>// IUnknown methods.  Note that IE never calls any of these methods, since
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#828b96;font-style:italic>// the caller owns the IBindStatusCallback interface, so the methods all
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#828b96;font-style:italic>// return zero/E_NOTIMPL.
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>STDMETHOD_</span>(<span style=color:#58a1dd>ULONG</span>, <span style=color:#58a1dd>AddRef</span>)()
+</span></span><span style=display:flex><span>	{
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>STDMETHOD_</span>(<span style=color:#58a1dd>ULONG</span>, <span style=color:#58a1dd>Release</span>)()
+</span></span><span style=display:flex><span>	{
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>STDMETHOD</span>(<span style=color:#58a1dd>QueryInterface</span>)(
+</span></span><span style=display:flex><span>		<span style=color:#828b96;font-style:italic>/* [in] */</span> <span style=color:#58a1dd>REFIID</span> <span style=color:#58a1dd>riid</span>,
+</span></span><span style=display:flex><span>		<span style=color:#828b96;font-style:italic>/* [iid_is][out] */</span> <span style=color:#ff636f>void</span> <span style=color:#58a1dd>__RPC_FAR</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>__RPC_FAR</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>ppvObject</span>)
+</span></span><span style=display:flex><span>	{
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#58a1dd>E_NOTIMPL</span>;
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>};
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#58a1dd>HRESULT</span> <span style=color:#58a1dd>DownloadStatus</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>OnProgress</span>(<span style=color:#58a1dd>ULONG</span> <span style=color:#58a1dd>ulProgress</span>, <span style=color:#58a1dd>ULONG</span> <span style=color:#58a1dd>ulProgressMax</span>,
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>ULONG</span> <span style=color:#58a1dd>ulStatusCode</span>, <span style=color:#58a1dd>LPCWSTR</span> <span style=color:#58a1dd>wszStatusText</span>)
+</span></span><span style=display:flex><span>{
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>float</span> <span style=color:#58a1dd>ps</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> (<span style=color:#58a1dd>ulProgressMax</span> <span style=color:#ff636f>!=</span> <span style=color:#a6be9d>0</span>) {
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>ps</span> <span style=color:#ff636f>=</span> (<span style=color:#ff636f>float</span>)<span style=color:#58a1dd>ulProgress</span> <span style=color:#ff636f>*</span> <span style=color:#a6be9d>100</span> <span style=color:#ff636f>/</span> <span style=color:#58a1dd>ulProgressMax</span>;
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>fprintf</span>(<span style=color:#58a1dd>stderr</span>, <span style=color:#a6be9d>&#34;</span><span style=color:#a6be9d>\r</span><span style=color:#a6be9d>Download %2.2f%%&#34;</span>, <span style=color:#58a1dd>ps</span>);
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>return</span> <span style=color:#58a1dd>S_OK</span>;
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>bool</span> <span style=color:#58a1dd>DownloadFileWarp</span>(<span style=color:#ff636f>const</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>remoteFile</span>, <span style=color:#ff636f>const</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>localFile</span>) {
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>DownloadStatus</span> <span style=color:#58a1dd>ds</span>;
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>return</span> <span style=color:#58a1dd>URLDownloadToFileW</span>(<span style=color:#ff636f>nullptr</span>, <span style=color:#58a1dd>remoteFile</span>.<span style=color:#58a1dd>c_str</span>(), <span style=color:#58a1dd>localFile</span>.<span style=color:#58a1dd>c_str</span>(), <span style=color:#a6be9d>0</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>ds</span>) <span style=color:#ff636f>==</span> <span style=color:#58a1dd>S_OK</span>;
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>在 ReactOS 中，URLDownloadToFile 是使用 WinINet 实现</p><h2 id=httpclient>HttpClient</h2><p>自 Windows 8 开始，微软推出了 Windows Runtime,Windows Runtime 基于 COM 实现，可以使用 C++/CX,C#,VB.Net,JavaScript 等，
+拥有存储，网络，设备，UI，媒体等等。但是如果要使用现代的标准 C++，还是有一些麻烦。</p><p>著名 MSDN 专栏作家，Microsoft MVP，Kenny Kerr 近一两年致力于 WinRT 对现代 C++ 的支持,先推出了
+<a href=https://github.com/kennykerr/modern>Modern C++ for the Windows Runtime</a>,最近又以微软官方的名义推出了
+<a href=https://github.com/microsoft/cppwinrt>cppwinrt</a>. 这些项目都是致力于现代 C++ 使用 Windows Runtime API。</p><p>在下载文件的时候，我们可以使用 HttpClient 下载文件，下面是一个简单的实例：</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-cpp data-lang=cpp><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&#34;stdafx.h&#34;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;Shlwapi.h&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;winrt/base.h&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;winrt/Windows.Web.h&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;winrt/Windows.Web.Http.h&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;winrt/Windows.Web.Http.Filters.h&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;winrt/Windows.Storage.Streams.h&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#pragma comment(lib, &#34;windowsapp&#34;)
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#pragma comment(lib,&#34;Shlwapi&#34;)
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>using</span> <span style=color:#ff636f>namespace</span> <span style=color:#58a1dd>winrt</span>;
+</span></span><span style=display:flex><span><span style=color:#ff636f>using</span> <span style=color:#ff636f>namespace</span> <span style=color:#58a1dd>Windows</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>Foundation</span>;
+</span></span><span style=display:flex><span><span style=color:#ff636f>using</span> <span style=color:#ff636f>namespace</span> <span style=color:#58a1dd>Windows</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>Web</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>Http</span>;
+</span></span><span style=display:flex><span><span style=color:#ff636f>using</span> <span style=color:#ff636f>namespace</span> <span style=color:#58a1dd>Windows</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>Web</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>Http</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>Filters</span>;
+</span></span><span style=display:flex><span><span style=color:#ff636f>using</span> <span style=color:#ff636f>namespace</span> <span style=color:#58a1dd>Windows</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>Storage</span>;
+</span></span><span style=display:flex><span><span style=color:#ff636f>using</span> <span style=color:#ff636f>namespace</span> <span style=color:#58a1dd>Windows</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>Storage</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>Streams</span>;
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>//https://msdn.microsoft.com/en-us/library/windows/apps/xaml/windows.web.http.httpclient.aspx
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#58a1dd>IAsyncAction</span> <span style=color:#58a1dd>DownloadFileInternal</span>(<span style=color:#58a1dd>hstring_ref</span> <span style=color:#58a1dd>remoteFile</span>,<span style=color:#58a1dd>hstring_ref</span> <span style=color:#58a1dd>localFile</span>) {
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>Uri</span> <span style=color:#58a1dd>uri</span>(<span style=color:#58a1dd>remoteFile</span>);
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>HttpBaseProtocolFilter</span> <span style=color:#58a1dd>baseFilter</span>;
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>baseFilter</span>.<span style=color:#58a1dd>AllowAutoRedirect</span>(<span style=color:#58a1dd>true</span>);
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>HttpClient</span> <span style=color:#58a1dd>client</span>(<span style=color:#58a1dd>baseFilter</span>);
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>StorageFolder</span> <span style=color:#58a1dd>folder</span><span style=color:#ff636f>=</span><span style=color:#58a1dd>KnownFolders</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>DocumentsLibrary</span>();
+</span></span><span style=display:flex><span>	{
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>auto</span> <span style=color:#58a1dd>file</span> <span style=color:#ff636f>=</span> <span style=color:#ff636f>co_await</span> <span style=color:#58a1dd>folder</span>.<span style=color:#58a1dd>CreateFileAsync</span>(<span style=color:#58a1dd>localFile</span>);
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>auto</span> <span style=color:#58a1dd>stream</span> <span style=color:#ff636f>=</span> <span style=color:#ff636f>co_await</span> <span style=color:#58a1dd>file</span>.<span style=color:#58a1dd>OpenAsync</span>(<span style=color:#58a1dd>FileAccessMode</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>ReadWrite</span>);
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>auto</span> <span style=color:#58a1dd>result</span> <span style=color:#ff636f>=</span> <span style=color:#ff636f>co_await</span> <span style=color:#58a1dd>client</span>.<span style=color:#58a1dd>GetAsync</span>(<span style=color:#58a1dd>uri</span>);
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>auto</span> <span style=color:#58a1dd>content</span> <span style=color:#ff636f>=</span> <span style=color:#ff636f>co_await</span> <span style=color:#58a1dd>result</span>.<span style=color:#58a1dd>Content</span>().<span style=color:#58a1dd>WriteToStreamAsync</span>(<span style=color:#58a1dd>stream</span>);
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>class</span> <span style=color:#58a1dd>RoInitializeWarp</span> {
+</span></span><span style=display:flex><span><span style=color:#ff636f>public</span><span style=color:#ff636f>:</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>RoInitializeWarp</span>() {
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>initialize</span>();
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>~</span><span style=color:#58a1dd>RoInitializeWarp</span>() {
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>uninitialize</span>();
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>};
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>bool</span> <span style=color:#58a1dd>WinRTDownloadFile</span>(<span style=color:#ff636f>const</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>remoteFile</span>, <span style=color:#ff636f>const</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>localFile</span>) {
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>initialize</span>();
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>try</span> {
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>DownloadFileInternal</span>(<span style=color:#58a1dd>remoteFile</span>.<span style=color:#58a1dd>c_str</span>(), <span style=color:#58a1dd>localFile</span>.<span style=color:#58a1dd>c_str</span>()).<span style=color:#58a1dd>get</span>();
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>catch</span> (<span style=color:#58a1dd>hresult_error</span> <span style=color:#ff636f>const</span>  <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>e</span>) {
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>printf</span>(<span style=color:#a6be9d>&#34;Error: %ls</span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>&#34;</span>, <span style=color:#58a1dd>e</span>.<span style=color:#58a1dd>message</span>().<span style=color:#58a1dd>c_str</span>());
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>uninitialize</span>();
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>catch</span> (...) {
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>uninitialize</span>();
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>return</span> <span style=color:#58a1dd>true</span>;
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>完全使用 cppwinrt 还是有一些问题，比如，StorageFolder 的目录权限问题，然后就是重定向，如果要解决重定向，
+还要添加一些复杂的代码，比如 npm.taobao.org 使用 HTTPS 下载重定向 HTTP 就会触发异常，然后异常捕获还是有点麻烦。</p><p>当然我是非常期待 cppwinrt 的进一步改进。</p><p>Kenny Kerr 在 <a href="https://msdn.microsoft.com/magazine/mt149362?author=Kenny%20Kerr">MSDN</a> 上发布了很多优秀的文章，
+Windows 平台上原生程序开发人员可以去查看此链接。</p><h2 id=background-intelligent-transfer-service>Background Intelligent Transfer Service</h2><p><a href="https://msdn.microsoft.com/en-us/library/windows/desktop/aa362708(v=vs.85).aspx">BITS</a> - Background Intelligent Transfer Service
+(后台智能传输服务) 是 Windows 的一个重要功能.</p><p>笔者在开发 <a href=https://github.com/fstudio/clangbuilder>Clangbuilder</a> 时,需要使用 PowerShell 下载软件使用的 cmdlet 是 Start-BitsTransfer,
+Start-BitsTransfer 实际上使用的是 Windows 的 BITS 服务,而 Windows 更新功能也是使用的 BITS, Chrome 同步扩展也是使用的 BITS.</p><p>IBackgroundCopyJob</p><h2 id=winhttp>WinHTTP</h2><p>WinHTTP 实现下载功能还算比较简单，通常就是发送 HTTP GET 请求，然后创建一个空文件，从 HTTP 响应中读取返回包体，
+写入到文件中，直至读取完毕。如果要下载超过 4GB 的文件，那么在获取 HTTP 头部 Content-Length 时需要获取字符串，而不是整数。</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-c++ data-lang=c++><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&#34;stdafx.h&#34;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;Shlwapi.h&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;windows.h&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;winhttp.h&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;string&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;algorithm&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;unordered_map&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&#34;console.h&#34;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#pragma comment(lib,&#34;WinHTTP&#34;)
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#define MinWarp(a,b) ((b&lt;a)?b:a)
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>struct</span> <span style=color:#58a1dd>RequestURL</span> {
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>int</span> <span style=color:#58a1dd>nPort</span>;
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>int</span> <span style=color:#58a1dd>nScheme</span>;
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#58a1dd>scheme</span>;
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#58a1dd>host</span>;
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#58a1dd>path</span>;
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#58a1dd>username</span>;
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#58a1dd>password</span>;
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#58a1dd>extrainfo</span>;
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>bool</span> <span style=color:#58a1dd>Parse</span>(<span style=color:#ff636f>const</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>url</span>) {
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>URL_COMPONENTS</span> <span style=color:#58a1dd>urlComp</span>;
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>DWORD</span> <span style=color:#58a1dd>dwUrlLen</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>ZeroMemory</span>(<span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>urlComp</span>, <span style=color:#ff636f>sizeof</span>(<span style=color:#58a1dd>urlComp</span>));
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>dwStructSize</span> <span style=color:#ff636f>=</span> <span style=color:#ff636f>sizeof</span>(<span style=color:#58a1dd>urlComp</span>);
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>dwSchemeLength</span> <span style=color:#ff636f>=</span> (<span style=color:#58a1dd>DWORD</span>)<span style=color:#ff636f>-</span><span style=color:#a6be9d>1</span>;
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>dwHostNameLength</span> <span style=color:#ff636f>=</span> (<span style=color:#58a1dd>DWORD</span>)<span style=color:#ff636f>-</span><span style=color:#a6be9d>1</span>;
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>dwUrlPathLength</span> <span style=color:#ff636f>=</span> (<span style=color:#58a1dd>DWORD</span>)<span style=color:#ff636f>-</span><span style=color:#a6be9d>1</span>;
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>dwExtraInfoLength</span> <span style=color:#ff636f>=</span> (<span style=color:#58a1dd>DWORD</span>)<span style=color:#ff636f>-</span><span style=color:#a6be9d>1</span>;
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>WinHttpCrackUrl</span>(<span style=color:#58a1dd>url</span>.<span style=color:#58a1dd>data</span>(), <span style=color:#58a1dd>dwUrlLen</span>, <span style=color:#a6be9d>0</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>urlComp</span>)) {
+</span></span><span style=display:flex><span>			<span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>scheme</span>.<span style=color:#58a1dd>assign</span>(<span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>lpszScheme</span>, <span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>dwSchemeLength</span>);
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>host</span>.<span style=color:#58a1dd>assign</span>(<span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>lpszHostName</span>, <span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>dwHostNameLength</span>);
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>path</span>.<span style=color:#58a1dd>assign</span>(<span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>lpszUrlPath</span>, <span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>dwUrlPathLength</span>);
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>nPort</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>nPort</span>;
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>nScheme</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>nScheme</span>;
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>if</span> (<span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>lpszUserName</span>) {
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>username</span>.<span style=color:#58a1dd>assign</span>(<span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>lpszUserName</span>, <span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>dwUserNameLength</span>);
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>if</span> (<span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>lpszPassword</span>) {
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>password</span>.<span style=color:#58a1dd>assign</span>(<span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>lpszPassword</span>, <span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>dwPasswordLength</span>);
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>if</span> (<span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>lpszExtraInfo</span>) {
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>extrainfo</span>.<span style=color:#58a1dd>assign</span>(<span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>lpszExtraInfo</span>,
+</span></span><span style=display:flex><span>				<span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>dwExtraInfoLength</span>);
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#58a1dd>true</span>;
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>};
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#define DEFAULT_USERAGENT L&#34;WindowsGet/1.0&#34;
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>class</span> <span style=color:#58a1dd>InternetObject</span> {
+</span></span><span style=display:flex><span><span style=color:#ff636f>public</span><span style=color:#ff636f>:</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>InternetObject</span>(<span style=color:#58a1dd>HINTERNET</span> <span style=color:#58a1dd>hInternet</span>)<span style=color:#ff636f>:</span><span style=color:#58a1dd>hInternet_</span>(<span style=color:#58a1dd>hInternet</span>) {
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>operator</span> <span style=color:#58a1dd>HINTERNET</span>() {
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#58a1dd>hInternet_</span>;
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>operator</span> <span style=color:#58a1dd>bool</span>() {
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#58a1dd>hInternet_</span> <span style=color:#ff636f>!=</span> <span style=color:#ff636f>nullptr</span>;
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>InternetObject</span>() {
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>if</span> (<span style=color:#58a1dd>hInternet_</span>) {
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>WinHttpCloseHandle</span>(<span style=color:#58a1dd>hInternet_</span>);
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span><span style=color:#ff636f>private</span><span style=color:#ff636f>:</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>HINTERNET</span> <span style=color:#58a1dd>hInternet_</span>;
+</span></span><span style=display:flex><span>};
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>bool</span> <span style=color:#58a1dd>DownloadFileUseWinHTTP</span>(<span style=color:#ff636f>const</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>url</span>, <span style=color:#ff636f>const</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>localFile</span>,<span style=color:#58a1dd>ProgressCallback</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>callback</span>) {
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>RequestURL</span> <span style=color:#58a1dd>zurl</span>;
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>zurl</span>.<span style=color:#58a1dd>Parse</span>(<span style=color:#58a1dd>url</span>)) {
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>BaseErrorMessagePrint</span>(<span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;Wrong URL: %s</span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>&#34;</span>,<span style=color:#58a1dd>url</span>.<span style=color:#58a1dd>c_str</span>());
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>InternetObject</span> <span style=color:#58a1dd>hInternet</span> <span style=color:#ff636f>=</span>
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>WinHttpOpen</span>(<span style=color:#58a1dd>DEFAULT_USERAGENT</span>, <span style=color:#58a1dd>WINHTTP_ACCESS_TYPE_DEFAULT_PROXY</span>,
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>WINHTTP_NO_PROXY_NAME</span>, <span style=color:#58a1dd>WINHTTP_NO_PROXY_BYPASS</span>, <span style=color:#a6be9d>0</span>);
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>hInternet</span>) {
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>ErrorMessage</span> <span style=color:#58a1dd>err</span>(<span style=color:#58a1dd>GetLastError</span>());
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>BaseErrorMessagePrint</span>(<span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;WinHttpOpen(): %s&#34;</span>, <span style=color:#58a1dd>err</span>.<span style=color:#58a1dd>message</span>());
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>//	WinHttpSetOption(hInternet, WINHTTP_OPTION_REDIRECT_POLICY, &amp;dwOption,sizeof(DWORD));
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#828b96;font-style:italic>/// https://msdn.microsoft.com/en-us/library/windows/desktop/aa384066(v=vs.85).aspx
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#828b96;font-style:italic>/// WINHTTP_PROTOCOL_FLAG_HTTP2
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#58a1dd>DWORD</span> <span style=color:#58a1dd>dwOption</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>WINHTTP_OPTION_REDIRECT_POLICY_ALWAYS</span>;
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>WinHttpSetOption</span>(<span style=color:#58a1dd>hInternet</span>, <span style=color:#58a1dd>WINHTTP_OPTION_REDIRECT_POLICY</span>,
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>dwOption</span>, <span style=color:#ff636f>sizeof</span>(<span style=color:#58a1dd>DWORD</span>))) {
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>ErrorMessage</span> <span style=color:#58a1dd>err</span>(<span style=color:#58a1dd>GetLastError</span>());
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>BaseErrorMessagePrint</span>(<span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;WINHTTP_OPTION_REDIRECT_POLICY: %s&#34;</span>, <span style=color:#58a1dd>err</span>.<span style=color:#58a1dd>message</span>());
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>dwOption</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>WINHTTP_PROTOCOL_FLAG_HTTP2</span>;
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>WinHttpSetOption</span>(<span style=color:#58a1dd>hInternet</span>, <span style=color:#58a1dd>WINHTTP_OPTION_ENABLE_HTTP_PROTOCOL</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>dwOption</span>, <span style=color:#ff636f>sizeof</span>(<span style=color:#58a1dd>dwOption</span>))) {
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>ErrorMessage</span> <span style=color:#58a1dd>err</span>(<span style=color:#58a1dd>GetLastError</span>());
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>BaseErrorMessagePrint</span>(<span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;WINHTTP_OPTION_ENABLE_HTTP_PROTOCOL: %s&#34;</span>, <span style=color:#58a1dd>err</span>.<span style=color:#58a1dd>message</span>());
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>InternetObject</span> <span style=color:#58a1dd>hConnect</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>WinHttpConnect</span>(<span style=color:#58a1dd>hInternet</span>, <span style=color:#58a1dd>zurl</span>.<span style=color:#58a1dd>host</span>.<span style=color:#58a1dd>c_str</span>(),
+</span></span><span style=display:flex><span>		(<span style=color:#58a1dd>INTERNET_PORT</span>)<span style=color:#58a1dd>zurl</span>.<span style=color:#58a1dd>nPort</span>, <span style=color:#a6be9d>0</span>);
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>hConnect</span>) {
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>BaseErrorMessagePrint</span>(<span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;Server unable to connect: %s&#34;</span>, <span style=color:#58a1dd>zurl</span>.<span style=color:#58a1dd>host</span>.<span style=color:#58a1dd>c_str</span>());
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>DWORD</span> <span style=color:#58a1dd>dwOpenRequestFlag</span> <span style=color:#ff636f>=</span>
+</span></span><span style=display:flex><span>		(<span style=color:#58a1dd>zurl</span>.<span style=color:#58a1dd>nScheme</span> <span style=color:#ff636f>==</span> <span style=color:#58a1dd>INTERNET_SCHEME_HTTPS</span>) <span style=color:#ff636f>?</span> <span style=color:#58a1dd>WINHTTP_FLAG_SECURE</span> : <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>InternetObject</span> <span style=color:#58a1dd>hRequest</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>WinHttpOpenRequest</span>(
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>hConnect</span>, <span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;GET&#34;</span>, <span style=color:#58a1dd>zurl</span>.<span style=color:#58a1dd>path</span>.<span style=color:#58a1dd>c_str</span>(), <span style=color:#ff636f>nullptr</span>, <span style=color:#58a1dd>WINHTTP_NO_REFERER</span>,
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>WINHTTP_DEFAULT_ACCEPT_TYPES</span>, <span style=color:#58a1dd>dwOpenRequestFlag</span>);
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>hRequest</span>) {
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>ErrorMessage</span> <span style=color:#58a1dd>err</span>(<span style=color:#58a1dd>GetLastError</span>());
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>BaseErrorMessagePrint</span>(<span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;Open Request failed: %s&#34;</span>, <span style=color:#58a1dd>err</span>.<span style=color:#58a1dd>message</span>());
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> (<span style=color:#58a1dd>WinHttpSendRequest</span>(<span style=color:#58a1dd>hRequest</span>, <span style=color:#58a1dd>WINHTTP_NO_ADDITIONAL_HEADERS</span>, <span style=color:#a6be9d>0</span>,
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>WINHTTP_NO_REQUEST_DATA</span>, <span style=color:#a6be9d>0</span>, <span style=color:#a6be9d>0</span>, <span style=color:#a6be9d>0</span>) <span style=color:#ff636f>==</span> <span style=color:#58a1dd>FALSE</span>) {
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>ErrorMessage</span> <span style=color:#58a1dd>err</span>(<span style=color:#58a1dd>GetLastError</span>());
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>BaseErrorMessagePrint</span>(<span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;Send Request failed: %s&#34;</span>, <span style=color:#58a1dd>err</span>.<span style=color:#58a1dd>message</span>());
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> (<span style=color:#58a1dd>WinHttpReceiveResponse</span>(<span style=color:#58a1dd>hRequest</span>, <span style=color:#58a1dd>NULL</span>) <span style=color:#ff636f>==</span> <span style=color:#58a1dd>FALSE</span>) {
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>ErrorMessage</span> <span style=color:#58a1dd>err</span>(<span style=color:#58a1dd>GetLastError</span>());
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>BaseErrorMessagePrint</span>(<span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;Receive Response failed: %s&#34;</span>, <span style=color:#58a1dd>err</span>.<span style=color:#58a1dd>message</span>());
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>DWORD</span> <span style=color:#58a1dd>dwStatusCode</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>DWORD</span> <span style=color:#58a1dd>dwXsize</span> <span style=color:#ff636f>=</span> <span style=color:#ff636f>sizeof</span>(<span style=color:#58a1dd>dwStatusCode</span>);
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>WinHttpQueryHeaders</span>(<span style=color:#58a1dd>hRequest</span>,
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>WINHTTP_QUERY_STATUS_CODE</span> <span style=color:#ff636f>|</span> <span style=color:#58a1dd>WINHTTP_QUERY_FLAG_NUMBER</span>,
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>WINHTTP_HEADER_NAME_BY_INDEX</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>dwStatusCode</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>dwXsize</span>,
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>WINHTTP_NO_HEADER_INDEX</span>)) {
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>ErrorMessage</span> <span style=color:#58a1dd>err</span>(<span style=color:#58a1dd>GetLastError</span>());
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>BaseErrorMessagePrint</span>(<span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;WinHttpQueryHeaders failed: %s&#34;</span>, <span style=color:#58a1dd>err</span>.<span style=color:#58a1dd>message</span>());
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> (<span style=color:#58a1dd>dwStatusCode</span> <span style=color:#ff636f>!=</span> <span style=color:#a6be9d>200</span> <span style=color:#ff636f>&amp;&amp;</span> <span style=color:#58a1dd>dwStatusCode</span> <span style=color:#ff636f>!=</span> <span style=color:#a6be9d>201</span>) {
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>BaseErrorMessagePrint</span>(<span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;Reponse status code: %d</span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>&#34;</span>,<span style=color:#58a1dd>dwStatusCode</span>);
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>uint64_t</span> <span style=color:#58a1dd>dwContentLength</span><span style=color:#ff636f>=</span><span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>wchar_t</span> <span style=color:#58a1dd>conlen</span>[<span style=color:#a6be9d>36</span>];
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>dwXsize</span> <span style=color:#ff636f>=</span> <span style=color:#ff636f>sizeof</span>(<span style=color:#58a1dd>conlen</span>);
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> (<span style=color:#58a1dd>WinHttpQueryHeaders</span>(<span style=color:#58a1dd>hRequest</span>,
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>WINHTTP_QUERY_CONTENT_LENGTH</span>,
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>WINHTTP_HEADER_NAME_BY_INDEX</span>,<span style=color:#58a1dd>conlen</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>dwXsize</span>,
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>WINHTTP_NO_HEADER_INDEX</span>)) {
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>wchar_t</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>cx</span> <span style=color:#ff636f>=</span> <span style=color:#ff636f>nullptr</span>;
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>dwContentLength</span><span style=color:#ff636f>=</span><span style=color:#58a1dd>wcstoull</span>(<span style=color:#58a1dd>conlen</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>cx</span>, <span style=color:#a6be9d>10</span>);
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>wprintf</span>(<span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;File size: %lld</span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>&#34;</span>, <span style=color:#58a1dd>dwContentLength</span>);
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#58a1dd>tmp</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>localFile</span> <span style=color:#ff636f>+</span> <span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;.part&#34;</span>;
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>HANDLE</span> <span style=color:#58a1dd>hFile</span> <span style=color:#ff636f>=</span>
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>CreateFileW</span>(<span style=color:#58a1dd>tmp</span>.<span style=color:#58a1dd>c_str</span>(), <span style=color:#58a1dd>GENERIC_READ</span> <span style=color:#ff636f>|</span> <span style=color:#58a1dd>GENERIC_WRITE</span>, <span style=color:#58a1dd>FILE_SHARE_READ</span>,
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>NULL</span>, <span style=color:#58a1dd>OPEN_ALWAYS</span>, <span style=color:#58a1dd>FILE_ATTRIBUTE_NORMAL</span>, <span style=color:#58a1dd>NULL</span>);
+</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>///
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#ff636f>uint64_t</span> <span style=color:#58a1dd>total</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>DWORD</span> <span style=color:#58a1dd>dwSize</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>char</span> <span style=color:#58a1dd>fixedsizebuf</span>[<span style=color:#a6be9d>16384</span>];
+</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>///
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#ff636f>if</span> (<span style=color:#58a1dd>callback</span>) {
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>callback</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>impl</span>(<span style=color:#a6be9d>0</span>, <span style=color:#58a1dd>callback</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>userdata</span>);
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>do</span> {
+</span></span><span style=display:flex><span>		<span style=color:#828b96;font-style:italic>// Check for available data.
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>		<span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>WinHttpQueryDataAvailable</span>(<span style=color:#58a1dd>hRequest</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>dwSize</span>)) {
+</span></span><span style=display:flex><span>			<span style=color:#ff636f>break</span>;
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>total</span> <span style=color:#ff636f>+=</span> <span style=color:#58a1dd>dwSize</span>;
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>if</span> (<span style=color:#58a1dd>dwContentLength</span> <span style=color:#ff636f>&gt;</span> <span style=color:#a6be9d>0</span>) {
+</span></span><span style=display:flex><span>			<span style=color:#ff636f>if</span> (<span style=color:#58a1dd>callback</span>) {
+</span></span><span style=display:flex><span>				<span style=color:#58a1dd>callback</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>impl</span>(<span style=color:#58a1dd>total</span> <span style=color:#ff636f>*</span> <span style=color:#a6be9d>100</span> <span style=color:#ff636f>/</span> <span style=color:#58a1dd>dwContentLength</span>, <span style=color:#58a1dd>callback</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>userdata</span>);
+</span></span><span style=display:flex><span>			}
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>auto</span> <span style=color:#58a1dd>dwSizeN</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>dwSize</span>;
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>while</span> (<span style=color:#58a1dd>dwSizeN</span> <span style=color:#ff636f>&gt;</span> <span style=color:#a6be9d>0</span>) {
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>DWORD</span> <span style=color:#58a1dd>dwDownloaded</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>			<span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>WinHttpReadData</span>(<span style=color:#58a1dd>hRequest</span>, (<span style=color:#58a1dd>LPVOID</span>)<span style=color:#58a1dd>fixedsizebuf</span>, <span style=color:#58a1dd>MinWarp</span>(<span style=color:#ff636f>sizeof</span>(<span style=color:#58a1dd>fixedsizebuf</span>), <span style=color:#58a1dd>dwSizeN</span>), <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>dwDownloaded</span>)) {
+</span></span><span style=display:flex><span>				<span style=color:#ff636f>break</span>;
+</span></span><span style=display:flex><span>			}
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>dwSizeN</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>dwSizeN</span> <span style=color:#ff636f>-</span> <span style=color:#58a1dd>dwDownloaded</span>;
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>DWORD</span> <span style=color:#58a1dd>wmWritten</span>;
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>WriteFile</span>(<span style=color:#58a1dd>hFile</span>, <span style=color:#58a1dd>fixedsizebuf</span>, <span style=color:#58a1dd>dwSize</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>wmWritten</span>, <span style=color:#58a1dd>NULL</span>);
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>	} <span style=color:#ff636f>while</span> (<span style=color:#58a1dd>dwSize</span> <span style=color:#ff636f>&gt;</span> <span style=color:#a6be9d>0</span>);
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> (<span style=color:#58a1dd>callback</span>) {
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>callback</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>impl</span>(<span style=color:#a6be9d>100</span>, <span style=color:#58a1dd>callback</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>userdata</span>);
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#58a1dd>npath</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>localFile</span>;
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>int</span> <span style=color:#58a1dd>i</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>1</span>;
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>while</span> (<span style=color:#58a1dd>PathFileExistsW</span>(<span style=color:#58a1dd>npath</span>.<span style=color:#58a1dd>c_str</span>())) {
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>auto</span> <span style=color:#58a1dd>n</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>localFile</span>.<span style=color:#58a1dd>find_last_of</span>(<span style=color:#a6be9d>&#39;.&#39;</span>);
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>if</span> (<span style=color:#58a1dd>n</span> <span style=color:#ff636f>!=</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>npos</span>) {
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>npath</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>localFile</span>.<span style=color:#58a1dd>substr</span>(<span style=color:#a6be9d>0</span>, <span style=color:#58a1dd>n</span>) <span style=color:#ff636f>+</span> <span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;(&#34;</span>;
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>npath</span> <span style=color:#ff636f>+=</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>to_wstring</span>(<span style=color:#58a1dd>i</span>);
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>npath</span> <span style=color:#ff636f>+=</span> <span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;)&#34;</span>;
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>npath</span> <span style=color:#ff636f>+=</span> <span style=color:#58a1dd>localFile</span>.<span style=color:#58a1dd>substr</span>(<span style=color:#58a1dd>n</span>);
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>else</span> {
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>npath</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>localFile</span> <span style=color:#ff636f>+</span> <span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;(&#34;</span> <span style=color:#ff636f>+</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>to_wstring</span>(<span style=color:#58a1dd>i</span>) <span style=color:#ff636f>+</span> <span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;)&#34;</span>;
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>i</span><span style=color:#ff636f>++</span>;
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>CloseHandle</span>(<span style=color:#58a1dd>hFile</span>);
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>MoveFileExW</span>(<span style=color:#58a1dd>tmp</span>.<span style=color:#58a1dd>c_str</span>(), <span style=color:#58a1dd>npath</span>.<span style=color:#58a1dd>c_str</span>(), <span style=color:#58a1dd>MOVEFILE_COPY_ALLOWED</span>);
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>return</span> <span style=color:#58a1dd>true</span>;
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><h3 id=http2-支持>HTTP2 支持</h3><p>自 Windows 10 1607 起，WinHTTP 允许开发者通过 WinHttpSetOption 开启 HTTP2 支持。
+上述源码中就有关于 HTTP2.0 的设置。</p><h2 id=wininet>Wininet</h2><p>Wininet 流程和 WinHTTP 类似，下面是实现代码：</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-c++ data-lang=c++><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&#34;stdafx.h&#34;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;Windows.h&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;WinInet.h&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;Shlwapi.h&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&#34;console.h&#34;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#pragma comment(lib, &#34;WinInet.lib&#34;)
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span><span style=color:#828b96;font-style:italic>//https://msdn.microsoft.com/en-us/library/windows/desktop/aa385328(v=vs.85).aspx
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>//INTERNET_OPTION_ENABLE_HTTP_PROTOCOL
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>//HTTP_PROTOCOL_FLAG_HTTP2
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span><span style=color:#ff636f>struct</span> <span style=color:#58a1dd>WinINetRequestURL</span> {
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>int</span> <span style=color:#58a1dd>nPort</span><span style=color:#ff636f>=</span><span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>int</span> <span style=color:#58a1dd>nScheme</span><span style=color:#ff636f>=</span><span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#58a1dd>scheme</span>;
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#58a1dd>host</span>;
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#58a1dd>path</span>;
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#58a1dd>username</span>;
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#58a1dd>password</span>;
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#58a1dd>extrainfo</span>;
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>bool</span> <span style=color:#58a1dd>Parse</span>(<span style=color:#ff636f>const</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>url</span>) {
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>URL_COMPONENTS</span> <span style=color:#58a1dd>urlComp</span>;
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>DWORD</span> <span style=color:#58a1dd>dwUrlLen</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>ZeroMemory</span>(<span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>urlComp</span>, <span style=color:#ff636f>sizeof</span>(<span style=color:#58a1dd>urlComp</span>));
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>dwStructSize</span> <span style=color:#ff636f>=</span> <span style=color:#ff636f>sizeof</span>(<span style=color:#58a1dd>urlComp</span>);
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>dwSchemeLength</span> <span style=color:#ff636f>=</span> (<span style=color:#58a1dd>DWORD</span>)<span style=color:#ff636f>-</span><span style=color:#a6be9d>1</span>;
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>dwHostNameLength</span> <span style=color:#ff636f>=</span> (<span style=color:#58a1dd>DWORD</span>)<span style=color:#ff636f>-</span><span style=color:#a6be9d>1</span>;
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>dwUrlPathLength</span> <span style=color:#ff636f>=</span> (<span style=color:#58a1dd>DWORD</span>)<span style=color:#ff636f>-</span><span style=color:#a6be9d>1</span>;
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>dwExtraInfoLength</span> <span style=color:#ff636f>=</span> (<span style=color:#58a1dd>DWORD</span>)<span style=color:#ff636f>-</span><span style=color:#a6be9d>1</span>;
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>InternetCrackUrlW</span>(<span style=color:#58a1dd>url</span>.<span style=color:#58a1dd>data</span>(), <span style=color:#58a1dd>dwUrlLen</span>, <span style=color:#a6be9d>0</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>urlComp</span>)) {
+</span></span><span style=display:flex><span>			<span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>scheme</span>.<span style=color:#58a1dd>assign</span>(<span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>lpszScheme</span>, <span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>dwSchemeLength</span>);
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>host</span>.<span style=color:#58a1dd>assign</span>(<span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>lpszHostName</span>, <span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>dwHostNameLength</span>);
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>path</span>.<span style=color:#58a1dd>assign</span>(<span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>lpszUrlPath</span>, <span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>dwUrlPathLength</span>);
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>nPort</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>nPort</span>;
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>nScheme</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>nScheme</span>;
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>if</span> (<span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>lpszUserName</span>) {
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>username</span>.<span style=color:#58a1dd>assign</span>(<span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>lpszUserName</span>, <span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>dwUserNameLength</span>);
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>if</span> (<span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>lpszPassword</span>) {
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>password</span>.<span style=color:#58a1dd>assign</span>(<span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>lpszPassword</span>, <span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>dwPasswordLength</span>);
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>if</span> (<span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>lpszExtraInfo</span>) {
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>extrainfo</span>.<span style=color:#58a1dd>assign</span>(<span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>lpszExtraInfo</span>,
+</span></span><span style=display:flex><span>				<span style=color:#58a1dd>urlComp</span>.<span style=color:#58a1dd>dwExtraInfoLength</span>);
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#58a1dd>true</span>;
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>};
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>class</span> <span style=color:#58a1dd>WinINetObject</span> {
+</span></span><span style=display:flex><span><span style=color:#ff636f>public</span><span style=color:#ff636f>:</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>WinINetObject</span>(<span style=color:#58a1dd>HINTERNET</span> <span style=color:#58a1dd>hInternet</span>) <span style=color:#ff636f>:</span><span style=color:#58a1dd>hInternet_</span>(<span style=color:#58a1dd>hInternet</span>) {
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>operator</span> <span style=color:#58a1dd>HINTERNET</span>() {
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#58a1dd>hInternet_</span>;
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>operator</span> <span style=color:#58a1dd>bool</span>() {
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#58a1dd>hInternet_</span> <span style=color:#ff636f>!=</span> <span style=color:#ff636f>nullptr</span>;
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>WinINetObject</span>() {
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>if</span> (<span style=color:#58a1dd>hInternet_</span>) {
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>InternetCloseHandle</span>(<span style=color:#58a1dd>hInternet_</span>);
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span><span style=color:#ff636f>private</span><span style=color:#ff636f>:</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>HINTERNET</span> <span style=color:#58a1dd>hInternet_</span>;
+</span></span><span style=display:flex><span>};
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>bool</span> <span style=color:#58a1dd>DownloadFileUseWininet</span>(<span style=color:#ff636f>const</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>url</span>, <span style=color:#ff636f>const</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>localFile</span>, <span style=color:#58a1dd>ProgressCallback</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>callback</span>) {
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>WinINetRequestURL</span> <span style=color:#58a1dd>zurl</span>;
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>zurl</span>.<span style=color:#58a1dd>Parse</span>(<span style=color:#58a1dd>url</span>)) {
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>BaseErrorMessagePrint</span>(<span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;Wrong URL: %s</span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>&#34;</span>, <span style=color:#58a1dd>url</span>.<span style=color:#58a1dd>c_str</span>());
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>DeleteUrlCacheEntryW</span>(<span style=color:#58a1dd>url</span>.<span style=color:#58a1dd>c_str</span>());
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>WinINetObject</span> <span style=color:#58a1dd>hInet</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>InternetOpenW</span>(<span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;WindowsGet&#34;</span>, <span style=color:#58a1dd>INTERNET_OPEN_TYPE_PRECONFIG</span>, <span style=color:#ff636f>nullptr</span>, <span style=color:#ff636f>nullptr</span>, <span style=color:#a6be9d>0</span>);
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>hInet</span>) {
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>ErrorMessage</span> <span style=color:#58a1dd>err</span>(<span style=color:#58a1dd>GetLastError</span>());
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>BaseErrorMessagePrint</span>(<span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;InternetOpenW(): %s&#34;</span>, <span style=color:#58a1dd>err</span>.<span style=color:#58a1dd>message</span>());
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>DWORD</span>  <span style=color:#58a1dd>dwOption</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>HTTP_PROTOCOL_FLAG_HTTP2</span>;
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>InternetSetOptionW</span>(<span style=color:#58a1dd>hInet</span>, <span style=color:#58a1dd>INTERNET_OPTION_ENABLE_HTTP_PROTOCOL</span>,<span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>dwOption</span>,<span style=color:#ff636f>sizeof</span>(<span style=color:#58a1dd>dwOption</span>));
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>WinINetObject</span> <span style=color:#58a1dd>hConnect</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>InternetConnectW</span>(<span style=color:#58a1dd>hInet</span>, <span style=color:#58a1dd>zurl</span>.<span style=color:#58a1dd>host</span>.<span style=color:#58a1dd>c_str</span>(),
+</span></span><span style=display:flex><span>		(<span style=color:#58a1dd>INTERNET_PORT</span>)<span style=color:#58a1dd>zurl</span>.<span style=color:#58a1dd>nPort</span>, <span style=color:#ff636f>nullptr</span>, <span style=color:#ff636f>nullptr</span>, <span style=color:#58a1dd>INTERNET_SERVICE_HTTP</span>, <span style=color:#a6be9d>0</span>, <span style=color:#58a1dd>NULL</span>);
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>hConnect</span>) {
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>ErrorMessage</span> <span style=color:#58a1dd>err</span>(<span style=color:#58a1dd>GetLastError</span>());
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>BaseErrorMessagePrint</span>(<span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;InternetConnectW(): %s&#34;</span>, <span style=color:#58a1dd>err</span>.<span style=color:#58a1dd>message</span>());
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>DWORD</span> <span style=color:#58a1dd>dwOpenRequestFlags</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>INTERNET_FLAG_IGNORE_REDIRECT_TO_HTTP</span> <span style=color:#ff636f>|</span>
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>INTERNET_FLAG_KEEP_CONNECTION</span> <span style=color:#ff636f>|</span>
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>INTERNET_FLAG_NO_AUTH</span> <span style=color:#ff636f>|</span>
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>INTERNET_FLAG_NO_COOKIES</span> <span style=color:#ff636f>|</span>
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>INTERNET_FLAG_NO_UI</span> <span style=color:#ff636f>|</span>
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>INTERNET_FLAG_SECURE</span> <span style=color:#ff636f>|</span>
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>INTERNET_FLAG_IGNORE_CERT_CN_INVALID</span> <span style=color:#ff636f>|</span>
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>INTERNET_FLAG_RELOAD</span>;
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>DWORD64</span> <span style=color:#58a1dd>dwContentLength</span><span style=color:#ff636f>=</span><span style=color:#a6be9d>1</span>;
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>WinINetObject</span> <span style=color:#58a1dd>hRequest</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>InternetOpenUrlW</span>(<span style=color:#58a1dd>hInet</span>, <span style=color:#58a1dd>url</span>.<span style=color:#58a1dd>c_str</span>(), <span style=color:#ff636f>nullptr</span>, <span style=color:#a6be9d>0</span>,
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>dwOpenRequestFlags</span>, <span style=color:#a6be9d>0</span>);
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> (<span style=color:#58a1dd>zurl</span>.<span style=color:#58a1dd>nScheme</span> <span style=color:#ff636f>==</span> <span style=color:#58a1dd>INTERNET_SCHEME_HTTP</span>
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>||</span> <span style=color:#58a1dd>zurl</span>.<span style=color:#58a1dd>nScheme</span> <span style=color:#ff636f>==</span> <span style=color:#58a1dd>INTERNET_SCHEME_HTTPS</span>) {
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>DWORD</span> <span style=color:#58a1dd>dwStatusCode</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>DWORD</span> <span style=color:#58a1dd>dwSizeLength</span> <span style=color:#ff636f>=</span> <span style=color:#ff636f>sizeof</span>(<span style=color:#58a1dd>dwStatusCode</span>);
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>if</span> (<span style=color:#58a1dd>HttpQueryInfoW</span>(<span style=color:#58a1dd>hRequest</span>,
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>HTTP_QUERY_FLAG_NUMBER</span> <span style=color:#ff636f>|</span> <span style=color:#58a1dd>HTTP_QUERY_STATUS_CODE</span>,
+</span></span><span style=display:flex><span>			<span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>dwStatusCode</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>dwSizeLength</span>, <span style=color:#ff636f>nullptr</span>)) {
+</span></span><span style=display:flex><span>			<span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>wchar_t</span> <span style=color:#58a1dd>szbuf</span>[<span style=color:#a6be9d>20</span>];
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>dwSizeLength</span> <span style=color:#ff636f>=</span> <span style=color:#ff636f>sizeof</span>(<span style=color:#58a1dd>szbuf</span>);
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>HttpQueryInfoW</span>(<span style=color:#58a1dd>hRequest</span>,<span style=color:#58a1dd>HTTP_QUERY_CONTENT_LENGTH</span>, 
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>szbuf</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>dwSizeLength</span>, <span style=color:#ff636f>nullptr</span>);
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>wchar_t</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>cx</span>;
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>dwContentLength</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>wcstoull</span>(<span style=color:#58a1dd>szbuf</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>cx</span>, <span style=color:#a6be9d>10</span>);
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>fprintf</span>(<span style=color:#58a1dd>stderr</span>, <span style=color:#a6be9d>&#34;Content-Length: %llu</span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>&#34;</span>, <span style=color:#58a1dd>dwContentLength</span>);
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>else</span> <span style=color:#ff636f>if</span>(<span style=color:#58a1dd>zurl</span>.<span style=color:#58a1dd>nScheme</span><span style=color:#ff636f>==</span><span style=color:#58a1dd>URL_SCHEME_FTP</span>) {
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>DWORD</span> <span style=color:#58a1dd>highSize</span><span style=color:#ff636f>=</span><span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>auto</span> <span style=color:#58a1dd>loSize</span><span style=color:#ff636f>=</span><span style=color:#58a1dd>FtpGetFileSize</span>(<span style=color:#58a1dd>hRequest</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>highSize</span>);
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>dwContentLength</span> <span style=color:#ff636f>=</span> ((<span style=color:#58a1dd>DWORD64</span>)<span style=color:#58a1dd>highSize</span> <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#a6be9d>32</span>)<span style=color:#ff636f>+</span><span style=color:#58a1dd>loSize</span> ;
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>//InternetQueryDataAvailable
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>hRequest</span>) {
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>ErrorMessage</span> <span style=color:#58a1dd>err</span>(<span style=color:#58a1dd>GetLastError</span>());
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>BaseErrorMessagePrint</span>(<span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;InternetOpenUrlW(): %s&#34;</span>, <span style=color:#58a1dd>err</span>.<span style=color:#58a1dd>message</span>());
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>// lpszVersion -&gt;nullptr ,use config
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#58a1dd>tmp</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>localFile</span> <span style=color:#ff636f>+</span> <span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;.part&#34;</span>;
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>HANDLE</span> <span style=color:#58a1dd>hFile</span> <span style=color:#ff636f>=</span>
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>CreateFileW</span>(<span style=color:#58a1dd>tmp</span>.<span style=color:#58a1dd>c_str</span>(), <span style=color:#58a1dd>GENERIC_READ</span> <span style=color:#ff636f>|</span> <span style=color:#58a1dd>GENERIC_WRITE</span>, <span style=color:#58a1dd>FILE_SHARE_READ</span>,
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>NULL</span>, <span style=color:#58a1dd>OPEN_ALWAYS</span>, <span style=color:#58a1dd>FILE_ATTRIBUTE_NORMAL</span>, <span style=color:#58a1dd>NULL</span>);
+</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>///
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#58a1dd>BYTE</span> <span style=color:#58a1dd>fixedsizebuf</span>[<span style=color:#a6be9d>16384</span>];
+</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>//DWORD64 rdsize = 0;
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#58a1dd>DWORD</span> <span style=color:#58a1dd>dwReadSize</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>DWORD</span> <span style=color:#58a1dd>dwWriteSize</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>uint64_t</span> <span style=color:#58a1dd>rdsize</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> (<span style=color:#58a1dd>callback</span>) {
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>callback</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>impl</span>(<span style=color:#a6be9d>0</span>, <span style=color:#58a1dd>callback</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>userdata</span>);
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>BOOL</span> <span style=color:#58a1dd>result</span><span style=color:#ff636f>=</span><span style=color:#58a1dd>true</span>;
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>do</span> {
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>result</span><span style=color:#ff636f>=</span><span style=color:#58a1dd>InternetReadFile</span>(<span style=color:#58a1dd>hRequest</span>, <span style=color:#58a1dd>fixedsizebuf</span>, <span style=color:#ff636f>sizeof</span>(<span style=color:#58a1dd>fixedsizebuf</span>), <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>dwReadSize</span>);
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>result</span>) {
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>ErrorMessage</span> <span style=color:#58a1dd>err</span>(<span style=color:#58a1dd>GetLastError</span>());
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>BaseErrorMessagePrint</span>(<span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;HttpOpenRequestW(): %s&#34;</span>, <span style=color:#58a1dd>err</span>.<span style=color:#58a1dd>message</span>());
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>WriteFile</span>(<span style=color:#58a1dd>hFile</span>, <span style=color:#58a1dd>fixedsizebuf</span>, <span style=color:#58a1dd>dwReadSize</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>dwWriteSize</span>, <span style=color:#ff636f>nullptr</span>);
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>rdsize</span> <span style=color:#ff636f>+=</span> <span style=color:#58a1dd>dwReadSize</span>;
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>if</span> (<span style=color:#58a1dd>callback</span>) {
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>callback</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>impl</span>(<span style=color:#58a1dd>rdsize</span> <span style=color:#ff636f>*</span><span style=color:#a6be9d>100</span><span style=color:#ff636f>/</span> <span style=color:#58a1dd>dwContentLength</span>, <span style=color:#58a1dd>callback</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>userdata</span>);
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>	} <span style=color:#ff636f>while</span> (<span style=color:#58a1dd>result</span><span style=color:#ff636f>&amp;&amp;</span><span style=color:#58a1dd>dwReadSize</span>);
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> (<span style=color:#58a1dd>callback</span>) {
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>callback</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>impl</span>(<span style=color:#a6be9d>100</span>, <span style=color:#58a1dd>callback</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>userdata</span>);
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#58a1dd>npath</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>localFile</span>;
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>int</span> <span style=color:#58a1dd>i</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>1</span>;
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>while</span> (<span style=color:#58a1dd>PathFileExistsW</span>(<span style=color:#58a1dd>npath</span>.<span style=color:#58a1dd>c_str</span>())) {
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>auto</span> <span style=color:#58a1dd>n</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>localFile</span>.<span style=color:#58a1dd>find_last_of</span>(<span style=color:#a6be9d>&#39;.&#39;</span>);
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>if</span> (<span style=color:#58a1dd>n</span> <span style=color:#ff636f>!=</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>npos</span>) {
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>npath</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>localFile</span>.<span style=color:#58a1dd>substr</span>(<span style=color:#a6be9d>0</span>, <span style=color:#58a1dd>n</span>) <span style=color:#ff636f>+</span> <span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;(&#34;</span>;
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>npath</span> <span style=color:#ff636f>+=</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>to_wstring</span>(<span style=color:#58a1dd>i</span>);
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>npath</span> <span style=color:#ff636f>+=</span> <span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;)&#34;</span>;
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>npath</span> <span style=color:#ff636f>+=</span> <span style=color:#58a1dd>localFile</span>.<span style=color:#58a1dd>substr</span>(<span style=color:#58a1dd>n</span>);
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>else</span> {
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>npath</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>localFile</span> <span style=color:#ff636f>+</span> <span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;(&#34;</span> <span style=color:#ff636f>+</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>to_wstring</span>(<span style=color:#58a1dd>i</span>) <span style=color:#ff636f>+</span> <span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;)&#34;</span>;
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>i</span><span style=color:#ff636f>++</span>;
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>CloseHandle</span>(<span style=color:#58a1dd>hFile</span>);
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>MoveFileExW</span>(<span style=color:#58a1dd>tmp</span>.<span style=color:#58a1dd>c_str</span>(), <span style=color:#58a1dd>npath</span>.<span style=color:#58a1dd>c_str</span>(), <span style=color:#58a1dd>MOVEFILE_COPY_ALLOWED</span>);
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>return</span> <span style=color:#58a1dd>true</span>;
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><h3 id=http2-支持-1>HTTP2 支持</h3><p>自 Windows 10 1507 起， Wininet 便允许开发者通过设置参数开启 HTTP2 支持</p><h1 id=如何选择>如何选择</h1><p>除了以上的解决方案外，在 Windows 系统中实现下载功能还有很多其他的选择，比如试用 libcurl，Poco Net，cpp-netlib，
+cpprestsdk，QNetworkRequest 等等。就 HTTP URL 的下载来说，如果不想使用现成的 HTTP 库实现下载，还可以自己实现
+HTTP 库，可以使用原生的 socket，也可以使用 Boost.Asio，libuv，libev，ACE 来实现 HTTP 客户端。</p><hr width=100% id=EOF><p style=color:#777>Last modified on 2016-11-03</p></div></div><nav class=post-pagination><a class=newer-posts href=/posts/2016/2016-11-05-brzo/>Next<br>码云分布式之 Brzo 服务器
+</a><a class=older-posts href=/posts/2016/2016-08-12-git-analyze/>Previous<br>Git Analyze 工具实现与原理</a></nav><div class=post-comment-wrapper></div></div></div></div></div><div id=sideContainer class=side-container><a class="a-block nav-head false" href=https://forcemz.net/><div class=nav-title>Charlie's Rethinking</div><div class=nav-subtitle>Themed by Diary.</div></a><div class=nav-link-list><a class="a-block nav-link-item active" href=/posts>归档
+</a><a class="a-block nav-link-item false" href=/categories>分类
+</a><a class="a-block nav-link-item false" href=/tags>标签
+</a><a class="a-block nav-link-item false" href=/about>关于
+</a><a class="a-block nav-link-item false" href=/index.xml>RSS Feed</a></div><div class=nav-footer>Hugo Theme <a href=https://github.com/amazingrise/hugo-theme-diary>Diary</a> by <a href=https://risehere.net/>Rise</a><br>Ported from <a href=https://mak1t0.cc/ target=_blank rel="noreferrer noopener">Makito</a>'s <a href=https://github.com/SumiMakito/hexo-theme-journal/ target=_blank rel="noreferrer noopener">Journal.</a><br><br>&copy;
+Copyright (c) 2009-2024 J23</div></div><div id=extraContainer class=extra-container><div class=toc-wrapper><div class=toc><div class=toc-content><center>- CATALOG -</center><ul><li><a href=#%e5%89%8d%e8%a8%80 class=nav-前言>前言</a></li><ul><li><a href=#urldownloadtofile class=nav-urldownloadtofile>URLDownloadToFile</a></li><li><a href=#httpclient class=nav-httpclient>HttpClient</a></li><li><a href=#background-intelligent-transfer-service class=nav-background-intelligent-transfer-service>Background Intelligent Transfer Service</a></li><li><a href=#winhttp class=nav-winhttp>WinHTTP</a></li><ul><li><a href=#http2-%e6%94%af%e6%8c%81 class=nav-http2-支持>HTTP2 支持</a></li></ul><li><a href=#wininet class=nav-wininet>Wininet</a></li><ul><li><a href=#http2-%e6%94%af%e6%8c%81-1 class=nav-http2-支持-1>HTTP2 支持</a></li></ul></ul><li><a href=#%e5%a6%82%e4%bd%95%e9%80%89%e6%8b%a9 class=nav-如何选择>如何选择</a></li></ul></div></div></div><div class=pagination><a id=globalBackToTop class="pagination-action animated-visibility" href=#top :class="{ invisible: scrollY == 0 }"><i class="material-icons pagination-action-icon">keyboard_arrow_up
+</i></a><a type=button class=pagination-action id=darkModeToggleButton><span class="material-icons pagination-action-icon" id=darkModeToggleIcon>dark_mode</span></a></div></div><div id=single-column-footer>Hugo Theme <a href=https://github.com/amazingrise/hugo-theme-diary>Diary</a> by <a href=https://risehere.net/>Rise</a><br>Ported from <a href=https://mak1t0.cc/ target=_blank rel="noreferrer noopener">Makito</a>'s <a href=https://github.com/SumiMakito/hexo-theme-journal/ target=_blank rel="noreferrer noopener">Journal.</a><br><br>&copy;
+Copyright (c) 2009-2024 J23</div></div><script src=/js/journal.js></script></body></html>

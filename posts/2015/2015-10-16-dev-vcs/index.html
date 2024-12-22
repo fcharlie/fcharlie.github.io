@@ -1,0 +1,260 @@
+<!doctype html><html lang=en><head><title>Subversion 和 GIT 开发者演进之 2015</title>
+<meta charset=utf-8><meta name=X-UA-Compatible content="IE=edge"><meta name=google-site-verification content><meta content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=5" name=viewport><meta content="telephone=no" name=format-detection><meta name=description content><meta name=renderer content="webkit"><meta name=theme-color content="#ffffff"><script src=/js/toc.js></script><link type=text/css rel=stylesheet href=/vendor/css/bootstrap.min.css><link rel=stylesheet href=/scss/dark-mode.min.cb53f1bee2b8900cb4f082afbf00175d6618f281cf9a2fe8619e3b52d20b5721.css integrity="sha256-y1PxvuK4kAy08IKvvwAXXWYY8oHPmi/oYZ47UtILVyE=" media=screen><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Material+Icons"></head><body><div id=app><div class=single-column-drawer-container id=drawer v-bind:class="{ 'single-column-drawer-container-active': isDrawerOpen }"><div class=drawer-content><div class=drawer-menu><a class="a-block drawer-menu-item active" href=/posts>归档
+</a><a class="a-block drawer-menu-item false" href=/categories>分类
+</a><a class="a-block drawer-menu-item false" href=/tags>标签
+</a><a class="a-block drawer-menu-item false" href=/about>关于
+</a><a class="a-block drawer-menu-item false" href=/index.xml>RSS Feed</a><div class=toc><div class=toc-content><center>- CATALOG -</center><ul><ul><li><a href=#%e5%89%8d%e8%a8%80 class=nav-前言>前言</a></li><li><a href=#%e7%89%88%e6%9c%ac%e6%8e%a7%e5%88%b6%e7%b3%bb%e7%bb%9f%e8%a7%81%e9%97%bb class=nav-版本控制系统见闻>版本控制系统见闻</a></li><li><a href=#git-%e6%8a%80%e6%9c%af%e5%86%85%e5%b9%95 class=nav-git-技术内幕>Git 技术内幕</a></li><ul><li><a href=#git-%e5%ad%98%e5%82%a8 class=nav-git-存储>Git 存储</a></li><li><a href=#git-%e4%bc%a0%e8%be%93%e5%8d%8f%e8%ae%ae class=nav-git-传输协议>Git 传输协议</a></li></ul><li><a href=#git-%e4%bb%a3%e7%a0%81%e6%89%98%e7%ae%a1%e5%b9%b3%e5%8f%b0%e7%9a%84%e5%bc%80%e5%8f%91%e6%bc%94%e8%bf%9b class=nav-git-代码托管平台的开发演进>Git 代码托管平台的开发演进</a></li><ul><li><a href=#%e5%9f%ba%e4%ba%8e-rpc-%e7%9a%84-git-%e5%88%86%e5%b8%83%e5%bc%8f%e8%ae%be%e8%ae%a1 class=nav-基于-rpc-的-git-分布式设计>基于 RPC 的 GIT 分布式设计</a></li><li><a href=#%e5%9f%ba%e4%ba%8e-libgit2-%e7%9a%84-smart-%e5%8d%8f%e8%ae%ae%e5%ae%9e%e7%8e%b0 class=nav-基于-libgit2-的-smart-协议实现>基于 libgit2 的 smart 协议实现</a></li></ul><li><a href=#subversion-%e5%86%85%e5%b9%95 class=nav-subversion-内幕>Subversion 内幕</a></li><ul><li><a href=#subversion-http-%e5%8d%8f%e8%ae%ae%e5%ae%9e%e7%8e%b0 class=nav-subversion-http-协议实现>Subversion HTTP 协议实现</a></li><li><a href=#subversion-svn-%e5%8d%8f%e8%ae%ae%e5%ae%9e%e7%8e%b0 class=nav-subversion-svn-协议实现>Subversion SVN 协议实现</a></li><li><a href=#subversion-%e5%85%bc%e5%ae%b9%e5%ae%9e%e7%8e%b0 class=nav-subversion-兼容实现>Subversion 兼容实现</a></li><li><a href=#subversion-%e5%8d%8f%e8%ae%ae%e4%bb%a3%e7%90%86%e6%9c%8d%e5%8a%a1%e5%99%a8%e7%9a%84%e5%ae%9e%e7%8e%b0 class=nav-subversion-协议代理服务器的实现>Subversion 协议代理服务器的实现</a></li></ul><li><a href=#%e7%bb%93%e5%b0%be class=nav-结尾>结尾</a></li></ul></div></div></div></div></div><transition name=fade><div id=drawer-mask v-bind:class="{ 'single-column-drawer-mask': mounted }" v-if=isDrawerOpen v-on:click=toggleDrawer></div></transition><nav id=navBar class="navbar sticky-top navbar-light single-column-nav-container"><div id=navBackground class=nav-background></div><div class="container container-narrow nav-content"><button id=nav_dropdown_btn class=nav-dropdown-toggle type=button v-on:click=toggleDrawer>
+<i class=material-icons>menu
+</i></button>
+<a id=navTitle class=navbar-brand href=https://forcemz.net/>Charlie's Rethinking
+</a><button type=button class=nav-darkmode-toggle id=darkModeToggleButton2>
+<i class=material-icons id=darkModeToggleIcon2>dark_mode</i></button></div></nav><div class=single-column-header-container id=pageHead v-bind:style="{ transform: 'translateZ(0px) translateY('+.3*scrollY+'px)', opacity: 1-navOpacity }"><a href=https://forcemz.net/><div class=single-column-header-title>Charlie's Rethinking</div><div class=single-column-header-subtitle>Themed by Diary.</div></a></div><div id=content><div id=streamContainer class=stream-container><div class="post-list-container post-list-container-shadow"><div class=post><div class=post-head-wrapper-text-only><div class=post-title>Subversion 和 GIT 开发者演进之 2015<div class=post-meta><time itemprop=datePublished>2015-10-16 21:30
+</time><i class=material-icons>folder</i>
+<a href=/categories/developer>developer</a>
+&nbsp;</div></div></div><div class=post-body-wrapper><div class=post-body v-pre><h2 id=前言>前言</h2><p>在开发软件的过程中，往往是需要多个人参与，版本控制系统的协同工作的重要性不言而喻，除此之外，
+版本控制软件对整个开发流程的记录对于缺陷追踪也是非常重要的。版本控制系统也是软件开发的基础设施。</p><p>笔者开始接触版本控制系统是大学的时候，最开始安装了 TortoiseSVN ，然而 TortoiseSVN
+仅仅是占据了硬盘空间而没有发挥作用，很多开发者在接触新事物的时候，并不一定会有极大的热情去了解，
+有的走了很多弯路后返回到了原地，有的深入以后，觉得其中异常的精彩。当我在 Windows 下编译 LLVM 的时候，
+Subversion 开始发挥作用，彼时，几乎所有开源的大型软件都是使用 Subversion 进行托管，当然还有部分 CVS。
+GIT 远远没有目前流行。后来参加工作后，就是代码托管的工作，对 Subversion 和 Git 有了一定程度的了解，
+逐渐有了自己的思考。</p><p>大多数人对版本控制系统的解读都是站在使用者的角度，而本文是基于一个代码托管的开发者立场。</p><h2 id=版本控制系统见闻>版本控制系统见闻</h2><p>版本控制系统的历史可以追溯到20世纪70年代，这是一个军方开发的 CCC （变更和配置控制）系统，名字叫做
+<a href=https://en.wikipedia.org/wiki/CA_Software_Change_Manager>CA Software Change Manager</a> 随后，版本控制系统开始发展起来。</p><p>CVS 一度曾经是开源软件的第一选择，比如 GNOME、KDE、THE GIMP 和 Wine，
+都曾使用过 CVS 来管理。这是一个集中式的版本控制系统，同样是集中式的还有 Subversion, Visual SouceSafe
+Perforce,Team Foundation Server。</p><p>由于难以忍受 CVS,CollabNet 的开发者开发了著名的 Subversion(SVN) 来取代 CVS, Subversion 诞生于 2000 年，
+时至今日，SVN 依然是最流行的集中式版本控制系统，GCC ,LLVM 等开源软件都使用 SVN 管理，代码托管网站方面，
+SourceForge 提供 SVN 的代码托管。</p><p>Visual SouceSafe（VSS）是微软开发的版本控制系统，到了 2008年，被 Team Foundation Server（TFS） 取代,
+TFS 并不是传统意义的版本控制系统，而是云开发协作平台，支持 Team Foundation Version Control 和 Git,
+像微软这样的企业，无论是 Windows 还是 Office 还是 其他软件，代码量都非常巨大，只有像 TFS 这样量身定做的系统才合适。</p><p>Perforce 是一个商业的版本控制系统，在其官网 <a href=https://www.perforce.com/>www.perfoce.com</a> 介绍，
+有着超过10000个用户使用他们的服务，有 NVIDIA ,Sumsuing,vmware,adidas 等著名企业，而我对他的印象在是
+OpenWATCOM C/C++ 编译器以及 p4merge 工具。p4merge 是 Perforce 提供的一个基于 Qt 开发的跨平台比较工具。</p><p>与集中式版本控制系统对应的是分布式版本控制系统 (Distribution Version Control System) 比较流行的有 git 和 Mercurial,
+二者均诞生于 2005 年。</p><p>Git 由 Linux 之父， Linus Torvalds 为了替代 BitKeeper 而开发的，关于 Git 的诞生，可以看对 Linus 本人的采访：
+<a href=http://www.linux.com/news/featured-blogs/185-jennifer-cloer/821541-10-years-of-git-an-interview-with-git-creator-linus-torvalds/>10 Years of Git: An Interview with Git Creator Linus Torvalds </a>Git 非常流行， Linux, FreeBSD, .NET Core CLR, .NET Core Fx, Minix, Android 等项目都使用 Git 来管理，
+Git 的社区非常成熟，有很多代码托管网站提供托管服务，如 Github, Bitbucket, 国内有 OSC@GIT，coding，gitcafe, CSDN code, jd code 等等。</p><p>技术上同样优秀的版本控制系统 Mercurial 的使用者少很多，也有著名的浏览器 Mozilla Firefox,服务器 Nginx,以及编程语言 Python。
+Mercurial 使用 Python 实现，或许这一点也限制了 Mercurial 的发展。</p><p>在维基百科中有一个 VCS 列表：
+<a href=https://en.wikipedia.org/wiki/Template:Version_control_software>Template:Version control software</a>
+记录了多种版本控制系统，诞生时间，分类。</p><p>大多数时候，开发者需要学习的版本控制系统为 Subversion 或者是 GIT。这二者已然是两个版本控制流派的代表。</p><h2 id=git-技术内幕>Git 技术内幕</h2><p>本节主要介绍 Git 的存储和传输</p><h3 id=git-存储>Git 存储</h3><p>git 仓库在磁盘上可以表现为两种形式，带有工作目录的普通仓库和不带工作目录的裸仓库。<br>我们可以创建一个标准仓库：</p><blockquote><p>mkdir gitrepo &&amp;cd gitrepo &&amp;git &ndash;init &&amp;tree -a</p></blockquote><p>如下</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-txt data-lang=txt><span style=display:flex><span>.
+</span></span><span style=display:flex><span>├── .git
+</span></span><span style=display:flex><span>│   ├── branches
+</span></span><span style=display:flex><span>│   ├── COMMIT_EDITMSG
+</span></span><span style=display:flex><span>│   ├── config
+</span></span><span style=display:flex><span>│   ├── description
+</span></span><span style=display:flex><span>│   ├── HEAD
+</span></span><span style=display:flex><span>│   ├── hooks
+</span></span><span style=display:flex><span>│   │   ├── applypatch-msg.sample
+</span></span><span style=display:flex><span>│   │   ├── commit-msg.sample
+</span></span><span style=display:flex><span>│   │   ├── post-update.sample
+</span></span><span style=display:flex><span>│   │   ├── pre-applypatch.sample
+</span></span><span style=display:flex><span>│   │   ├── pre-commit.sample
+</span></span><span style=display:flex><span>│   │   ├── prepare-commit-msg.sample
+</span></span><span style=display:flex><span>│   │   ├── pre-push.sample
+</span></span><span style=display:flex><span>│   │   ├── pre-rebase.sample
+</span></span><span style=display:flex><span>│   │   └── update.sample
+</span></span><span style=display:flex><span>│   ├── index
+</span></span><span style=display:flex><span>│   ├── info
+</span></span><span style=display:flex><span>│   │   └── exclude
+</span></span><span style=display:flex><span>│   ├── logs
+</span></span><span style=display:flex><span>│   │   ├── HEAD
+</span></span><span style=display:flex><span>│   │   └── refs
+</span></span><span style=display:flex><span>│   │       └── heads
+</span></span><span style=display:flex><span>│   │           └── master
+</span></span><span style=display:flex><span>│   ├── objects
+</span></span><span style=display:flex><span>│   │   ├── 89
+</span></span><span style=display:flex><span>│   │   │   └── 50b8b1af3c4cc712edb5a995c83a53eb03e6be
+</span></span><span style=display:flex><span>│   │   ├── d0
+</span></span><span style=display:flex><span>│   │   │   └── 2d9281b58703d020c3afe3e2ace204d6d462ae
+</span></span><span style=display:flex><span>│   │   ├── e6
+</span></span><span style=display:flex><span>│   │   │   └── 9de29bb2d1d6434b8b29ae775ad8c2e48c5391
+</span></span><span style=display:flex><span>│   │   ├── info
+</span></span><span style=display:flex><span>│   │   └── pack
+</span></span><span style=display:flex><span>│   └── refs
+</span></span><span style=display:flex><span>│       ├── heads
+</span></span><span style=display:flex><span>│       │   └── master
+</span></span><span style=display:flex><span>│       └── tags
+</span></span><span style=display:flex><span>└── helloworld
+</span></span></code></pre></div><p>实际上我们创建一个裸仓库会发现和普通仓库的 .git 目录结构是一致的。</p><blockquote><p>mkdir gitbare.git &&amp;cd gitbare.git &&amp;git init &ndash;bare &&amp;tree -a</p></blockquote><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-txt data-lang=txt><span style=display:flex><span>.
+</span></span><span style=display:flex><span>├── branches
+</span></span><span style=display:flex><span>├── config
+</span></span><span style=display:flex><span>├── description
+</span></span><span style=display:flex><span>├── HEAD
+</span></span><span style=display:flex><span>├── hooks
+</span></span><span style=display:flex><span>│   ├── applypatch-msg.sample
+</span></span><span style=display:flex><span>│   ├── commit-msg.sample
+</span></span><span style=display:flex><span>│   ├── post-update.sample
+</span></span><span style=display:flex><span>│   ├── pre-applypatch.sample
+</span></span><span style=display:flex><span>│   ├── pre-commit.sample
+</span></span><span style=display:flex><span>│   ├── prepare-commit-msg.sample
+</span></span><span style=display:flex><span>│   ├── pre-push.sample
+</span></span><span style=display:flex><span>│   ├── pre-rebase.sample
+</span></span><span style=display:flex><span>│   └── update.sample
+</span></span><span style=display:flex><span>├── info
+</span></span><span style=display:flex><span>│   └── exclude
+</span></span><span style=display:flex><span>├── objects
+</span></span><span style=display:flex><span>│   ├── info
+</span></span><span style=display:flex><span>│   └── pack
+</span></span><span style=display:flex><span>└── refs
+</span></span><span style=display:flex><span>    ├── heads
+</span></span><span style=display:flex><span>    └── tags
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>9 directories, 13 files
+</span></span></code></pre></div><p>当我们创建一个仓库时，默认情况下会创建工作目录，在工作目录下有个 .git 的子目录，这才是存储库的目录。
+而我们通常修改代码的目录称之为工作目录。</p><p>众所周知，git 是分布式版本控制系统，这就意味着，只要获得了 .git 目录的完整数据，就可以在任意位置恢复成一个带有工作目录的仓库。
+而 GIT 克隆一个存储库也仅仅是将 .git/objects 目录下的 object 和 .git/refs (.git/packed-refs|.git/info/refs) 所存储的引用列表传输到本地，并应用。</p><p>对于 Subversion 一样的集中式版本控制系统，就相当于 .git 目录被托管在中央服务器上，而本地的 .svn 只是工作目录的元数据。<br>二者不同的机制带来的直接差别就是一旦中央服务器宕机，git 可以迅速的迁移到其他服务器，并且数据的丢失的可能性很小，
+而 Subversion 服务器就没有这么好的运气了。</p><p>每一次提交，git 都会把修改的文件快照，还有更新的目录结构，以及提交信息，打包成一个个 object，这些 object 被loose object,
+所以 git 的 object 可能是 blob tree commit 等。打包的过程会使用 zip 压缩，这种被广泛运用的压缩格式实上压缩率较低，压缩速度也慢，
+但好处有广泛的支持，专利上比较友好。</p><p>如果调用 git gc 命令后，git-gc 会将这些 object 打包成 pack 文件，gc 过后保存文件差异，但这样是有代价的，我司的代码托管平台某台机器一日触发了 GC,
+然后 CPU 占用突然上升，抢占其他进程资源，直接导致用户体验下降，如果使用的是分布式文件系统，这种现象将更加突出。关于 git gc 更多的内容可以查看
+ProGit ，或者去查阅 git 技术文档。</p><h3 id=git-传输协议>Git 传输协议</h3><p>Git 支持多种协议 http, git , ssh, file ,以内部机制区分为哑协议和智能协议，哑协议非常简单，简单的说，
+客户端通过 URL 直接拿取服务端的文件。<br>Git 智能协议实现了两类 RPC 调用，一个是 fetch-pack&lt;->upload-pack, 另一个是 send-pack&lt;->receive-pack。</p><p>任何 Git 远程操作都需要获得远程仓库的引用列表，与自身的引用列表进行比对</p><p>这里以 HTTP 为例</p><ol><li>Fetch-Upload<br>Step 1:<br>Request</li></ol><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-txt data-lang=txt><span style=display:flex><span>C: GET $GIT_URL/info/refs?service=git-upload-pack HTTP/1.0
+</span></span></code></pre></div><p>Response</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-txt data-lang=txt><span style=display:flex><span>S: 200 OK
+</span></span><span style=display:flex><span>S: Content-Type: application/x-git-upload-pack-advertisement
+</span></span><span style=display:flex><span>S: Cache-Control: no-cache
+</span></span><span style=display:flex><span>S:
+</span></span><span style=display:flex><span>S: 001e# service=git-upload-pack\n
+</span></span><span style=display:flex><span>S: 004895dcfa3633004da0049d3d0fa03f80589cbcaf31 refs/heads/maint\0multi_ack\n
+</span></span><span style=display:flex><span>S: 0042d049f6c27a2244e12041955e262a404c7faba355 refs/heads/master\n
+</span></span><span style=display:flex><span>S: 003c2cb58b79488a98d2721cea644875a8dd0026b115 refs/tags/v1.0\n
+</span></span><span style=display:flex><span>S: 003fa3c2e2402b99163d1d59756e5f207ae21cccba4c refs/tags/v1.0^{}\n
+</span></span></code></pre></div><p>Step 2:<br>Request</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-txt data-lang=txt><span style=display:flex><span>C: POST $GIT_URL/git-upload-pack HTTP/1.0
+</span></span><span style=display:flex><span>C: Content-Type: application/x-git-upload-pack-request
+</span></span><span style=display:flex><span>C:
+</span></span><span style=display:flex><span>C: 0032want 0a53e9ddeaddad63ad106860237bbf53411d11a7\n
+</span></span><span style=display:flex><span>C: 0032have 441b40d833fdfa93eb2908e52742248faf0ee993\n
+</span></span><span style=display:flex><span>C: 0000
+</span></span></code></pre></div><p>Response</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-txt data-lang=txt><span style=display:flex><span>S: 200 OK
+</span></span><span style=display:flex><span>S: Content-Type: application/x-git-upload-pack-result
+</span></span><span style=display:flex><span>S: Cache-Control: no-cache
+</span></span><span style=display:flex><span>S:
+</span></span><span style=display:flex><span>S: ....ACK %s, continue
+</span></span><span style=display:flex><span>S: ....NAK
+</span></span></code></pre></div><ol start=2><li>Send-Receive
+实际上 push 的过程也是 GET 和 POST， 只不过，git-upload-pack 要变成 git-receive-pack ，POST 时，后者请求体中包含有 差异 package。</li></ol><p>对于 git HTTP 来说，权限验证通常是 HTTP 的一套，也就是 WWW-Authenticate， 绝大多数的 HTTP 服务器也就支持 Basic。<br>即：</p><blockquote><p>user:password ->Base64 encode &ndash;>dXNlcjpwYXNzd29yZA==</p></blockquote><p>所以从安全上来说，如果使用 HTTP 而不是 HTTPS ， 对 GIT 远程仓库进行写操作简直就是在裸奔。</p><p>git HTTP 支持的 HTTP 返回码并不多， 200 30x 304 403 404 410</p><p>关于 HTTP 的更多文档细节可以去这个地址查看：
+<a href=https://www.kernel.org/pub/software/scm/git/docs/technical/http-protocol.html>HTTP Protocol</a></p><p>基于 HTTP 的智能协议和基于 SSH，Git 协议本质上并无太大的不同，都是通过这两类 RPC 调用，实现本地仓库和远程仓库的数据交换。</p><p>HTTP 协议是通过 http smart server 运行 git-xxx-pack，对其输入数据，然后读取 git-xxx-pack 输出。
+SSH 则是通过 ssh 服务器在远程机器上运行 git-xxx-pack ，数据传输的过程使用 SSH 加密。
+而 GIT 协议 (git://) 协议则是 通过远程服务器 git-daemon 运行 git-xxx-pack 实现数据的交互。通常来说 git:// 无法实现差异化的权限管理，
+也就是要么全部只读，全部可写。</p><blockquote><p>git help daemon</p></blockquote><p>一些更多的技术内幕可以参考 社区大作 《Pro Git》</p><h2 id=git-代码托管平台的开发演进>Git 代码托管平台的开发演进</h2><p>虽然 GIT 是分布式版本控制，但是对于代码托管平台来说又是一回事了。传统的代码托管平台服务主要运行在一台计算机上，
+额外的存储机器通过例如 NFS 之类的分布式文件系统被挂载到服务所在机器，成为一个存储目录。</p><p>这样的坏处显而易见:</p><ol><li>网络流量过于集中，这点很好解释，网络入口都是服务所在的机器，对于 git 这样频繁 IO 读写的服务，NFS 有缓存，也显得力不从心。</li><li>运算过于集中，git-upload-pack git-receive-pack 都运行在服务机器上，无论是将 loose object 打包成 package 还是 解包 package 成 loose object，
+都是运算密集型。CPU 飙升也就很常见了。</li></ol><p>如果要偷懒实现一个折衷的分布式方案，动态代理算是不错的选择，对于 HTTP 协议来说，重定向和代理都是很常见的，
+使用 NGINX 之类的服务器就可以方便的实现代理，然后编写模块实现动态获取路由即可,更进一步使用 upstream 的方式
+来复用连接，提高效率。而 GIT 的 HTTP 访问与 托管服务的 web 页面都可以用这种策略实现分布式。</p><p>对于 SSH 来说，除了端口转发就是动态反向代理了。当然也可以使用 RPC, 通过编写 RPC 客户端伪装成 git-upload-pack 或
+git-receive-pack 实现 SSH 的分布式。</p><h3 id=基于-rpc-的-git-分布式设计>基于 RPC 的 GIT 分布式设计</h3><p>客户端访问仓库时，路由智能到达 DNS 所记录的机器或者是无差别代理的机器(前端机器)，往往不能到达特定的存储机器，
+开发者使用分布式文件系统或者 分布式 RPC 或者代理等多种方案实现 前端到存储的关键一步。这里主要说分布式 RPC 与
+GIT smart 的应用。<br>分布式 RPC 框架很多，其中著名的有 Apache Thrift ,此项目是 Facebook 开源并贡献给 Apache 基金会的，支持多种语言。<br>对于 GIT 操作，只需要实现 4个函数。一下是 Thrift 接口文件的一部分：</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-cpp data-lang=cpp><span style=display:flex><span><span style=color:#58a1dd>service</span> <span style=color:#58a1dd>GitSmartService</span>{
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>i32</span> <span style=color:#58a1dd>Checksum</span>(<span style=color:#a6be9d>1</span><span style=color:#ff636f>:</span><span style=color:#58a1dd>i32</span> <span style=color:#58a1dd>client</span>);
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>string</span> <span style=color:#58a1dd>FetchRemoteReferences</span>(<span style=color:#a6be9d>1</span><span style=color:#ff636f>:</span><span style=color:#58a1dd>string</span> <span style=color:#58a1dd>repositoryPath</span>);
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>binary</span> <span style=color:#58a1dd>FetchRemoteDiffPackage</span>(<span style=color:#a6be9d>1</span><span style=color:#ff636f>:</span><span style=color:#58a1dd>string</span> <span style=color:#58a1dd>repositoryPath</span>, <span style=color:#a6be9d>2</span><span style=color:#ff636f>:</span><span style=color:#58a1dd>string</span> <span style=color:#58a1dd>clientReferences</span>)
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>string</span> <span style=color:#58a1dd>PushRemoteRefereces</span>(<span style=color:#a6be9d>1</span><span style=color:#ff636f>:</span><span style=color:#58a1dd>string</span> <span style=color:#58a1dd>repositoryPath</span>);
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>string</span> <span style=color:#58a1dd>PushRemoteDiffPackage</span>(<span style=color:#a6be9d>1</span><span style=color:#ff636f>:</span><span style=color:#58a1dd>string</span> <span style=color:#58a1dd>repositoryPath</span>, <span style=color:#a6be9d>2</span><span style=color:#ff636f>:</span><span style=color:#58a1dd>binary</span> <span style=color:#58a1dd>clientPackage</span>);
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>然后存储服务器通过 pipe 读取存储机器上的 git-upload-pack /git-receive-pack 的输入输出。
+在 Linux 上通过管道读取 git upload-pack 的输出：</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-cpp data-lang=cpp><span style=display:flex><span><span style=color:#ff636f>int</span> <span style=color:#58a1dd>FetchRemoteReferencesCli</span>(<span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>result</span>,<span style=color:#ff636f>const</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>string</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>path</span>){
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>result</span>.<span style=color:#58a1dd>clear</span>();
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>int</span> <span style=color:#58a1dd>pid</span>,<span style=color:#58a1dd>fd</span>[<span style=color:#a6be9d>2</span>];
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span>(<span style=color:#58a1dd>pipe</span>(<span style=color:#58a1dd>fd</span>)<span style=color:#ff636f>&lt;</span><span style=color:#a6be9d>0</span>){
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>printf</span>(<span style=color:#a6be9d>&#34;oops</span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>&#34;</span>);
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span>((<span style=color:#58a1dd>pid</span><span style=color:#ff636f>=</span><span style=color:#58a1dd>fork</span>())<span style=color:#ff636f>&lt;</span><span style=color:#a6be9d>0</span>){
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>printf</span>(<span style=color:#a6be9d>&#34;fork failed </span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>&#34;</span>);
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#ff636f>-</span><span style=color:#a6be9d>1</span>;
+</span></span><span style=display:flex><span>	}<span style=color:#ff636f>else</span> <span style=color:#ff636f>if</span>(<span style=color:#58a1dd>pid</span><span style=color:#ff636f>==</span><span style=color:#a6be9d>0</span>){
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>if</span>(<span style=color:#58a1dd>fd</span>[<span style=color:#a6be9d>1</span>]<span style=color:#ff636f>!=</span><span style=color:#58a1dd>STDOUT_FILENO</span>){
+</span></span><span style=display:flex><span>			<span style=color:#ff636f>if</span> (<span style=color:#58a1dd>dup2</span>(<span style=color:#58a1dd>fd</span>[<span style=color:#a6be9d>1</span>], <span style=color:#58a1dd>STDOUT_FILENO</span>) <span style=color:#ff636f>!=</span> <span style=color:#58a1dd>STDOUT_FILENO</span>){  
+</span></span><span style=display:flex><span>				<span style=color:#ff636f>return</span> <span style=color:#ff636f>-</span><span style=color:#a6be9d>1</span>; 
+</span></span><span style=display:flex><span>			} 
+</span></span><span style=display:flex><span>            <span style=color:#58a1dd>close</span>(<span style=color:#58a1dd>fd</span>[<span style=color:#a6be9d>1</span>]);  
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>if</span>(<span style=color:#58a1dd>execlp</span>(<span style=color:#a6be9d>&#34;git&#34;</span>,<span style=color:#a6be9d>&#34;git&#34;</span>,<span style=color:#a6be9d>&#34;upload-pack&#34;</span>,<span style=color:#a6be9d>&#34;--stateless-rpc&#34;</span>,<span style=color:#a6be9d>&#34;--advertise-refs&#34;</span>,<span style=color:#58a1dd>path</span>.<span style=color:#58a1dd>c_str</span>(),<span style=color:#58a1dd>NULL</span>)<span style=color:#ff636f>==-</span><span style=color:#a6be9d>1</span>){
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>printf</span>(<span style=color:#a6be9d>&#34;execlp failed </span><span style=color:#a6be9d>\n</span><span style=color:#a6be9d>&#34;</span>);
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>exit</span>(<span style=color:#a6be9d>0</span>);
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>	}<span style=color:#ff636f>else</span>{
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>char</span> <span style=color:#58a1dd>buffer</span>[<span style=color:#a6be9d>4096</span>]<span style=color:#ff636f>=</span>{<span style=color:#a6be9d>0</span>};
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>close</span>(<span style=color:#58a1dd>fd</span>[<span style=color:#a6be9d>1</span>]);
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>int</span> <span style=color:#58a1dd>n</span><span style=color:#ff636f>=</span><span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>while</span>((<span style=color:#58a1dd>n</span><span style=color:#ff636f>=</span><span style=color:#58a1dd>read</span>(<span style=color:#58a1dd>fd</span>[<span style=color:#a6be9d>0</span>],<span style=color:#58a1dd>buffer</span>,<span style=color:#a6be9d>4096</span>))){
+</span></span><span style=display:flex><span>			<span style=color:#58a1dd>result</span>.<span style=color:#58a1dd>append</span>(<span style=color:#58a1dd>buffer</span>,<span style=color:#58a1dd>n</span>);
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>close</span>(<span style=color:#58a1dd>fd</span>[<span style=color:#a6be9d>0</span>]);
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>return</span> <span style=color:#a6be9d>0</span>;
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>前端服务器上，编写 模拟 git-upload-pack 或者是 git-receive-pack 的程序。用户通过 ssh 访问远程仓库时执行的 git 工具变成了模拟后的
+git-upload-pack /git-receive-pack, 当使用 HTTP 访问时，可以整合成 RPC 客户端整合直接整合进 HTTP 服务器，比如 NGINX 模块，
+或者也可 使用 传统的 Git Smart HTTP 库的方式，总的来说 Thrift 有多种语言支持，Git Smart HTTP 整合 Thrift RPC 并不成问题。<br>这个唯一的问题是实现异步比较麻烦，两者都需要实现异步模式，git 仓库可能非常大，一次性克隆传输数据几百 MB 或者上 GB,
+这个时候 4nK 发送非常必要。</p><h3 id=基于-libgit2-的-smart-协议实现>基于 libgit2 的 smart 协议实现</h3><p>GIT 除了 Linus 本人实现，kernel.org 托管的官方版本外，还有 jgit,libgit2 等，git 是一系列命令组成，几乎没有剥离出共享库的能力，
+这样的后果导致其他语言使用 git 时，不得不使用管道等进程间通讯的模式与 git 工具交互。而 jgit 使用 Java 实现，基本上没有其他流行语言的绑定能力。<br>libgit2 是一个 GIT 的兼容实现，基于 C89 开发，支持绝大多数 git 特性。开发非常活跃，有多种语言绑定，如 C# Ruby 等，
+其中 C# 绑定 Libgit2Sharp 被 VisualStudio, Github for Windows 等使用，而 Ruby 绑定 Rugged ，被 Github, GIT@OSC 等代码托管平台使用。</p><p>libgit2 并没有合适的 GIT smart 服务器后端实现，多数情况下，libgit2 主要面向的是客户端，由于 git 是分布式的，对于仓库的读写也就客户端
+和服务器的行为也是类似的。</p><h2 id=subversion-内幕>Subversion 内幕</h2><p>此部分中 <strong>SVN 协议</strong> 指 Apache Subversion 程序 svn（以及兼容的客户端） 与远程服务器上的 Apache Subversion svnserve （以及兼容的服务器） 进程通讯的协议，
+即 Subversion protocol，协议默认端口是 3690，基于 TCP, 传输数据使用 ABNF 范式。</p><p>在这里指出，与 Git 完全不同的是，svn 的仓库存储在远程中央服务器上，开发者检出的代码只是特定版本，特定目录的代码，本地为工作拷贝。</p><h3 id=subversion-http-协议实现>Subversion HTTP 协议实现</h3><p>Subversion HTTP 协议是一种 基于 WebDAV/DeltaV 的协议，WebDAV 在 HTTP 1.1 的基础上扩展了多个 Method, 绝大多数的服务器并不支持 WebDAV,
+这样的后果就是，除了 Apache 可以使用 mod_dav_svn 插件，基本上再也没有其他的服务器能快速的支持 Subversion 的 HTTP 协议了。代理还是可以的。</p><p>WebDAV 协议在 HTTP 1.1 的基础上 使用 XML 的方式呈现数据，对于 Subversion 这种集中式版本控制系统来说，绝大多数操作都是在线的，
+WebDAV 包裹这些操作就变得很繁琐。</p><p>比如一个 update-report 请求：</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-xml data-lang=xml><span style=display:flex><span>  <span style=color:#58a1dd>&lt;S:update-report</span> <span style=color:#58a1dd>send-all=</span><span style=color:#a6be9d>&#34;true&#34;</span> <span style=color:#58a1dd>xmlns:S=</span><span style=color:#a6be9d>&#34;svn:&#34;</span><span style=color:#58a1dd>&gt;</span>
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>&lt;S:src-path&gt;</span>http://localhost:8080/repos/test/httpd/support<span style=color:#58a1dd>&lt;/S:src-path&gt;</span>
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>&lt;S:target-revision&gt;</span>2<span style=color:#58a1dd>&lt;/S:target-revision&gt;</span>
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>&lt;S:entry</span> <span style=color:#58a1dd>rev=</span><span style=color:#a6be9d>&#34;2&#34;</span>  <span style=color:#58a1dd>start-empty=</span><span style=color:#a6be9d>&#34;true&#34;</span><span style=color:#58a1dd>&gt;&lt;/S:entry&gt;</span>
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>&lt;/S:update-report&gt;</span>
+</span></span></code></pre></div><p>然后服务器返回：</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-xml data-lang=xml><span style=display:flex><span><span style=color:#58a1dd>&lt;S:update-report</span> <span style=color:#58a1dd>xmlns:S=</span><span style=color:#a6be9d>&#34;svn:&#34;</span> <span style=color:#58a1dd>xmlns:V=</span><span style=color:#a6be9d>&#34;...&#34;</span> <span style=color:#58a1dd>xmlns:D=</span><span style=color:#a6be9d>&#34;DAV:&#34;</span> <span style=color:#58a1dd>send-all=</span><span style=color:#a6be9d>&#34;true&#34;</span><span style=color:#58a1dd>&gt;</span>
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>&lt;S:target-revision</span> <span style=color:#58a1dd>rev=</span><span style=color:#a6be9d>&#34;2&#34;</span><span style=color:#58a1dd>/&gt;</span>
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>&lt;S:open-directory</span> <span style=color:#58a1dd>rev=</span><span style=color:#a6be9d>&#34;2&#34;</span><span style=color:#58a1dd>&gt;</span>
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>&lt;D:checked-in&gt;</span>
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&lt;D:href&gt;</span>/repos/test/!svn/ver/2/httpd/support<span style=color:#58a1dd>&lt;/D:href&gt;</span>
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>&lt;/D:checked-in&gt;</span>
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>&lt;S:set-prop</span> <span style=color:#58a1dd>name=</span><span style=color:#a6be9d>&#34;svn:entry:committed-rev&#34;</span><span style=color:#58a1dd>&gt;</span>2<span style=color:#58a1dd>&lt;/S:set-prop&gt;</span>
+</span></span><span style=display:flex><span>    ... more set props ...
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>&lt;S:add-file</span> <span style=color:#58a1dd>name=</span><span style=color:#a6be9d>&#34;ab.c&#34;</span><span style=color:#58a1dd>&gt;</span>
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&lt;D:checked-in&gt;</span>
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>&lt;D:href&gt;</span>/repos/test/!svn/ver/2/httpd/support/ab.c<span style=color:#58a1dd>&lt;/D:href&gt;</span>
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&lt;/D:checked-in&gt;</span>
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&lt;S:set-prop</span> <span style=color:#58a1dd>name=</span><span style=color:#a6be9d>&#34;svn:entry:committed-rev&#34;</span><span style=color:#58a1dd>&gt;</span>2<span style=color:#58a1dd>&lt;/S:set-prop&gt;</span>
+</span></span><span style=display:flex><span>      ... more set props for the file ...
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&lt;S:txdelta&gt;</span>...base64-encoded file content...<span style=color:#58a1dd>&lt;/S:txdelta&gt;</span>
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>&lt;/S:add-file&gt;</span>
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>&lt;S:add-directory</span> <span style=color:#58a1dd>name=</span><span style=color:#a6be9d>&#34;os&#34;</span> <span style=color:#58a1dd>bc-url=</span><span style=color:#a6be9d>&#34;/repos/test/!svn/bc/2/httpd/os&#34;</span><span style=color:#58a1dd>&gt;</span>
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&lt;D:checked-in&gt;</span>
+</span></span><span style=display:flex><span>        <span style=color:#58a1dd>&lt;D:href&gt;</span>/repos/test/!svn/ver/2/httpd/os<span style=color:#58a1dd>&lt;/D:href&gt;</span>
+</span></span><span style=display:flex><span>      <span style=color:#58a1dd>&lt;/D:checked-in&gt;</span>
+</span></span><span style=display:flex><span>      ...directory contents...
+</span></span><span style=display:flex><span>    <span style=color:#58a1dd>&lt;/S:add-directory&gt;</span>
+</span></span><span style=display:flex><span>  <span style=color:#58a1dd>&lt;/S:open-directory&gt;</span>
+</span></span><span style=display:flex><span><span style=color:#58a1dd>&lt;/S:update-report&gt;</span>
+</span></span></code></pre></div><p>不同的请求，xml 的内容也完全不同，Subversion HTTP 协议的复杂也让很多开发者望而却步。</p><p>在 Subversion 的路线图中，基于 WebDAV/DeltaV 的 HTTP 接入将被 基于 HTTP v2 的实现取代。<br><a href=http://svn.apache.org/repos/asf/subversion/trunk/notes/http-and-webdav/http-protocol-v2.txt>A Streamlined HTTP Protocol for Subversion</a></p><h3 id=subversion-svn-协议实现>Subversion SVN 协议实现</h3><p>与 HTTP 不同的是，一个完整的基于 SVN 协议的连接中，仓库的操作是上下文相关的。<br>当客户端的连接过来时，服务器，通常说的 svnservice 将发送一段信息给客户端，告知服务器的能力,这个过程叫握手 Handshake。</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-txt data-lang=txt><span style=display:flex><span>S: ( minver:number maxver:number mechs:list ( cap:word ... ) )
+</span></span></code></pre></div><p>Example:</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-txt data-lang=txt><span style=display:flex><span>( success ( 2 2 ( ) ( edit-pipeline svndiff1 absent-entries depth inherited-props log-revprops ) ) ) 
+</span></span></code></pre></div><p>这个时候客户端获知了这些数据，如果无法兼容，服务器，那么将断开与服务器的连接，否则，将发送请求数据给服务器，格式如下：</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-txt data-lang=txt><span style=display:flex><span>C: response: ( version:number ( cap:word ... ) url:string
+</span></span><span style=display:flex><span>              ? ra-client:string ( ? client:string ) )
+</span></span></code></pre></div><p>Example:</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-txt data-lang=txt><span style=display:flex><span>( 2 ( edit-pipeline svndiff1 absent-entries depth mergeinfo log-revprops ) 36:svn://subversion.io/subversion/trunk 53:SVN/1.8.13-SlikSvn-1.8.13-X64 (x64-microsoft-windows) ( ) )
+</span></span></code></pre></div><p>与 GIT 数据包类似的地方有一点，git 每一行数据前 4 个16进制字符代表本行的长度，而 这里的 10 进制字符代表 字符的长度，比如 URL 长度36，UA 53。</p><p>服务器此时的行为就得通过解析 URL 获得中央仓库的位置，判断协议是否兼容，而 UA 有可能为空，格式并不是非常标准，所以这是值得注意的地方。</p><p>服务器将决定使用那种授权方式，MD5 一般是 Subversion 客户端默认的，无法第三方库支持，而 PLAIN 和 ANONYMOUS 需要 SASL 模块的支持，
+在 Ubuntu 上编译 svn,先安装 libsasl2-dev。</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-txt data-lang=txt><span style=display:flex><span>S: ( ( mech:word ... ) realm:string )
+</span></span></code></pre></div><p>客户端不支持此授权方式时，会输出错误信息，“无法协商验证方式”</p><p>这里的 Realm 是 subversion 客户端存储用户账户用户名和密码信息的一个 key,只要 realm 一致，就会取相同的 用户名和密码。
+realm <a href=http://www.ietf.org/rfc/rfc2617.txt>RFC2617</a></p><p>Example:</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-txt data-lang=txt><span style=display:flex><span>( success ( ( PLAIN ) 36:e967876f-5ea0-4ff2-9c55-ea2d1703221e ) ) 
+</span></span></code></pre></div><p>如果是 MD5 ，验证协商如下：</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-txt data-lang=txt><span style=display:flex><span>S: ( mech:word [ token:string ] )
+</span></span></code></pre></div><p>这个 Token 是随机生成的 UUID, C++ 可以使用 boost 生成，也可以使用平台的 API 生成。</p><p>如果是 PLAIN 授权机制，这里就是用户名和密码经 Base64 编码了, 用 NUL(0) 分隔</p><blockquote><p>usernameNULpassword &ndash;> Base64 Encoded</p></blockquote><p>Example:</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-txt data-lang=txt><span style=display:flex><span>( PLAIN ( 44:YWRtaW5Ac3VidmVyc2lvbi5pbyU1QzBwYXNzd29yZA== ) ) 
+</span></span></code></pre></div><p>对于纯 svn 协议来说，使用 PLAIN 并不安全，且当 Subversion 只作为 GIT 代码托管平台的一个服务来说，
+使用 CRAM-MD5 并不利于服务整合，这也是一个缺陷了。</p><p>这是服务器的下一步骤：</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-txt data-lang=txt><span style=display:flex><span>S:  challenge: ( step ( token:string ) )
+</span></span><span style=display:flex><span>S:           | ( failure ( message:string ) )
+</span></span><span style=display:flex><span>S:           | ( success [ token:string ] )
+</span></span></code></pre></div><p>Incorrect credentials:</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-txt data-lang=txt><span style=display:flex><span>( failure ( 21:incorrect credentials ) ) 
+</span></span></code></pre></div><p>Success</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-txt data-lang=txt><span style=display:flex><span>( success ( ) )
+</span></span></code></pre></div><p>随后服务器再发送存储库 UUID, capabilities 给客户端</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-txt data-lang=txt><span style=display:flex><span>S: ( uuid:string repos-url:string ( cap:word ... ) )
+</span></span></code></pre></div><p>Example:</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-txt data-lang=txt><span style=display:flex><span>( ( 36:0f475597-c342-45b4-88c5-7dc0857b8ba4 36:svn://subversion.io/subversion/trunk ( edit-pipeline svndiff1 absent-entries depth inherited-props log-revprops ))
+</span></span></code></pre></div><p>如果是 svn up/commit 或者其他的操作，这个时候会检查 uuid 是否匹配，当然也会检查 URL 是否匹配。</p><p>如果客户端觉得一切都 OK 啦，那么就会开始下一阶段的操作，command 模式，这些规则可以从 Subversion 官方存储库查看
+<a href=http://svn.apache.org/repos/asf/subversion/trunk/subversion/libsvn_ra_svn/protocol>Subversion Protocol</a></p><p>与 GIT 或者 SVN HTTP 不同的是，一个完整的 基于 svn 协议的 SVN 操作，只需要建立一次 socket，Subversion 客户端此时是阻塞的，并且屏蔽了 Ctrl+C 等
+信号， 仓库体积巨大时，这种对连接资源的占用非常突出，因为有数据读取， socket 并不会超时。单纯按并发来算，svn 服务器的并发就收到了限制。</p><h3 id=subversion-兼容实现>Subversion 兼容实现</h3><p>Github 基于 HTTP 协议的方式实现了对 Subversion 的兼容，而 GIT@OSC 基于 svn 协议方式实现了对 Subversion 的不完全兼容。</p><p>基于 HTTP 协议实现的 Subversion 兼容服务和 基于 SVN 协议的 Subversion 兼容服务二者并不能说谁就一定好，HTTP 协议很容易导致网关超时，
+多大数情况下，一次完整的操作时成千上万的 HTTP 请求构成，HTTP 协议支持需要 HTTP 服务器能够支持 WebDAV, XML 解析过程比较麻烦，
+Subversion 官方也计划使用 HTTP v2 取代 WebDAV，但 HTTP 协议的好处还是有的，比如很多企业并不一定开放 SVN 端口 3690，
+可以和 gitlab 之类的服务整合。</p><p>而 SVN 协议也有不好的地方，比如连接时间过长，服务器并发上不去，容易阻塞，与 HTTP 服务整合不便，但同时 SVN 协议能够支持较大存储库。</p><p>实际上兼容实现 SVN 接入往往没有原生的 SVN 服务好，这点事毋庸置疑的。</p><h3 id=subversion-协议代理服务器的实现>Subversion 协议代理服务器的实现</h3><p>前面 SVN 协议，虽然不全，但是那些协议内容足够实现一个 SVN 协议动态代理服务器了。普通代理服务器的实现比较简单，具有路由能力的代理服务器
+则有点难度，主要难度体现在需要解析特定协议的请求内容，然后得到用户请求资源所在的服务器。</p><p>笔者在 2015 年底实现了一个 SVN 协议动态代理服务器，以下是实现思路</p><p>在客户端 C 和代理服务器 S 建立连接后， S 向 C 发送一个数据包：</p><ul><li>服务器头</li></ul><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-txt data-lang=txt><span style=display:flex><span>#S to C
+</span></span><span style=display:flex><span>( success ( 2 2 ( ) ( edit-pipeline svndiff1 absent-entries depth inherited-props log-revprops ) ) )
+</span></span></code></pre></div><p>C 接收到 S 的数据后，必须做出选择，并发送第一个请求给 S。</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-txt data-lang=txt><span style=display:flex><span>#C to S
+</span></span><span style=display:flex><span>( 2 ( edit-pipeline svndiff1 absent-entries depth mergeinfo log-revprops ) 43:svn://subversion.io/apache/subversion/trunk 53:SVN/1.8.13-SlikSvn-1.8.13-X64 (x64-microsoft-windows) ( ) )
+</span></span></code></pre></div><p>S 接收到 C 的请求后，解析 数据包，提取到 URL 为 svn://subversion.io/apache/subversion/trunk , 而 Gitlab 的规则是 host/user/repo,
+如果不同用户的存储库放在不同机器上，这个时候提取到用户为 apache, 交由路由选择模块去处理得到后端的地址，也就是真实 svnserve 的 IP 和端口。</p><p>建立与后端服务器 B 的连接。这个时候 S 读取 B 的数据包，也就是前面的服务器头,接收完毕直接丢弃即可，然后将客户端 C 的头请求转发给后端服务器。</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-txt data-lang=txt><span style=display:flex><span>#S to B
+</span></span><span style=display:flex><span>( 2 ( edit-pipeline svndiff1 absent-entries depth mergeinfo log-revprops ) 43:svn://subversion.io/apache/subversion/trunk 53:SVN/1.8.13-SlikSvn-1.8.13-X64 (x64-microsoft-windows) ( ) )
+</span></span></code></pre></div><p>这里值得注意的是 svnkit，Subversion Javahl 并没有添加 UA 字符串，所以解析时略过即可。</p><p>至此，代理服务器的后面就不必关系细节了，通常使用 Boost.ASIO 等异步框架，在使用 Boost.ASIO 时，先以阻塞的方式与客户端通信，待到与后端存储服务器
+建立连接后才使用异步的方式转发数据包。</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-txt data-lang=txt><span style=display:flex><span>Client &lt;---&gt; Proxy Server &lt;---&gt; Backend Subversion Server
+</span></span></code></pre></div><p>一个基本的 SVN 协议动态代理服务器就实现了。</p><h2 id=结尾>结尾</h2><p>如果你不是专业的 Git 或者 Subversion 开发者，你可能会觉得上面的内容没什么用处，实际上也没什么技术难度。</p><hr width=100% id=EOF><p style=color:#777>Last modified on 2015-10-16</p></div></div><nav class=post-pagination><a class=newer-posts href=/posts/2015/2015-11-27-new-launcher/>Next<br>基于清单的启动器的实现
+</a><a class=older-posts href=/posts/2015/2015-06-16-aot/>Previous<br>软件的变革与 AOT</a></nav><div class=post-comment-wrapper></div></div></div></div></div><div id=sideContainer class=side-container><a class="a-block nav-head false" href=https://forcemz.net/><div class=nav-title>Charlie's Rethinking</div><div class=nav-subtitle>Themed by Diary.</div></a><div class=nav-link-list><a class="a-block nav-link-item active" href=/posts>归档
+</a><a class="a-block nav-link-item false" href=/categories>分类
+</a><a class="a-block nav-link-item false" href=/tags>标签
+</a><a class="a-block nav-link-item false" href=/about>关于
+</a><a class="a-block nav-link-item false" href=/index.xml>RSS Feed</a></div><div class=nav-footer>Hugo Theme <a href=https://github.com/amazingrise/hugo-theme-diary>Diary</a> by <a href=https://risehere.net/>Rise</a><br>Ported from <a href=https://mak1t0.cc/ target=_blank rel="noreferrer noopener">Makito</a>'s <a href=https://github.com/SumiMakito/hexo-theme-journal/ target=_blank rel="noreferrer noopener">Journal.</a><br><br>&copy;
+Copyright (c) 2009-2024 J23</div></div><div id=extraContainer class=extra-container><div class=toc-wrapper><div class=toc><div class=toc-content><center>- CATALOG -</center><ul><ul><li><a href=#%e5%89%8d%e8%a8%80 class=nav-前言>前言</a></li><li><a href=#%e7%89%88%e6%9c%ac%e6%8e%a7%e5%88%b6%e7%b3%bb%e7%bb%9f%e8%a7%81%e9%97%bb class=nav-版本控制系统见闻>版本控制系统见闻</a></li><li><a href=#git-%e6%8a%80%e6%9c%af%e5%86%85%e5%b9%95 class=nav-git-技术内幕>Git 技术内幕</a></li><ul><li><a href=#git-%e5%ad%98%e5%82%a8 class=nav-git-存储>Git 存储</a></li><li><a href=#git-%e4%bc%a0%e8%be%93%e5%8d%8f%e8%ae%ae class=nav-git-传输协议>Git 传输协议</a></li></ul><li><a href=#git-%e4%bb%a3%e7%a0%81%e6%89%98%e7%ae%a1%e5%b9%b3%e5%8f%b0%e7%9a%84%e5%bc%80%e5%8f%91%e6%bc%94%e8%bf%9b class=nav-git-代码托管平台的开发演进>Git 代码托管平台的开发演进</a></li><ul><li><a href=#%e5%9f%ba%e4%ba%8e-rpc-%e7%9a%84-git-%e5%88%86%e5%b8%83%e5%bc%8f%e8%ae%be%e8%ae%a1 class=nav-基于-rpc-的-git-分布式设计>基于 RPC 的 GIT 分布式设计</a></li><li><a href=#%e5%9f%ba%e4%ba%8e-libgit2-%e7%9a%84-smart-%e5%8d%8f%e8%ae%ae%e5%ae%9e%e7%8e%b0 class=nav-基于-libgit2-的-smart-协议实现>基于 libgit2 的 smart 协议实现</a></li></ul><li><a href=#subversion-%e5%86%85%e5%b9%95 class=nav-subversion-内幕>Subversion 内幕</a></li><ul><li><a href=#subversion-http-%e5%8d%8f%e8%ae%ae%e5%ae%9e%e7%8e%b0 class=nav-subversion-http-协议实现>Subversion HTTP 协议实现</a></li><li><a href=#subversion-svn-%e5%8d%8f%e8%ae%ae%e5%ae%9e%e7%8e%b0 class=nav-subversion-svn-协议实现>Subversion SVN 协议实现</a></li><li><a href=#subversion-%e5%85%bc%e5%ae%b9%e5%ae%9e%e7%8e%b0 class=nav-subversion-兼容实现>Subversion 兼容实现</a></li><li><a href=#subversion-%e5%8d%8f%e8%ae%ae%e4%bb%a3%e7%90%86%e6%9c%8d%e5%8a%a1%e5%99%a8%e7%9a%84%e5%ae%9e%e7%8e%b0 class=nav-subversion-协议代理服务器的实现>Subversion 协议代理服务器的实现</a></li></ul><li><a href=#%e7%bb%93%e5%b0%be class=nav-结尾>结尾</a></li></ul></div></div></div><div class=pagination><a id=globalBackToTop class="pagination-action animated-visibility" href=#top :class="{ invisible: scrollY == 0 }"><i class="material-icons pagination-action-icon">keyboard_arrow_up
+</i></a><a type=button class=pagination-action id=darkModeToggleButton><span class="material-icons pagination-action-icon" id=darkModeToggleIcon>dark_mode</span></a></div></div><div id=single-column-footer>Hugo Theme <a href=https://github.com/amazingrise/hugo-theme-diary>Diary</a> by <a href=https://risehere.net/>Rise</a><br>Ported from <a href=https://mak1t0.cc/ target=_blank rel="noreferrer noopener">Makito</a>'s <a href=https://github.com/SumiMakito/hexo-theme-journal/ target=_blank rel="noreferrer noopener">Journal.</a><br><br>&copy;
+Copyright (c) 2009-2024 J23</div></div><script src=/js/journal.js></script></body></html>

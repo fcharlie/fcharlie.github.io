@@ -1,0 +1,1267 @@
+<?xml-stylesheet href="/rss.xsl" type="text/xsl"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Charlie's Rethinking</title><link>https://forcemz.net/</link><description>Recent content on Charlie's Rethinking</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><copyright>Copyright (c) 2009-2024 J23</copyright><lastBuildDate>Mon, 01 Apr 2024 20:00:00 +0800</lastBuildDate><atom:link href="https://forcemz.net/index.xml" rel="self" type="application/rss+xml"/><item><title>Golang 简单的国际化多语言支持思路</title><link>https://forcemz.net/posts/2022/2022-05-22-golang-i18n/</link><pubDate>Sun, 22 May 2022 12:00:00 +0800</pubDate><guid>https://forcemz.net/posts/2022/2022-05-22-golang-i18n/</guid><description>Charlie's Rethinking https://forcemz.net/posts/2022/2022-05-22-golang-i18n/ -&lt;h2 id="前言">前言&lt;/h2>
+&lt;p>在我之前的软件开发过程中，无论是开源软件还是公司的项目，我在程序中输出的提示多是蹩脚的英文，这大概是代码多用英文，习惯使然，但这对使用者或许并不好，后来在公司的项目中，我们大抵会使用英文和中文重复一段信息，然后不论是中文用户还是英文用户也都能简单的阅读。&lt;/p>
+&lt;p>这通常是不错的，但最近老板们想要推进大库研发，也就是很多人在一个很大的仓库上进行协助，这不仅需要代码托管后端的架构改造，也需要客户端工具的支持，还有一些其它组件的协作，与代码托管的服务端客户端的工作主要就落在了我的身上，既然要做客户端，那么客户端的多语言要不要做，怎么做？&lt;/p>
+&lt;p>自大约十年之前，我在大学寝室使用 Win32 编写 Wifi 热点开启助手的时候就接触过多语言，那个时候我使用 &lt;code>ini&lt;/code> 存储对应语言的字符串，程序运行的过程中动态加载相关的字符串，这样就实现了多语言。实际上在 Windows 系统还存在一些其他的国际化支持方案，比如使用 Windows Resources 存储字符串，操作系统按照语言环境加载相关的翻译，另外这些资源还可以存在单独的 dll 中，新增的语言只需要添加该语言的翻译然后编译成 dll 分发即可，这种机制在 Windows 程序中被广泛运用。&lt;/p>
+&lt;p>如果要去了解国际化还可以看看 chromium, vscode 的国际化，这里篇幅有限，不做赘述。&lt;/p>
+&lt;h2 id="国际化的思路">国际化的思路&lt;/h2>
+&lt;p>回过头来，如果要在 Golang 客户端程序中实现国际化，我应该怎么做？&lt;/p>
+&lt;p>首先，我目前想到的方案是，国际化本质上是字符串替换，那么比较简单的就是我们建立字符串映射表，在 golang 中，我们使用 &lt;code>map[string]string&lt;/code> 就可以做到，其次，资源怎么存？golang 1.16 新增了 go embed 可以将资源嵌入到程序中，这样我们就可以把翻译文件嵌入到 golang 二进制文件中，然后使用 &lt;code>embed.FS&lt;/code> 去读取，这样就可以根据实际的 locale 进行切换，这样不就实现了国际化么？&lt;/p>
+&lt;h2 id="演示">演示&lt;/h2>
+&lt;p>为了证明我的思路正确，我花了一点时间写了个简单的项目 &lt;a href="https://github.com/fcharlie/golang-i18n-demo">golang-i18n-demo&lt;/a>。&lt;/p>
+&lt;p>在这个项目中，在 Windows 中，我使用 &lt;code>GetUserDefaultLocaleName&lt;/code> 获得当前的区域名称，在其他操作系统中，我使用环境变量获取当前的区域名称：&lt;code>var localeEnvs = []string{&amp;quot;LC_ALL&amp;quot;, &amp;quot;LC_MESSAGES&amp;quot;, &amp;quot;LANG&amp;quot;}&lt;/code>。&lt;/p>
+&lt;p>资源文件我使用 &lt;code>toml&lt;/code> 存储，这种格式严格约束，有好的工具容易编写和格式化，格式化字符串可以直接存储到 TOML 的&lt;a href="https://toml.io/cn/v1.0.0#%E9%94%AE%E5%90%8D">引号键&lt;/a>中（&lt;em>引号键遵循与基本字符串或字面量字符串相同的规则并允许你使用更为广泛的键名&lt;/em> ），TOML 文件的解析也比 JSON 高效，因此选择 TOML 格式存储是一个较好的选择。&lt;/p>
+&lt;p>在项目中，我们添加了如下多语言翻译：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-toml" data-lang="toml">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#828b96;font-style:italic"># zh-CN.toml&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6be9d">&amp;#34;current os &amp;#39;%s&amp;#39;\n&amp;#34;&lt;/span> = &lt;span style="color:#a6be9d">&amp;#34;当前系统为 &amp;#39;%s&amp;#39;\n&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#58a1dd">ok&lt;/span> = &lt;span style="color:#a6be9d">&amp;#34;好的&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#58a1dd">cancel&lt;/span> = &lt;span style="color:#a6be9d">&amp;#34;取消&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>编写源代码：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-go" data-lang="go">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#ff636f">package&lt;/span> &lt;span style="color:#58a1dd">main&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#ff636f">import&lt;/span> (
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6be9d">&amp;#34;fmt&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6be9d">&amp;#34;os&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6be9d">&amp;#34;runtime&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6be9d">&amp;#34;github.com/fcharlie/golang-i18n-demo/modules/locale&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#ff636f">func&lt;/span> &lt;span style="color:#58a1dd">main&lt;/span>() {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">os&lt;/span>.&lt;span style="color:#58a1dd">Setenv&lt;/span>(&lt;span style="color:#a6be9d">&amp;#34;LC_ALL&amp;#34;&lt;/span>, &lt;span style="color:#a6be9d">&amp;#34;zh_CN.UTF8&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">_&lt;/span> = &lt;span style="color:#58a1dd">locale&lt;/span>.&lt;span style="color:#58a1dd">DelayInitializeLocale&lt;/span>()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">fmt&lt;/span>.&lt;span style="color:#58a1dd">Fprintf&lt;/span>(&lt;span style="color:#58a1dd">os&lt;/span>.&lt;span style="color:#58a1dd">Stderr&lt;/span>, &lt;span style="color:#a6be9d">&amp;#34;load ok=&amp;#39;%v&amp;#39;\n&amp;#34;&lt;/span>, &lt;span style="color:#58a1dd">locale&lt;/span>.&lt;span style="color:#58a1dd">LoadString&lt;/span>(&lt;span style="color:#a6be9d">&amp;#34;ok&amp;#34;&lt;/span>))
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">locale&lt;/span>.&lt;span style="color:#58a1dd">Fprintf&lt;/span>(&lt;span style="color:#58a1dd">os&lt;/span>.&lt;span style="color:#58a1dd">Stderr&lt;/span>, &lt;span style="color:#a6be9d">&amp;#34;current os &amp;#39;%s&amp;#39;\n&amp;#34;&lt;/span>, &lt;span style="color:#58a1dd">runtime&lt;/span>.&lt;span style="color:#58a1dd">GOOS&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>运行：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-txt" data-lang="txt">&lt;span style="display:flex;">&lt;span>load ok=&amp;#39;好的&amp;#39;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>当前系统为 &amp;#39;windows&amp;#39;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="进阶">进阶&lt;/h2>
+&lt;p>这个演示足够简单，并未涉及多语言的切换，当然对于 cli 程序来说，多语言一般是一次初始化即可，对于 GUI 程序还需要实现切换机制，这个并不难，在更改语言后调用 DelayInitializeLocale，或者修改其参数即可。&lt;/p>
+&lt;p>对于 Web 服务，我们还可以同时加载所有语言翻译，按照用户请求的语言偏好选择相应的翻译即可。&lt;/p>
+&lt;p>另外，我们还可以给 Git 提交 PR，在 Push 过程中将 Locale 设置传递给服务端，改进服务端的提示。&lt;/p>
+&lt;h2 id="总结">总结&lt;/h2>
+&lt;p>Windows 的资源字符串（Resources）存储在 PE 的 Resource Directory，golang embed 并不是如此，而是采取的更通用的方式（毕竟 ELF 和 Mach-O 没有类似的结构），这样带来的后果可能是运行内存的增加，但这些在现在的大内存环境下，影响并没有那么严重。&lt;/p>
+- https://forcemz.net/posts/2022/2022-05-22-golang-i18n/ - Copyright (c) 2009-2024 J23</description></item><item><title>若浮生若梦，为欢几何</title><link>https://forcemz.net/posts/2022/2022-01-01-life-is-like-a-dream/</link><pubDate>Sat, 01 Jan 2022 20:00:00 +0800</pubDate><guid>https://forcemz.net/posts/2022/2022-01-01-life-is-like-a-dream/</guid><description>Charlie's Rethinking https://forcemz.net/posts/2022/2022-01-01-life-is-like-a-dream/ -&lt;h2 id="一李白的诗">一、李白的诗&lt;/h2>
+&lt;p>坦白的说，我是一个粗俗的人，没有脱离低级趣味的人，但我有时候又会显得不一样，举起酒杯时：&lt;code>人生得意须尽欢，莫使金樽空对月。&lt;/code> 离别时：&lt;code>桃花潭水深千尺，不及汪伦送我情。&lt;/code> 梦呓时：&lt;code>事了拂衣去，深藏身与名。&lt;/code>&lt;/p>
+&lt;p>然而，回顾仿佛在昨天的 2021 年，我会觉得&lt;code>若浮生若梦，为欢几何&lt;/code>正好形容。&lt;/p>
+&lt;p>开元十五年，二十七的李白“仗剑去国，辞亲远游”，约开元二十一年在安陆与堂弟们春夜宴饮赋诗作序文：&lt;/p>
+&lt;blockquote>
+&lt;p>夫天地者万物之逆旅也；光阴者百代之过客也。而浮生若梦，为欢几何？古人秉烛夜游，良有以也。况阳春召我以烟景，大块假我以文章。会桃花之芳园，序天伦之乐事。群季俊秀，皆为惠连；吾人咏歌，独惭康乐。幽赏未已，高谈转清。开琼筵以坐花，飞羽觞而醉月。不有佳咏，何伸雅怀？如诗不成，罚依金谷酒数。&lt;/p>
+&lt;/blockquote>
+&lt;h2 id="二城市">二、城市&lt;/h2>
+&lt;p>十八岁之前，我都生活在洞庭湖区的一个小乡村，地势平坦，村落密集，这片土地亦老亦新，既有新石器时代晚期华夏先人繁衍生息的遗迹，也有 1895 设县的短暂历史，千百年间，沧海桑田，水淹泽国，水退良田。如今，若是一个饕餮，何不尽情剥壳吃虾，酣畅淋漓。&lt;/p>
+&lt;p>刘邦先入关中，项羽佯尊楚怀王为义帝，徙于长沙郴县，暗中杀害，义帝陵位于郴州北湖区文化路，18 岁时，我赴郴州读书，校址在苏仙区，兼职或出校玩的时候路过几次，但并未去义帝陵跨越千年见一见楚汉争霸最受伤的人。读书之外，在郴州发传单兼职的日子颇有意思，40 元一天的工资能够抵两三天的伙食费，5 快一碗的郴州鱼粉至今让我念念不忘，我可以忘记过自己喜欢过什么样的女生，但忘不了饕餮的使命，郴州鱼粉严格来说叫栖凤渡鱼粉，至于说什么与三国时期的凤雏先生庞统有关这个无从考证，白鲢鱼炖出红彤彤的汤头，鲜辣是其特色，浇在米粉上，吃一碗，辣起来，过把瘾，校门口的餐馆老板还经常帮我们加粉。&lt;/p>
+&lt;p>郴州去处可多，雾漫小东江，烟雨朦胧，东江大坝一坝锁东江，高峡出平湖，那里渔获丰富，还记得十元买了六条小鱼，嘎嘣酥脆。东江湖边上一条小道斜上到了清江镇，这里的橘子特别好吃。&lt;/p>
+&lt;p>郴州市区往南 50 千米，便到了宜章，尽管过了七八年，我还十分怀念宜章的芋荷鸭，一种拿芋荷（芋头的绿色茎）制作的美食，在我的老家，我们更喜欢吃的是酸芋荷炖白鲢鱼，各有各的特色。宜章县城往西南狂飙到与广东的边界，就到了莽山国家级自然保护区，这里有着剧毒的珍惜蛇&amp;ndash;莽山烙铁头蛇，也就是俗称“小青龙”。去的那次刚好下小雨，及至山顶，云遮雾绕，岂不美哉！&lt;/p>
+&lt;p>读书的时候不觉，工作后才发现，那几年的时光快乐悠闲，尽情欢娱。&lt;/p>
+&lt;p>天气太冷，不瞎写了。&lt;/p>
+- https://forcemz.net/posts/2022/2022-01-01-life-is-like-a-dream/ - Copyright (c) 2009-2024 J23</description></item><item><title>Baulk - 一次有趣的尝试</title><link>https://forcemz.net/posts/2021/2021-07-20-baulk-talk/</link><pubDate>Tue, 20 Jul 2021 20:00:00 +0800</pubDate><guid>https://forcemz.net/posts/2021/2021-07-20-baulk-talk/</guid><description>Charlie's Rethinking https://forcemz.net/posts/2021/2021-07-20-baulk-talk/ -&lt;h2 id="前言">前言&lt;/h2>
+&lt;p>作为一个程序员，你认为你做过的最让你自豪的东西是什么？作为了一个菜鸡程序员，很遗憾，我拿不出什么像样的作品，工作上也只是站在前人的肩膀上，做了一些微小的改动。如果硬要说一个作品是我最得意的，我会选择 Baulk，它是一个极简的 Windows 包管理器，开发这个工具花费了我大量的业余时间，我很多有意思的构想也在开发 baulk 的过程中付诸实现了。Baulk &lt;code>[bɔːk]&lt;/code> 其含义是&lt;code>错误；失败；障碍（等于balk）&lt;/code> 或是 &lt;code>阻止；错过；推诿（等于balk）&lt;/code>；对于绝大多数人来说，2020 年有一个坠落的魔幻开局，到了今年，新冠疫情的阴影任然笼罩全球，Baulk 诞生于 2020 年 3 月 9 日，那个时候我确实是挫败的吧。Baulk 还可以翻译成&lt;code>梁木&lt;/code>，阴云将逐渐消散，baulk 也可以成为 &lt;code>梁木&lt;/code>。&lt;/p>
+&lt;p>我认为 Baulk 是个有趣的工具，在这篇文章中，我将说一说它为什么会有趣。&lt;/p>
+&lt;h2 id="为什么会有-baulk">为什么会有 Baulk&lt;/h2>
+&lt;p>为什么会有 Baulk，我想到了一个词&lt;strong>文人相轻&lt;/strong>，总觉得自己能够写出更好的软件，他人写的并不能满足我的需求，于是乎，也就有了 Baulk。&lt;/p>
+&lt;p>《典论·论文》- 曹丕： &lt;code>文人相轻,自古而然.傅毅之于班固,伯仲之间耳.而固小之,与弟超书曰：“武仲以能属文，为兰台令史,下笔不能自休.”夫人善于自见.而文非一体,鲜能备善,是以各以所长,相轻所短.里语曰：“家有弊帚,享之千金.”斯不自见之患也。&lt;/code>&lt;/p>
+&lt;p>在开发 Baulk 很长一段时间，我使用 PowerShell 开发了一个简单的包管理软件 devi，这个软件最初用于 Clang on Windows 的构建工具的安装，升级。毕竟重复得一次次手动下载安装一些软件总显得有些愚蠢，就如同我们重复说同样的话会被别人觉得怪异。&lt;/p>
+&lt;p>使用 PowerShell 开发的 devi 缺点也很明显，慢，尽管我是一个 PowerShell 粉丝，但事实我也需要说出来，PowerShell 的加载速度慢，毕竟它需要加载 PowerShell 解析引擎，如果还加载一些启动配置文件，那个速度就很感人了。&lt;/p>
+&lt;p>2020 年上半年，我终于开始不再忍受基于 PowerShell 的 devi，于是就开始使用 C++17（后来升级为 C++20） 开发新的包管理器 baulk，在 Windows 上有 scoop、chocolatey 这样优秀的开源包管理器，但它们都是基于 PowerShell（C#） 开发，然后在环境变量和安装机制上也与 Baulk 有一些分歧。这些不同之处也是 baulk 存在的原因。&lt;/p>
+&lt;h2 id="baulk-有哪些特色">Baulk 有哪些特色&lt;/h2>
+&lt;p>在 baulk 的 ReadMe 页面，介绍了 baulk 的一些特色，但很繁杂，并不是很容易了解全，这里再次简单的介绍一下。&lt;/p>
+&lt;h3 id="baulk-是一个绿色的包管理器">Baulk 是一个绿色的包管理器&lt;/h3>
+&lt;p>在 baulk 的设计哲学中，便携，绿色是其管理软件的宗旨，这衍生出来一些特性，baulk 在安装软件的过程中所执行的动作只有：&lt;/p>
+&lt;ol>
+&lt;li>解压压缩包&lt;/li>
+&lt;li>移动到安装目录&lt;/li>
+&lt;li>创建命令的符号链接或者启动器&lt;/li>
+&lt;/ol>
+&lt;p>为了实现解压各种格式的安装包，baulk 将 Golang 的 &lt;a href="https://github.com/golang/go/tree/master/src/archive/zip">archive/zip&lt;/a> 和 &lt;a href="https://github.com/golang/go/tree/master/src/archive/zip">archive/tar&lt;/a> 使用 C++20 重新实现，提供了 &lt;code>.zip&lt;/code>、&lt;code>tar.*&lt;/code> 等格式的解压能力。其中 zip 解压缩相比于 Minizip 新增支持 deflate64 解压缩能力，与 7z 的 zip 解压缩相比，支持 zstd，可以说 baulk 的解压缩能力还是不错的，另外，baulk 集成了 google 的 &lt;a href="https://github.com/google/compact_enc_det">Compact Encoding Detection(CED for short)&lt;/a> 支持文本编码的自动识别，而一些旧的 zip 文件名并非使用 UTF-8，导致在不同的代码也共享具有中文或者其他多字节编码的文件名的 zip 文件查看或者解压缩乱码，这个问题在 baulk 中被基本解决。&lt;/p>
+&lt;p>baulk 创新的使用了 Linux/macOS 的安装-软链接技术，这样能够合并 PATH 环境变量的条目数，降低操作系统在搜索环境变量的次数，对的你没看错，操作系统在查找 PATH 中的命令时需要一个目录去找，如果环境变量 PATH 组成的目录太多，会导致搜索次数太多，另外还有一个非常严重的问题，PATH 条目过多还存在 环境变量冲突的影响。baulk 的软链机制就很好的解决了这些问题。有些程序依赖自身目录下的动态链接库，并没有正确处理 GetModuleFilename，所以我们还增加了启动器的机制，当用户安装了 Visual Studio (c++ compiler exists)，我们会生成极简的启动源码，编译成启动器，如果没有则会使用 baulk-lnk.exe 代理，baulk-lnk.exe 需要分析安装信息，所以要慢一点点，只有一点点，不会太多。&lt;/p>
+&lt;h2 id="baulk-的环境隔离特性">Baulk 的环境隔离特性&lt;/h2>
+&lt;p>baulk 作为一个绿色的包管理器，一个很强的特性是环境隔离机制，为了支持并行安装同类软件的多个版本，我在 baulk 中引入了虚拟环境隔离机制，对于像 JDK/Golang/DMD/node.js 这样的软件，用户需要安装多个版本并且相互不影响，这个时候 baulk 就派上大用场了，baulk 也不需要像 RVM(ruby) 那样麻烦就能做到提供一套通用解决方案：&lt;/p>
+&lt;p>下面以 zulu（JDK 的著名发行版）为例，在这里我们支持的 venv 能够指定 category，这是一个大的分类，比如所有的 JDK 发行版的分类就应该是 java，而 &lt;code>path&lt;/code> 则告知 baulk-exec 在加载虚拟环境时需要追加的 PATH 环境变量，而 env 则是除了 path 之外其他追加的环境变量，这些变量都支持推导，baulk 内置一些变量可以帮助开发者更好的展开环境变量。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-json" data-lang="json">&lt;span style="display:flex;">&lt;span>{
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">&amp;#34;description&amp;#34;&lt;/span>: &lt;span style="color:#a6be9d">&amp;#34;Zulu is certified build of OpenJDK&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">&amp;#34;version&amp;#34;&lt;/span>: &lt;span style="color:#a6be9d">&amp;#34;16.0.2&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">&amp;#34;homepage&amp;#34;&lt;/span>: &lt;span style="color:#a6be9d">&amp;#34;https://www.azul.com/&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">&amp;#34;url64&amp;#34;&lt;/span>: &lt;span style="color:#a6be9d">&amp;#34;https://cdn.azul.com/zulu/bin/zulu16.32.15-ca-jdk16.0.2-win_x64.zip&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">&amp;#34;url64.hash&amp;#34;&lt;/span>: &lt;span style="color:#a6be9d">&amp;#34;SHA256:2b9ad008596c535c0b4da6ddabe56b35af3198cf00a933b1e60e074a30f31047&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">&amp;#34;urlarm64&amp;#34;&lt;/span>: &lt;span style="color:#a6be9d">&amp;#34;https://cdn.azul.com/zulu/bin/zulu16.30.17-ca-jdk16.0.1-win_aarch64.zip&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">&amp;#34;urlarm64.hash&amp;#34;&lt;/span>: &lt;span style="color:#a6be9d">&amp;#34;SHA256:5263cfc5f9526a5cb9520111d5abb506c6cad18bd1d1ea165d0f218cfd1318c3&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">&amp;#34;extension&amp;#34;&lt;/span>: &lt;span style="color:#a6be9d">&amp;#34;zip&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">&amp;#34;venv&amp;#34;&lt;/span>: {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">&amp;#34;category&amp;#34;&lt;/span>: &lt;span style="color:#a6be9d">&amp;#34;java&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">&amp;#34;path&amp;#34;&lt;/span>: &lt;span style="color:#a6be9d">&amp;#34;${BAULK_PKGROOT}\\bin&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">&amp;#34;env&amp;#34;&lt;/span>: [
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6be9d">&amp;#34;JAVA_HOME=${BAULK_PKGROOT}&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> ]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>当然，baulk 还支持 &lt;code>include&lt;/code>、&lt;code>lib&lt;/code> 这类特殊的环境变量，这些单独抽出来是为了方便追加。另外 baulk 还支持 &lt;code>dependencies&lt;/code> 机制，比如 kotlin-native 就依赖 zulu。&lt;/p>
+&lt;p>baulk 虚拟环境的精髓在 baulk-exec 中得以实现，其命令行如下：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-txt" data-lang="txt">&lt;span style="display:flex;">&lt;span>baulk-exec - Baulk extend executor
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Usage: baulk-exec [option] &amp;lt;command&amp;gt; [&amp;lt;args&amp;gt;] ...
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> -h|--help Show usage text and quit
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> -v|--version Show version number and quit
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> -V|--verbose Make the operation more talkative
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> -C|--cleanup Create clean environment variables to avoid interference
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> -W|--cwd Set the command startup directory
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> -A|--arch Select a specific arch, use native architecture by default
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> -E|--venv Choose to load a specific package virtual environment
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> --vs Load Visual Studio related environment variables
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> --vs-preview Load Visual Studio (Preview) related environment variables
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> --clang Add Visual Studio&amp;#39;s built-in clang to the PATH environment variable
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> --time Summarize command system resource usage
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Example:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> baulk-exec -V --vs TUNNEL_DEBUG=1 pwsh
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Built-in alias:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> winsh A fake shell. It may be pwsh or powershell and cmd.
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> pwsh PowerShell Core
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> pwsh-preview PowerShell Core Preview
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>对了，如果用户觉得环境变量乱糟糟的，可以使用 &lt;code>-C/--cleanup&lt;/code> 机制避免外部混乱的环境变量带来干扰，为了方便 C++ 开发，baulk 支持初始化 Visual C++ 环境变量，&lt;code>--clang&lt;/code> 则可以初始化 Visual Studio 内置的 clang，当然你还可以使用 &lt;code>--time&lt;/code> 去分析执行某个命令所消耗的时间。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span> &amp;gt;$ baulk-exec --time baulk unzip .&lt;span style="color:#a6be9d">\D&lt;/span>G520884_x64.zip
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>x DiskGenius&lt;span style="color:#a6be9d">\V&lt;/span>Preview.dll
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>run &lt;span style="color:#58a1dd">command&lt;/span> &lt;span style="color:#a6be9d">&amp;#39;baulk unzip .\DG520884_x64.zip&amp;#39;&lt;/span> use time:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Creation: 625.6us
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Kernel: 125ms
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>User: 93.75ms
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Exit: 231.0306ms
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Wall: 231.9762ms
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="baulk-的其他功能">Baulk 的其他功能&lt;/h2>
+&lt;p>baulk 还实现了许多其他的功能，限于篇幅长度也就不一一说了，有兴趣可以访问 [&lt;a href="https://github.com/baulk/baulk/issues">baulk/ReadMe.zh-CN.md at master · baulk/baulk (github.com)&lt;/a>] 提出建议或者参与到项目的贡献当中。&lt;/p>
+- https://forcemz.net/posts/2021/2021-07-20-baulk-talk/ - Copyright (c) 2009-2024 J23</description></item><item><title>调查报告：你想待在这个城市吗？</title><link>https://forcemz.net/posts/2021/2021-03-12-report-workers-2021/</link><pubDate>Fri, 12 Mar 2021 16:00:00 +0800</pubDate><guid>https://forcemz.net/posts/2021/2021-03-12-report-workers-2021/</guid><description>Charlie's Rethinking https://forcemz.net/posts/2021/2021-03-12-report-workers-2021/ -&lt;h2 id="0x0-调查的缘由">0x0 调查的缘由&lt;/h2>
+&lt;p>一个人的观点要结合实际情况，当我要评价人们对一个城市的归属感时，也不能道听途说，人云亦云。那么我要掌握实际情况该怎么做？问卷调查是一种不错的方法，于是我就编辑了一个调查问卷，在 v2ex 上分享，然后也转发给一些同事朋友，请求他们的协助。&lt;/p>
+&lt;h2 id="0x1-调查问卷的回收">0x1 调查问卷的回收&lt;/h2>
+&lt;p>最后更新时间：&lt;strong>2021年3月20日 14:34:11 UTC+8&lt;/strong>&lt;/p>
+&lt;p>截至目前共回收调查问卷 274 份，删掉一份因受访者填写暴露了个人隐私，有效问卷是 273 份。273 份问卷中，受访者男性有 200 位，女性有 65 位，其他有 8 位。这一数据表明女性的样本数较少，因此在评价女性的归属感时，可能会出现一些的失误。&lt;/p>
+&lt;p>数据分享存储库：&lt;a href="https://github.com/developerv5/2021-survey">https://github.com/developerv5/2021-survey&lt;/a>&lt;br/>
+CSV 数据地址：&lt;a href="https://github.com/developerv5/2021-survey/blob/mainline/MigrantWorkersSurvey.csv">https://github.com/developerv5/2021-survey/blob/mainline/MigrantWorkersSurvey.csv&lt;/a>&lt;br/>
+部分交叉分析 PDF: &lt;a href="https://github.com/developerv5/2021-survey/blob/mainline/survey-cross-analysis.pdf">https://github.com/developerv5/2021-survey/blob/mainline/survey-cross-analysis.pdf&lt;/a>&lt;/p>
+&lt;p>&lt;img src="https://s4.ax1x.com/2021/03/20/6htDSg.png" alt="chart.png">&lt;/p>
+&lt;p>受访者 26~30 岁居多，而 35 岁以上更少，这与笔者问卷投放的平台和对象关系较密切。&lt;/p>
+&lt;p>&lt;img src="https://s4.ax1x.com/2021/03/20/6ht5pF.png" alt="chart 1.png">&lt;/p>
+&lt;p>受访者当前工作的城市（排除其他选项后）题中，在深圳工作的数量更多。&lt;/p>
+&lt;p>&lt;img src="https://s4.ax1x.com/2021/03/20/6htHmR.png" alt="chart 2.png">&lt;/p>
+&lt;h2 id="0x2-大城市有更多的可能大城市也有更多的不可能">0x2 大城市有更多的可能，大城市也有更多的不可能&lt;/h2>
+&lt;p>回到“ 你是否愿意在现在工作的城市定居？”这个问题，55.7% 的受访者表示愿意，但也有 32.2% 的受访者表示不愿意，12.1% 的受访者表示不确定。&lt;/p>
+&lt;p>&lt;img src="https://s4.ax1x.com/2021/03/20/6htXtK.png" alt="chart.png">&lt;/p>
+&lt;p>那么我们按照当前工作的城市交叉分析这个问题，可以看到在北京，广州和深圳工作的受访者意愿最低，北京仅有 42.9% 的受访者表示愿意45.7% 的受访者表示不愿意，11.4% 的受访者表示不确定。&lt;del>而在落户限制比较宽松的深圳市，也只有 47.3% 的受访者表示愿意在深圳定居，超过一半的人不愿意或者不确定。广州的样本数量较少，目前也是较多的受访者不愿意或者不确定在广州定居&lt;/del>。&lt;/p>
+&lt;p>&lt;img src="https://s4.ax1x.com/2021/03/20/6hNP0I.png" alt="chart 1.png">&lt;/p>
+&lt;p>如果从性别交叉分析，结论又有一些差异，男性受访者愿意在当前城市定居的刚刚过半为 51.5%，而女性则是 70.8%，并且女性不愿意在当前工作城市定居的受访者比例更低，而男性受访者直接了当的否认在当前工作城市定居的比例更高。&lt;/p>
+&lt;p>&lt;img src="https://s4.ax1x.com/2021/03/20/6hNKns.png" alt="chart 2.png">&lt;/p>
+&lt;p>背井离乡，打工人肯定是想多挣点钱，不出所料，53.5% 的受访者认为当前工作的城市工资水平高。&lt;/p>
+&lt;p>&lt;img src="https://s4.ax1x.com/2021/03/20/6hNau9.png" alt="chart 3.png">&lt;/p>
+&lt;p>如果按照城市交叉分析，在北京工作的受访者 91.4% 满意北京的工资水平，上海则是 77.8%，深圳则只有 56.6%，可见深圳并不是一个人人向往的高薪城市。人们选择深圳的原因还有一个重要的因素，气候，57.9% 的受访者满意深圳的气候条件，但深圳的教育医疗养老，文化底蕴则惨不忍睹，还是一个美食沙漠。&lt;/p>
+&lt;p>&lt;img src="https://s4.ax1x.com/2021/03/20/6hNy9O.png" alt="chart 1.png">&lt;/p>
+&lt;p>谈到不满意家乡的因素时，83.5% 的受访者认为工资水平太低，38.5% 的受访者不满意家乡的人文素质，还有 37% 的受访者不满意家乡的教育医疗和养老。&lt;/p>
+&lt;p>&lt;img src="https://s4.ax1x.com/2021/03/20/6hNWDA.png" alt="chart 2.png">&lt;/p>
+&lt;p>在多选题“宇宙的尽头是家乡，是否有哪些因素让你想回家？”中，60.1% 的受访者因父母年龄渐长想要回家，52% 的受访者因无法在工作的城市定居想要回家，34.4% 的受访者喜欢家乡的生活节奏，18.7% 的受访者因个人感情状况想要回家。这一题交叉分析显示没有太大的性别差异。&lt;/p>
+&lt;p>&lt;img src="https://s4.ax1x.com/2021/03/20/6hNHgg.png" alt="chart 3.png">&lt;/p>
+&lt;p>在多选题“如果让你换一个城市生活，原因可能是？”中，人们首先考虑的是更好的工作机会（77.3%），其次是更宜居的生活环境（59.7%），还有一部分是感情上的突破（24.5%）。这一题交叉分析显示没有太大的性别差异。&lt;/p>
+&lt;p>&lt;img src="https://s4.ax1x.com/2021/03/20/6hNODs.png" alt="chart 4.png">&lt;/p>
+&lt;p>你最想去哪个城市？其他占据了大多数，而在北上广深几个选项中，想去深圳的人最多（15.4%），想去北京的最少（8.8%）。如果我们按照性别交叉分析，结果又不一样，女性受访者更喜欢深圳（36.9%）和其他选项接近。&lt;/p>
+&lt;p>&lt;img src="https://s4.ax1x.com/2021/03/20/6hNvEq.png" alt="chart 5.png">&lt;/p>
+&lt;p>&lt;img src="https://s4.ax1x.com/2021/03/20/6hUpCT.png" alt="chart 6.png">&lt;/p>
+&lt;h2 id="0x3-你现在的工作快乐吗">0x3 你现在的工作快乐吗？&lt;/h2>
+&lt;p>在谈到工作的时候，60.1% 的受访者表示不快乐，这个问题是不是有性别差异？我们再做交叉分析，男性受访者的不快乐比例更高达到了 66.5%，而女性受访者感到快乐的比例更高，为 63.1%。而其他群体绝大多数表示不快乐。&lt;/p>
+&lt;p>&lt;img src="https://s4.ax1x.com/2021/03/20/6hUlKH.png" alt="chart 7.png">&lt;/p>
+&lt;p>&lt;img src="https://s4.ax1x.com/2021/03/20/6hUYIP.png" alt="chart 8.png">&lt;/p>
+&lt;p>在谈及工作快乐的原因中，工作内容轻松比例最高（43.6%），其次是同事合作顺利（39.7%），以及工资水平达到预期（30.7%）和上班地点近（34.1%），工作内容有成就感并不算高（27.4%）。&lt;/p>
+&lt;p>&lt;img src="https://s4.ax1x.com/2021/03/20/6hUDqs.png" alt="chart 9.png">&lt;/p>
+&lt;p>女性受访者似乎在处理同事合作中更得心应手（49.2%），男性受访者仅有 19.5% 认为同事合作顺利。&lt;/p>
+&lt;p>&lt;img src="https://s4.ax1x.com/2021/03/20/6hUoZR.png" alt="chart 11.png">&lt;/p>
+&lt;p>在谈及工作不快乐的因素时，工资不达预期（60.4%）多数打工人的困扰，工作内容没有成就感（57.8%）是多数受访者的感受，41.3% 的受访者认为公司福利差，还有 28.4% 的受访者认为公司领导没有能力。&lt;/p>
+&lt;p>&lt;img src="https://s4.ax1x.com/2021/03/20/6hULRO.png" alt="chart 10.png">&lt;/p>
+&lt;p>而从性别进行交叉分析，56% 的男性受访者认为工作没有成就感，53% 的男性受访者认为工资不达预期，工资不达预期（41.5%）则是一大部分女性在职场上的不快乐。&lt;/p>
+&lt;p>&lt;img src="https://s4.ax1x.com/2021/03/20/6haSeA.png" alt="chart 12.png">&lt;/p>
+&lt;h2 id="0x4-你给现在的城市打几分">0x4 你给现在的城市打几分&lt;/h2>
+&lt;p>回到“ 你觉得目前生活的城市你可以打几分？”，打7分的比例最高（31.1%），其次是8分（19.8%），有73.3% 的受访者给了现在生活的城市一个超过及格线的分数。&lt;/p>
+&lt;p>&lt;img src="https://s4.ax1x.com/2021/03/20/6haFW8.png" alt="6haFW8.png">&lt;/p>
+&lt;h2 id="0x5-生活">0x5 生活&lt;/h2>
+&lt;p>现在的年轻人，大多都想睡觉，或许就是因为没有睡好，72.5% 的喜欢在工作之余补充睡眠，59.3% 的受访者则愿意从游戏中获得乐趣，看电影（52%），刷剧（48.4%），干饭（38.8%）也有不少。&lt;/p>
+&lt;p>&lt;img src="https://s4.ax1x.com/2021/03/20/6hdkA1.png" alt="6hdkA1.png">&lt;/p>
+&lt;p>从性别的角度交叉分析，女性受访者中，睡觉/看电影（69.2%）最多，刷剧（67.7%）和干饭（61.5%）拍二三位，男性受访者睡觉（75%）高居首位，游戏（67.5%）要比女性受访者（36.9%）高很多。且男性受访者在这些选项中户外运动的比例低于女性，但这个结论可能和该题不够完善有关。&lt;/p>
+&lt;p>&lt;img src="https://s4.ax1x.com/2021/03/20/6hdWDJ.png" alt="6hdWDJ.png">&lt;/p>
+&lt;h2 id="0x6-想说的话">0x6 想说的话&lt;/h2>
+&lt;p>回不去的家乡，留不住的城。&lt;/p>
+&lt;p>“我爱我的家乡，但是我不会选择回去了。”&lt;/p>
+&lt;h2 id="0x7-观点">0x7 观点&lt;/h2>
+&lt;p>这份报告还比较粗糙，有很多的不足，一些结论仅供参考，非常感谢参与答题的朋友们。&lt;/p>
+- https://forcemz.net/posts/2021/2021-03-12-report-workers-2021/ - Copyright (c) 2009-2024 J23</description></item><item><title>程序员的方法论</title><link>https://forcemz.net/posts/2021/2021-03-12-programmer-methodology/</link><pubDate>Fri, 12 Mar 2021 10:00:00 +0800</pubDate><guid>https://forcemz.net/posts/2021/2021-03-12-programmer-methodology/</guid><description>Charlie's Rethinking https://forcemz.net/posts/2021/2021-03-12-programmer-methodology/ -&lt;h2 id="前言">前言&lt;/h2>
+&lt;p>&lt;strong>你为什么会成为一名程序员&lt;/strong>？ 二月二十二日，我发起了一个&lt;a href="https://wj.qq.com/s2/8089068/7a9c">调查问卷&lt;/a>，几天后回收了 106 份，对于为什么会成为一名程序员，大家的原因很多（详细的数据可以查看：&lt;a href="https://github.com/developerv5/2021-survey/blob/mainline/2021-survey.csv">https://github.com/developerv5/2021-survey/blob/mainline/2021-survey.csv&lt;/a>），有的是迫于生计羡慕信息行业薪资高，有的是社恐不喜欢与人打交道，还有的是阴差阳错进入了计算机相关专业毕业后选择成为一名程序员，爱因斯坦说过：&lt;em>兴趣是最好的老师&lt;/em>&lt;sup>1&lt;/sup>，在学习编程的过程中也需要我们对程序开发充满兴趣，然后与理想的状况相反，只有很少一部分人因为兴趣爱好成为了一名程序员。&lt;/p>
+&lt;p>我最初也不是因为兴趣成为一名程序员的，2010 年，我报考学校的时候觉得通信工程大有作为，那个时候移动的 GSM 还占据着上风，数据流量还是使用的 GPRS，流量包是 5 元 30M，中国移动刚刚获得 TD-SCDMA 牌照不久，而业内已经开始研究 4G，UWB 等等各种各样的新技术，这种新的事物让我着迷，初入大学，我在图书馆疯狂的阅读各种通信技术、无线通信技术的书籍，可惜我们学校的氛围是松懈的，这种迷热和疯狂在也在这种松懈的氛围中渐渐冷却，没有潜心学习研究通信技术。我们学校的通信工程隶属于计算机系，所以会教授一些计算机相关的课程，不过遗憾的是教授相关课程的老师大多知识面老化，能给予的帮助有限。在配了一台 AMD 速龙四核的台式机后，我疯狂的迷上了玩电脑，宅在寝室不愿意出门，但并不是玩游戏，而是在电脑上安装各种软件，搜索各种源码，做一些小工具，希望成为一名极客受人追捧。毕业后，也没有其他本领，找了一个互联网的工作，跌跌撞撞几年，从开始的懵懂无知，工作受挫到后来的积累了一些经验，工作上逐渐有了自己的方法。总结起来，我虽然没有成为一个优秀的程序员，但我还是有了十足的成长。&lt;/p>
+&lt;p>我并不是一个优秀的程序员，但这并不妨碍我想要成为一名优秀的程序员。如何对程序开发保持&lt;strong>兴趣&lt;/strong>？如何&lt;strong>提升&lt;/strong>自我的编程水平？如何&lt;strong>增长&lt;/strong>自己的编程&lt;strong>经验&lt;/strong>？如何&lt;strong>解决&lt;/strong>程序开发中面临的各种问题？那么如何能成为一个&lt;strong>优秀的程序员&lt;/strong>？每个程序员都有发言权，在这篇文章中，我将分享自己的方法论，如果这篇文章能够给人带来一点点启发，那我就感到非常高兴呢，如果有朋友能够指出其中的不足我也是非常感激。&lt;/p>
+&lt;p>我认为在与不同的人交流方法和方法论中容易出现的碰撞，这些碰撞转变为想法的冲突，为了达成一致需要可能需要一方或者双方的妥协和退让，但也不是无条件的退让，这需要不断的改进这些思想，也就产生了新的火花，产生了新的灵感。这也是我写《程序员方法论》的初衷。&lt;/p>
+&lt;h2 id="方法论释义">方法论释义&lt;/h2>
+&lt;p>&lt;strong>方法&lt;/strong> &lt;a href="https://www.zdic.net/hans/%E6%96%B9%E6%B3%95">汉典&lt;/a>给出的释义为：&lt;em>为达到某种目的所行的方式和步骤。&lt;/em> 英语中常翻译为 &lt;em>method&lt;/em>，在一些编程语言，如 Java 中也会用到该词汇，但本文中我我将探索的并非是编程语言的词汇，而是常规语境中的方法。&lt;/p>
+&lt;p>我们知道了方法的含义，那么有没有方法可以让我们快速的找到有效解决问题的方法？这实际上就属于&lt;strong>方法论&lt;/strong>，&lt;strong>方法论&lt;/strong>是哲学用语，指的是研究如何处理问题的一个哲学分支。在&lt;a href="https://zh.wikipedia.org/wiki/%E6%96%B9%E6%B3%95%E5%AD%A6">维基百科&lt;/a>上，又称为&lt;strong>方法学&lt;/strong>，但国内通常以&lt;strong>方法论&lt;/strong>称呼为准。我们讲世界观解决的是“是什么”的问题，而方法论解决的就是“怎么做”的问题。维基百科上对方法论的定义如下：&lt;/p>
+&lt;ul>
+&lt;li>一门学问采用的方法、规则与公理；&lt;/li>
+&lt;li>一种特定的做法或一套做法；&lt;/li>
+&lt;li>在某种知识的领域上，对探索知识的原则或做法而作之分析（梅里厄姆-韦伯斯特词典）。&lt;/li>
+&lt;/ul>
+&lt;p>在&lt;a href="https://www.zdic.net/hans/%E6%96%B9%E6%B3%95%E8%AE%BA">汉典&lt;/a>中，方法论的释义如下：&lt;/p>
+&lt;ul>
+&lt;li>关于认识世界、改造世界的根本方法的学说。&lt;/li>
+&lt;li>在某一门具体学科上所采用的研究方式 、方法的综合。&lt;/li>
+&lt;/ul>
+&lt;p>古代中国方法论的发展史：&lt;/p>
+&lt;ul>
+&lt;li>公元前 600 年：孔子提出了正名的要求，并提出“能近取譬”和“举一反三”等类推方法。&lt;/li>
+&lt;li>公元前 350 年：墨子在《墨经》中阐述了力的概念和力矩原理、杠杆原理，也提出了“粒子论”的雏形，指出“端”是不占有空间的，是物体不可再细分的最小单位。&lt;/li>
+&lt;li>公元前 300 年：公孙龙通过对“白马非马”这一命题的具体分析，提出了“唯乎其彼此焉”的正名原则。&lt;/li>
+&lt;li>公元前 250 年：韩非提出了“矛盾”概念，揭示了矛盾律。&lt;/li>
+&lt;li>公元前 250 年：荀子系统化地整理了名家和墨家对儒家正名思想的逻辑学理论。&lt;/li>
+&lt;li>公元 86 年：王充在反对宗教神学的斗争中，著作了《论衡》，强调要通过论证而达到辨真伪、证是非、驳虚假的目的。&lt;/li>
+&lt;li>公元 240 年：王弼为代表的“言不尽意”论和欧阳建的“言尽意”论之间的辩论。&lt;/li>
+&lt;li>公元 1000 年：程朱学派把“理”作为思想本体，发展出由一理推知诸理的认识论观点，是北宋理学的主要内容。&lt;/li>
+&lt;/ul>
+&lt;p>西方方法论的发展史：&lt;/p>
+&lt;p>在 1960 年代以前，西方科学研究的方法，从机械到人体解剖的研究，基本是按照笛卡儿的《谈谈方法》进行的，对西方近代科学的飞速发展，起了相当大的促进作用。&lt;/p>
+&lt;p>笛卡尔在《谈谈方法》中指出，研究问题的方法分四个步骤：&lt;/p>
+&lt;ul>
+&lt;li>①永远不接受任何我自己不清楚的真理，就是说要尽量避免鲁莽和偏见，只能是根据自己的判断非常清楚和确定，没有任何值得怀疑的地方的真理。就是说只要没有经过自己切身体会的问题，不管有什么权威的结论，都可以怀疑。这就是著名的“怀疑一切”理论。例如亚里士多德曾下结论说，女人比男人少两颗牙齿。但事实并非如此。&lt;/li>
+&lt;li>②可以将要研究的复杂问题，尽量分解为多个比较简单的小问题，一个一个地分开解决。&lt;/li>
+&lt;li>③将这些小问题从简单到复杂排列，先从容易解决的问题着手。&lt;/li>
+&lt;li>④将所有问题解决后，再综合起来检验，看是否完全，是否将问题彻底解决了。&lt;/li>
+&lt;/ul>
+&lt;p>维基百科的方法论发展史不够全面，&lt;a href="https://wiki.mbalib.com/wiki/%E6%96%B9%E6%B3%95%E8%AE%BA">MBA 智库.百科&lt;/a>有着更详细的介绍：&lt;/p>
+&lt;p>英国的洛克和休谟进一步发展了经验主义方法论。洛克提出了感觉论的认识论。休谟提出了批判理性知识的怀疑论。欧洲大陆的B.斯宾诺莎和G.W.莱布尼茨进一步发展了唯理论的方法论。特别是斯宾诺莎用理性演绎法，效法几何学的方式即公理方法，建立了自已的哲学体系。这时方法论已经作为认识过程的哲学根据。由于19世纪以前，整个自然科学还处于搜集材料的阶段，只有数学和力学得到较充分的发展，故机械论和形而上学思维方法占着统治的地位。&lt;/p>
+&lt;p>康德第一个打破了形而上学思维方法的缺口。他从物质微粒之间的吸引和排斥的矛盾统一运动来说明太阳系的形成和发展，促使了机械唯物主义方法的破产。与此同时，他建立了庞大的先验唯心主义体系，力图把整个哲学变成方法论。康德批判地考察理性思维的方法以及它认识世界的可能性，形成了先验唯心主义的批判的方法论。康德批判莱布尼茨的唯理论，说他盲目地相信理性的可靠性，全盘否认感觉经验的必要性；也批判了休谟的经验论，说他排斥理性在认识中的作用，否定普遍性和必然性，否定了科学知识。康德把莱布尼茨的唯理论和休谟的经验论结合起来，认为没有感性直观材料，理性思维是空洞的；没有逻辑范畴、概念，感性直观就是盲目的。但是，在康德看来，逻辑概念范畴不是来自感性经验，而是人类认识能力自身固有的，从而实际上否认了逻辑的客观性。&lt;/p>
+&lt;p>黑格尔批判了康德的批判的方法论。他坚持逻辑的客观性，但把整个世界的历史发展看作是绝对理念的辩证的逻辑的发展。黑格尔在《逻辑学》中，强调了理念辩证法作为普遍的认识方法和一般精神活动方法的作用，因而他的逻辑学也就是其辩证唯心主义的方法论。&lt;/p>
+&lt;p>唯物辩证法是马克思和恩格斯在唯物主义基础上改造黑格尔唯心主义辩证法，所创立的唯一科学的方法论。它是在概括总结各门具体科学积极成果的基础上，根据自然、社会、思维的最一般的规律引出的最具普遍意义的方法论。唯物辩证法是对客观规律的正确反映，它要求人们在认识和实践活动中一切从实际出发，实事求是，自觉地运用客观世界发展的辩证规律，严格地按客观规律办事。&lt;/p>
+&lt;p>唯物辩证法认为，世界上的一切现象都处于普遍联系和永恒运动之中，事物普遍联系的最本质的形式和运动发展的最深刻的原因是矛盾着的对立方面的统一。因此，孤立地、静止地看问题的形而上学思维方法是错误的，而矛盾分析法是最重要的认识方法。唯物辩证法认为，实践是主观和客观对立统一的基础，脱离实践必然会导致主客观的背离，产生主观主义，所以必须坚持实践以保持主观和客观的一致性。在认识过程中，要用实践检验人们的认识，要善于正确地运用多种多样的科学实验和典型试验的方法。整个客观物质世界以及其中的每一个事物、现象都是多样性的统一。各自都有自身的结构，包含有不同的层次、要素，组成一个个系统；各个事物、现象、系统都有自身的个性;同时，它们之间又有着某种共性，共性存在于个性之中。多样性与统一性、共性与个性都是对立的统一。&lt;/p>
+&lt;h2 id="你现在的工作快乐吗">你现在的工作快乐吗？&lt;/h2>
+&lt;p>在某个周末的时候看了台剧《她们创业的那些事儿》，剧集讲述了三个不同年龄，不同性格的女生因缘际会在一起创业的故事，第一集开始，“&lt;strong>你现在的工作&lt;/strong> &lt;em>快乐&lt;/em> &lt;strong>吗？&lt;/strong>” 直接浮现在屏幕中央，这句话太醒目了，砰的一下子撞击了打工人的心。说实话，工作上我并没有感到很快乐，在解决 BUG，技术水平得到认可的时候，我还是有一些快乐，我想要知道大家是怎么想的，于是我在程序员经常逛的社区发了一个帖子《你现在的工作快乐吗？》。&lt;/p>
+&lt;p>帖子很快有人回复，一天过后，收到了100多条回复，仔细翻看了一下，现实就像冷冷的冰雨在脸上胡乱地拍，仅有几条回复是快乐的，大多数的朋友都感觉现在的工作是不快乐的，这不由得让我想起了珍妮特·温特森在《橘子不是唯一的水果》中的一句话：&amp;ldquo;快乐是个属于成年人的词儿。你不必问一个孩子他是否快乐，你能看得出来。成年人讨论快乐是因为他们大多都不快乐&amp;rdquo;。工资低，加班，工作没有成就感（创造性），领导没有能力，工作环境比较糟糕，大家工作不快乐的原因各不相同，如果列出程序员工作不快乐的主要原因，&lt;strong>作为程序员，你认为不能忍受的事情有什么？&lt;/strong>，49.1% 的同学认为不能忍受加班，44.3% 的同学认为频繁改需求不合适，10.4% 的同学认为只做简单的增删查改是没有创造性的。还有的同学认为讨厌无意义的加班，临时开会，画饼，背锅，陪客户这些也是不能忍受的。&lt;/p>
+&lt;p>&lt;img src="https://s3.ax1x.com/2021/02/26/yx5tv6.png" alt="">&lt;/p>
+&lt;p>你对不快乐的事情能够保持兴趣吗？想必是不能吧！&lt;/p>
+&lt;p>在《程序员的方法论》中讨论工作的快乐似乎离题甚远，但我并不这样认为，人的性格中存在理性的部分也少不了感性的部分，也就是说，尽管一个理性的人如何强大，如果情绪长期是消极，这个人也是脆弱的，这个道理应该是大家的共识。&lt;/p>
+&lt;p>有一些朋友的回复中说到，在不工作的时候是快乐的，工作的时候是不快乐的，这同样是不行的，要想在职业上有长远的发展，保持对工作的兴趣，在工作中获得乐趣是非常重要的，成功学的鸡汤文非常多，这里我觉得也没有必要铺陈，因此我这里只是粗略的讲一下我的认识。&lt;/p>
+&lt;p>首先，我们应该建立工作与生活的边界，工作的时候认真工作，休息的时间好好休息和娱乐，当你的工作侵入到生活的时候，也就容易陷入到低效的忙碌。另外，一些业余的程序编程和学习，如果过度，也容易消耗自己的精力，使人感到精神的疲倦，当然这因人而异，需要针对自己的情况采取合适的措施。&lt;/p>
+&lt;p>业余生活，我们既可以选择一些比较宅的活动，比如王者荣耀，全军出击，狼人杀等等，也可以选择一些户外活动，比如滑板，滑冰溜冰，滑雪，划水，骑自行车，爬山，跑步，逛街消费也挺不错的，主要是把自己的压力要释放出来，使身体疲倦进而减少大脑的过度思考。&lt;/p>
+&lt;p>然后我们要关注自己的情绪，如果情绪长期低落，消极，则应该进行疏导，严重的情况下应当找专业的心理咨询师咨询。其他朋友可以采取冥想等方式放空自己，让自己情绪稳定，改善心情。&lt;/p>
+&lt;p>另外，我们在工作中，要认识到自己的价值，包括对个体的价值和对社会的价值，对个人的价值包括经济收入，物质奖励，以及荣誉和肯定。对社会的价值则包括推动社会进步，促进社会发展，解决一类人的问题，评判社会价值更容易忽略螺丝钉的作用，比如波音 777 客机有 300 万个螺丝钉，虽然数量巨大，但每一个都非常重要，同样在平凡的岗位上的每一个人做好自己的工作，也就是不平凡的。&lt;/p>
+&lt;p>在工作中，让自己感到快乐还需要进行&lt;a href="https://wiki.mbalib.com/wiki/%E8%87%AA%E6%88%91%E6%BF%80%E5%8A%B1">自我激励&lt;/a>，MBA 智库百科&lt;sup>2&lt;/sup>自我激励的方法有20多种，我认为很重要的有如下几种：&lt;/p>
+&lt;ul>
+&lt;li>树立远景&lt;/li>
+&lt;li>把握好情绪&lt;/li>
+&lt;li>调高目标&lt;/li>
+&lt;li>直面困难&lt;/li>
+&lt;li>立足现在&lt;/li>
+&lt;li>敢于竞争&lt;/li>
+&lt;li>内省&lt;/li>
+&lt;li>敢于犯错&lt;/li>
+&lt;li>不要害怕拒绝&lt;/li>
+&lt;/ul>
+&lt;p>也就是人生有理想，有目标，有坚强的心，敢于拼搏，不怕犯错，不怕失败。当你强大了，你做的事情预期有了美好的前景，有个盼头，努力的过程中也就是愉悦的了。&lt;/p>
+&lt;p>对于程序员而言，工作内容基本上就是程序开发，我们在工作中保持愉悦，换句话说，我们也就能对程序开发保持兴趣，如果还能在业余过程中参与一些开源项目或者说输出一些文字，也就可以在业内受到一些肯定。兴趣是一个正向激励的过程。&lt;/p>
+&lt;h2 id="行业发展的讨论">行业发展的讨论&lt;/h2>
+&lt;p>美国东部时间 2021 年 3 月 2 号，微软 Power Apps 产品总监 Ryan Cunningham 发布了一篇文章 &lt;a href="https://powerapps.microsoft.com/en-us/blog/introducing-microsoft-power-fx-the-low-code-programming-language-for-everyone/">Introducing Microsoft Power Fx: the low-code programming language for everyone&lt;/a> 推出了低代码开发平台 &lt;a href="https://github.com/microsoft/power-fx">Microsoft Power Fx&lt;/a>，低代码开发平台是无需编码（0代码或无代码）或通过少量代码就可以快速生成应用程序的开发平台。这一概念并不是新鲜事，国内还有阿里云旗下的宜搭，腾讯云旗下的 LowCode 等等。信息行业发展极度依赖从事该行业的人才，人才是短板，而低代码平台这样的工具能够减少人才的需求，解决了信息行业的短板，自然是未来的发展趋势。&lt;/p>
+&lt;p>另外，还有一些人在对程序开发这个行业进行反思，比如 CircleCI 的创始人 Paul Biggar 的团队创造了 Darklang，通过将研发的流程和逻辑简化降低研发的难度。这实际上也会降低程序开发的难度，使得更多人容易加入倒程序开发的工作，另一方面，也减少了研发流程流水线的人员需求。&lt;/p>
+&lt;p>我们知道，信息技术的发展以及自动化技术还有其他科学技术的发展，极大的提升了社会的生产力，生产力决定生成关系，可能会导致一些行业的兴起，另一些行业的消亡，也会出现一些新的职业，导致另一些职业的消亡。前瞻经济学人曾写过一篇 &lt;a href="https://t.qianzhan.com/caijing/detail/190129-1a4c68cf.html">替代与升级：那些正在消逝的行业与岗位&lt;/a> 分析了一些传统行业的消退。特别是信息技术发展导致了一些行业的消退，一些岗位逐渐被取消，比如随着 AI 技术，语音合成技术的发展，机器翻译的准确性越来越高，发音更加自然，这将逐渐替代翻译人员；随着智能电网的发展，供电站抄表员也就逐渐淡出了人们的视野；随着个人计算机的普及，手机的运算能力上升，有些人的网管梦也就逐渐破灭了；还有传统的零售行业也被电商发展大潮冲击，门庭冷落鞍马稀，不复当年。&lt;/p>
+&lt;p>信息技术的发展是不是一个蓝海？盲目的进入这个行业，成为一名信息民工是否就可以高枕无忧？答案肯定是否定的，信息化的快速发展，确实给很多人带来了巨大的机遇，但也带来了巨大的挑战。技术的发展大势并不是以人的意志转移，信息技术发展不仅要解决传统行业的沉疴，也要解决自身行业的短板。比如这类低代码研发平台出现就是要解决一些常用场景的开发，解决一些简单的问题，但随着这类平台的发展，其能力不断提升，势必要在更多的场景中出现，这实际上对很多程序员也带来了挑战，如果只能做一些简单可替代的工作，个人能力没有得到提升，则其工作岗位很容易被这样的新平台替代。&lt;/p>
+&lt;p>目前还出现了一些少儿编程热的现象，一些高校的的计算机专业也在不断的扩大规模，一些 IT 培训学校也在疯狂招生，大量的后备人员涌入了这个行业，竞争加剧，信息技术行业也将会有更激烈的厮杀。&lt;/p>
+&lt;h2 id="程序员的学习方法">程序员的学习方法&lt;/h2>
+&lt;p>那么作为一名程序员如何在这种激烈的厮杀中闯出一片光明，如何不被这个行业淘汰？如何站立潮头不倒？如果实现自我的价值？&lt;/p>
+&lt;p>其实方法很简单，也就是去不断的提升自我，具备更全面更精通的专业能力，也就是知识的广度，和技术的深度，然后做好一件又一件事。&lt;/p>
+&lt;p>程序员的成长需要学习，学习也要讲究方法。首先，我们可以了解行业内对于程序员的技术水平的划分通常为&lt;strong>助理工程师&lt;/strong>，&lt;strong>初级工程师&lt;/strong>，&lt;strong>中级工程师&lt;/strong>，和&lt;strong>高级工程师&lt;/strong>以及&lt;strong>专家工程师&lt;/strong>，那么程序员的成长可以按照这些职级水平的能力评估细节进行提升。当然，这些职称的划分标准在不同的公司是不一样的，比如，我司的对于工程师的评价分为&lt;strong>通用能力&lt;/strong>和&lt;strong>专业知识及技能&lt;/strong>以及&lt;strong>组织影响力&lt;/strong>，通用能力包括&lt;strong>解决问题&lt;/strong>，&lt;strong>项目管理&lt;/strong>，&lt;strong>学习能力&lt;/strong>，&lt;strong>创新能力&lt;/strong>；而专业知识及技能则包括&lt;strong>研发流程和规范&lt;/strong>，&lt;strong>后端编码&lt;/strong>，&lt;strong>安全知识&lt;/strong>，&lt;strong>计算机知识&lt;/strong>，&lt;strong>架构设计&lt;/strong>；组织影响力则包括&lt;strong>方法论建设&lt;/strong>，&lt;strong>知识传播&lt;/strong>，&lt;strong>人才培养&lt;/strong>。我司对于不同职级的工程师的能力框架的要求都包括这方面，但要求达到的水平并不一样。虽然不同的公司评价标准并不一样，但也只是细节不同，核心的标准则是类似的。&lt;/p>
+&lt;p>要提升这些能力，我们一个个捋一下，比如&lt;strong>解决问题&lt;/strong>的能力通常需要靠积累，在市场上，有时评价一个程序员的时候，通常会说几年几年经验，在这里我们可以认为经验实际上是指这些人积累了很多解决问题的能力，另外我们谈到解决问题的时候，还要注意，我们应该做到能够及时发现问题，找到问题的症结，这样就能有效的解决问题，在积累解决问题的时候还需要将这些经验通过一定的途径记录下来。&lt;/p>
+&lt;p>项目管理则需要不断的实践，项目管理的内容有：范围管理，时间管理，成本管理，质量管理，人力资源管理，沟通管理，风险管理，集成管理，干系人管理等。程序员在提升项目管理的能力最主要的有项目的时间管理，沟通管理，这里通俗的讲就是要合理规划项目的研发进度，保持与合作方的沟通，对于产品经理或者负责人则还需要管理项目的边界，保证研发的投入等等。而这种能力的提升也是需要不断的实践和积累的。&lt;/p>
+&lt;p>学习能力则主要是丰富自身的知识面，夯实知识结构和积累，当接触到新的知识时也就能快速的学习，这实际上就是学习能力足的体现。&lt;/p>
+&lt;p>创新并不是凭空产生的，无论是优化还是改进，都是在原有的基础上夯实的，是站在巨人的肩膀上的，因此我们提升创新能力也应当有坚实的基础，然后在现有的技术上改进和创新，另外一点，如果没有对系统体系的深入了解，反思和创新也就无从说起。&lt;/p>
+&lt;p>对于专业知识和技能的提升，则需要我们在日常学习和研发过程中注重研发流程和规范，后端编码等方面的积累。&lt;/p>
+&lt;p>程序员的学习方法也就是这样：了解程序员的能力划分，然后针对每一个部分选择自己合适的方法去增强，当水平都达到了应有的层次，也就实现了相应的目的。但是，对于一些入门级程序员来说，最难的是入门，这时候 TA 是茫然无措的，我的建议是通过学习一种语言了解基础概念，做一些简单的程序获得成就感，进而激励自己，也就是&lt;strong>学习&amp;ndash;实践&amp;ndash;学习&amp;ndash;实践&lt;/strong>这样的快速迭代，快速学习，当积累到一定程度时，则可以按照上述的能力划分进行针对性的提升。对于另外一些想要成为程序员圈子的牛人的朋友，我们则要明白，做这样一个程序员既要有知识的广度，也要有研究的深度，知识的广度能够让人融会贯通，知识的深度则支撑人解决关键问题，再创新等等。&lt;/p>
+&lt;p>任何时候，我也不会满足，越是多读书，就越是深刻地感到不满足，越感到自己知识贫乏。科学是奥妙无穷的。&lt;/p>
+&lt;h2 id="程序开发的方法探讨">程序开发的方法探讨&lt;/h2>
+&lt;p>毛泽东曾经在《中国革命战争的战略问题》&lt;sup>4&lt;/sup>中曾经讲过，“大家明白，不论做什么事，不懂得那件事的情形，它的性质，它和它以外的事情的关联，就不知道那件事的规律，就不知道如何去做，就不能做好那件事。”在程序开发的过程中，同样如此。我们在程序研发的过程中，也应当理解软件系统的性质，内在的联系，与外部的交互，知己知彼方能百战不殆。实际上，很多程序员在开发软件/系统的时候都是拿到需求就做，也没有做过仔细的技术调研，没有做过方案评估，做到一半中道崩殂，费钱费力。&lt;/p>
+&lt;p>在开发一个软件或者系统的时候，我们应该对系统或者软件进行功能划分，模块划分，然后通过分工协作完成工作，这里需要注意局部和整体的关联关系。&lt;/p>
+&lt;p>解决一个问题，要明白他的主要矛盾，也就是找到问题的症结，在程序开发的过程中，我们通常会遇到各种各样的 BUG，在解决 BUG 的时候，就应该按照矛盾论的思路去解决，也就是解决问题的症结，但是我们还应该从实际出发，现有的条件达不到时，我们解决问题则可以做出取舍，也就是通过延缓主要矛盾的激化来解决问题。&lt;/p>
+&lt;p>未完待续。&lt;/p>
+&lt;h2 id="引用">引用&lt;/h2>
+&lt;ol>
+&lt;li>《爱因斯坦文集》，第三卷，商务印书馆，1979 年第 1 版，第 144 页。&lt;/li>
+&lt;li>自我激励 - MBA 智库.百科：&lt;a href="https://wiki.mbalib.com/wiki/%E8%87%AA%E6%88%91%E6%BF%80%E5%8A%B1">https://wiki.mbalib.com/wiki/自我激励&lt;/a>&lt;/li>
+&lt;li>《毛泽东选集》，第一卷，人民出版社，1991 年 6 月第 2 版，第 171 页。&lt;/li>
+&lt;/ol>
+- https://forcemz.net/posts/2021/2021-03-12-programmer-methodology/ - Copyright (c) 2009-2024 J23</description></item><item><title>评论文件解析</title><link>https://forcemz.net/posts/2021/2021-03-11-review-file-parsing/</link><pubDate>Thu, 11 Mar 2021 10:00:00 +0800</pubDate><guid>https://forcemz.net/posts/2021/2021-03-11-review-file-parsing/</guid><description>Charlie's Rethinking https://forcemz.net/posts/2021/2021-03-11-review-file-parsing/ -&lt;h2 id="前言">前言&lt;/h2>
+&lt;p>2019 年，我曾经写过一篇名为&lt;a href="https://forcemz.net/toolset/2019/01/25/FileParsing/">《文件的解析》&lt;/a>的文章，粗略的讲述了如何识别文件的特征，分析文件的类型。随着认识的不断加深，知识的不断积累，代码的不断重构，徘徊之间，我将文中提到的 Planck 分析库在 &lt;a href="https://github.com/fcharlie/bela">Bela&lt;/a> 项目中用 C++20 重写了，还将 Golang 的 PE/ELF/MachO/ZIP 库用 C++ 重写了一遍，然后在 &lt;a href="https://github.com/fcharlie/BelaUtils">BelaUtils&lt;/a> 项目中基于 Bela 文件分析库实现了文件类型检测工具 - &lt;strong>Bona&lt;/strong>，工具简单的推广后总算是有几个人收藏，之后有一点想法，觉得要和大家分享，便有了此文。&lt;/p>
+&lt;h2 id="评论文件解析">评论文件解析&lt;/h2>
+&lt;p>“大家明白，不论做什么事，不懂得那件事的情形，它的性质，它和它以外的事情的关联，就不知道那件事的规律，就不知道如何去做，就不能做好那件事。” 文件的解析亦是如此，要解析文件，首先得对文件的格式有个大致的了解，然后分析它区别于其它文件的特征，这样就能快速检测，好在计算机行业是一个经验积累的行业，人们在设计新的文件格式也通常会借鉴旧有的文件格式，吸取精华破除糟粕。为了方便一些程序快速的检测文件，有些文件会聪明的使用魔数的机制去标识文件头，这样能大大提高文件格式的识别速度。&lt;/p>
+&lt;h2 id="字节序和字节序的处理">字节序和字节序的处理&lt;/h2>
+&lt;p>在计算机中，大端和小端代表了两种不同的理解，网络字节序使用大端，x86/AMD64 使用小端，ARM 支持大端也支持小端，但小端居多，最后我们发现，市面上绝大多数的计算机及其操作系统的本机字节序是小端。&lt;/p>
+&lt;p>大端和小端的转换通常使用 &lt;code>bswap*/_byteswap_*&lt;/code> 这样的函数，当然需要先确定自己的主机字节序，主机字节序是固定的，使用 C++ 编程时可以使用 &lt;code>constexpr&lt;/code> 或者宏定义。&lt;/p>
+&lt;p>对于 ARM 等一些处理器则需要关注内存对齐的问题，在转换字节序时，如果引用的是指针则需要考虑内存对齐。x86/AMD64 会自己处理好。&lt;/p>
+&lt;h2 id="zip-文件的压缩和解压">ZIP 文件的压缩和解压&lt;/h2>
+&lt;p>解压 ZIP 文件的思路有两种，第一种是从文件末尾开始找到中央目录结尾，中央目录结尾的魔数为 &lt;code>'P','K',0x05,0x06&lt;/code>，中央目录结尾的用处是记录 zip 文件中文件/目录的数量和偏移，如果 zip 是一个大文件或者目录条目数大于 0xFFFF 还需要检测 64 位中央目录结尾，再读取一个个中央目录条目，读取这些信息后再按文件偏移读取解压文件，这属于标准的做法。&lt;/p>
+&lt;p>另一种是从文件头部开始一个个目录的读取，但这并不是合适的方法，对于一些自解压的文件，这里就显得无能为力。&lt;/p>
+&lt;p>实际上在编写 zip 解压缩库的时候，我确实感到 zip 的设计充满了历史感，很多功能只能通过扩展来实现，导致规范篇幅冗长，很多客户端也就只实现了规范中的一部分而不是全部。&lt;/p>
+&lt;p>ZIP 编码默认是 ANSI 的，因此在分享 zip 文件的时候可能会遇到乱码的情况，正确的做法是在压缩时强制使用 UTF-8，解压时使用编码检测机制自动识别编码。&lt;/p>
+&lt;h2 id="pe-文件的分析">PE 文件的分析&lt;/h2>
+&lt;p>PE 文件的解析比较简单，毕竟这东西都解析烂了，很多人都写过，要注意的主要是 &lt;code>RVA&lt;/code>，其他的也就没有什么可以说的了。&lt;/p>
+&lt;p>上面讲到 zip 的解析从末尾开始，而 PE 的解析从开头开始，于是我们将一个 ZIP 文件追加到 PE 文件的尾部，就可以实现自解压文件了，在 PE 中，我们将在 Section 之外的数据称之为 &lt;code>Overlay&lt;/code> 数据，当然里面有一些细节需要处理。Overlay 数据还被用于存储 PE 的校验和，或者病毒将一些数据放在这段空间等等。&lt;/p>
+&lt;h2 id="elf-文件的分析">ELF 文件的分析&lt;/h2>
+&lt;p>ELF 文件的解析和 PE 类似，也没什么好说的，当然也可以存在 &lt;code>Overlay&lt;/code> 数据，也就是说，你也可以按照这样的逻辑实现自解压文件，这种机制和 STGZ 的原理有一点类似。&lt;/p>
+&lt;h2 id="macho-文件的分析">MachO 文件的分析&lt;/h2>
+&lt;p>MachO 的解析稍微复杂，与 PE/ELF 不太相同，另外 MachO 还有 FatMachO 机制，也就使得解析要稍稍复杂，MachO 的概念也和 PE/ELF Section 之类的概念有一些差别，解析复杂一点。&lt;/p>
+&lt;h3 id="universalchardet-的故纸堆">UniversalChardet 的故纸堆&lt;/h3>
+&lt;p>在初入职场时，我知道的文件编码检测有 &lt;code>UniversalChardet&lt;/code>，但最近发现 FireFox 已经把 &lt;code>UniversalChardet&lt;/code> 删除了，而是使用 Rust 编写的 &lt;code>chardetng&lt;/code>，&lt;code>UniversalChardet&lt;/code> 的衍生版本 uchardet 仍然被 &lt;a href="https://www.freedesktop.org/wiki/Software/uchardet/">Freedesktop&lt;/a> 维护，但由于许可证的问题，实际上包括我在内的一些人是不会选择的。我在 Bona 中检测 ZIP 文件编码使用的是 &lt;a href="https://github.com/google/compact_enc_det">Compact Encoding Detection&lt;/a>。&lt;/p>
+&lt;ul>
+&lt;li>&lt;a href="https://github.com/mozilla/gecko-dev/commit/1447a771ccd75a183526169605a83f5c06db07b6">https://github.com/mozilla/gecko-dev/commit/1447a771ccd75a183526169605a83f5c06db07b6&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://phabricator.services.mozilla.com/D27794">https://phabricator.services.mozilla.com/D27794&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://hsivonen.fi/chardetng/">https://hsivonen.fi/chardetng/&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://github.com/hsivonen/chardetng">https://github.com/hsivonen/chardetng&lt;/a>&lt;/li>
+&lt;/ul>
+- https://forcemz.net/posts/2021/2021-03-11-review-file-parsing/ - Copyright (c) 2009-2024 J23</description></item><item><title>观点：如何实现男女平等</title><link>https://forcemz.net/posts/2021/2021-03-08-view-point-achieve-gender-equality/</link><pubDate>Mon, 08 Mar 2021 10:00:00 +0800</pubDate><guid>https://forcemz.net/posts/2021/2021-03-08-view-point-achieve-gender-equality/</guid><description>Charlie's Rethinking https://forcemz.net/posts/2021/2021-03-08-view-point-achieve-gender-equality/ -&lt;h2 id="国际妇女节">国际妇女节&lt;/h2>
+&lt;p>在维基百科上&lt;a href="https://zh.wikipedia.org/wiki/%E5%9B%BD%E9%99%85%E5%A6%87%E5%A5%B3%E8%8A%82">&lt;strong>国际妇女节&lt;/strong>&lt;/a> 的描述是“是为了纪念妇女权利的运动，设在每年3月8日的国际性节日。这个纪念日在很多国家也是法定假期。各地社会在国际妇女节易庆祝妇女在经济，政治和社会等领域做出的重要贡献。”&lt;/p>
+&lt;p>1857年3月8日，美国纽约的制衣和纺织女工走上街头，抗议恶劣的工作条件和低薪，1908年，有15000名妇女走上街头，要求缩短工作时间，增加工资和享有选举权等，并喊出了象征经济保障和生活质量的“面包加玫瑰”的口号，1917年3月8号，彼得堡女工举行罢工，要求得到“面包，和平和自由”，这也是俄国革命的前奏&lt;sup>来源：维基百科&lt;/sup>。&lt;/p>
+&lt;p>我们可以看到，国际妇女节既是纪念女性在争取自身权益的斗争，又是纪念女性在推动社会进步的贡献。&lt;/p>
+&lt;h2 id="消费主义陷阱">消费主义陷阱&lt;/h2>
+&lt;p>消费注意的介绍无论是维基百科还是 MBA 智库上都有介绍，其中 &lt;a href="https://wiki.mbalib.com/wiki/%E6%B6%88%E8%B4%B9%E4%B8%BB%E4%B9%89">MBA 智库百科&lt;/a>的介绍较为消极，而维基百科的介绍比较中性，这里参考&lt;a href="https://zh.wikipedia.org/wiki/%E6%B6%88%E8%B2%BB%E4%B8%BB%E7%BE%A9">维基百科 - 消费主义&lt;/a>的介绍：&lt;/p>
+&lt;blockquote>
+&lt;p>消费主义（Consumerism）指相信持续及增加消费活动有助于经济的意识形态。[1]创造出在生活态度上对商品的可欲及需求（多消费是好事）让资本主义可以提高工资及提高消费。[2]消费主义为发达国家的经济引擎，使现代人有购买与获得商品的社会及经济上的信念及集体情绪。[3]然而在社会科学领域中，不同领域因各别知识传统对消费主义有不同的定义与诠释[4]，此差异也反映在如绿色消费主义[5]、消费者运动[6]、消费者保护[7]、消费者权利[8]等概念及实践上。&lt;/p>
+&lt;/blockquote>
+&lt;p>为什么要在本文中讲到消费主义陷阱，我们知道，目前国内涌现出了 3月7日女生节，3月8日女神节，女王节这样的宣传，然后通稿都是女性保持美丽，然后就是消费，诚然，女性确实需要为自己而活，但是也不能被这些商家放大的容貌焦虑，年龄焦虑所裹挟，失去了追求男女平等的初衷。任何有利所图的事情如不加以限制，总会变的如脱缰野马，肆无忌惮，最后人仰马翻，车毁人亡。&lt;/p>
+&lt;h2 id="斗争与斗争的方法">斗争与斗争的方法&lt;/h2>
+&lt;p>毛泽东在《目前抗日统一战线中的策略问题》中曾提出：“在抗日统一战线时期中，斗争是团结的手段，团结是斗争的目的。以斗争求团结则团结存，以退让求团结则团结亡”，在追求男女平等也是不能妥协的，如果妥协，这种不平等也会恶化，你什么时候看到坏人主动变好的？&lt;/p>
+&lt;p>我们常说的男女不平等，在大尺度上的不平等更严重但没有得到重视，比如女性工作通常获得的报酬更低，妇女在政治参与中比例更低，女性因家庭生育等在职场遭受歧视，一些农村或者落后地区女性在财产继承上权益得不到保障，在个体的尺度上，这种不平等则存在显著的差异。&lt;/p>
+&lt;p>那么我们反思一下，斗争的目标是什么？哪里不平等哪里就要斗争。比如要争取男女同工同酬，女性要争取广泛的政治参与，要争取保证女性在财产方面的权益，要争取结婚的自由和不结婚的自由，要反歧视，特别是要反对职场上的歧视。&lt;/p>
+&lt;p>在争取性别平等的奋斗中，只靠女性的努力肯定是不够的，也需要我们男性同胞的参与。团结是斗争的目的，只有团结可以团结的人才能在性别平等的斗争中获得胜利，这也就是说，要达成男女平等斗争的统一战线，而不应该去挑起男女性别对立。要采用正确的方法去斗争。&lt;/p>
+&lt;p>战略规划如果有了，还需要讲究战术的细腻，比如从一些新兴的行业开始，逐步破解女性在职场受到的歧视，获得更高的收入，女性要积极参与社会治理，获得更多的政治话语权，推动一些男女平等的法律法规出台，等等。&lt;/p>
+&lt;p>随着信息技术的发展，很多传统行业逐渐发生了改变，一些职业也逐渐消失，而信息技术行业的从业人员逐年增加，实际上这是促进性别平等的好机遇，如果女性在这些新兴行业能够和男性具备同样的地位，那实际上在职场上也是一种胜利，遗憾的是，女性程序员还是太少了。&lt;/p>
+- https://forcemz.net/posts/2021/2021-03-08-view-point-achieve-gender-equality/ - Copyright (c) 2009-2024 J23</description></item><item><title>代码托管从业者 Git 指南</title><link>https://forcemz.net/posts/2021/2021-01-20-git-guide-for-code-hosting-practitioners/</link><pubDate>Wed, 20 Jan 2021 18:00:00 +0800</pubDate><guid>https://forcemz.net/posts/2021/2021-01-20-git-guide-for-code-hosting-practitioners/</guid><description>Charlie's Rethinking https://forcemz.net/posts/2021/2021-01-20-git-guide-for-code-hosting-practitioners/ -&lt;h2 id="0-前言">0. 前言&lt;/h2>
+&lt;p>六七年前，机缘巧合进入了代码托管行业，做过基于 Git 支持 SVN 客户端接入，做过 Git 代码托管平台分布式，做过 Git 代码托管读写分离，做过 Git 代码托管高可用，所幸学到了一些知识，积累了一些经验，这或许对已在或者即将进入代码托管行业的朋友有些帮助，便分享出来，权当是经验之谈，希望读的人有些许收获。&lt;/p>
+&lt;h2 id="1-git-的发展历史">1. Git 的发展历史&lt;/h2>
+&lt;h3 id="11-版本控制系统的发展历史">1.1 版本控制系统的发展历史&lt;/h3>
+&lt;p>版本控制系统历史悠久，最早的开源的版本控制系统可以追溯到几乎与 C 语言同时诞生的 &lt;a href="https://en.wikipedia.org/wiki/Source_Code_Control_System">Source Code Control System (SCCS)&lt;/a>，作者来自于著名的贝尔实验室的 &lt;strong>Marc J. Rochkind&lt;/strong>，他于 1973 年发布了 SCCS 的初始版本，SCCS 的寿命悠久，直到 2007 年再没有人维护而终结。SCCS 本质上是一种 &lt;strong>Local Only&lt;/strong> 版本控制系统，在网络快速发展的时代，几乎是无法跟上历史的脚步，也就只能消亡，同类型的 RCS 虽然维护至今，却鲜有人问津。&lt;/p>
+&lt;p>&lt;img src="https://s3.ax1x.com/2021/01/20/sWRN0H.png" alt="">&lt;/p>
+&lt;p>常见版本控制系统清单：&lt;/p>
+&lt;p>&lt;img src="https://s3.ax1x.com/2021/01/20/sWhbDS.png" alt="">&lt;/p>
+&lt;p>1986 年诞生的 &lt;a href="https://en.wikipedia.org/wiki/Concurrent_Versions_System">CVS&lt;/a> 是一款真正的自由软件，使用 GPL 协议发布，有一个有趣的事实是，CVS 是 RCS 的前端，也就是说，CVS 将 RCS 从 &lt;strong>Local Only&lt;/strong> 变成了 &lt;strong>Client-Server&lt;/strong> 版本控制系统。随着 2000 年 &lt;a href="https://en.wikipedia.org/wiki/Apache_Subversion">Apache Subversion&lt;/a> 诞生，CVS 的市场快速萎缩，到了 2008 年 CVS 不再维护，集中式版本控制系统渐渐的也只剩 Subversion 在维护了。　&lt;/p>
+&lt;p>最早的分布式版本控制系统是 1992 年诞生的 &lt;a href="https://en.wikipedia.org/wiki/Sun_WorkShop_TeamWare">Sun WorkShop TeamWare&lt;/a>，但它并没有发展的很好，从 2000 年到 2007 年，分布式版本控制系统如雨后春笋一样冒了出来，2005 年诞生的 &lt;a href="https://en.wikipedia.org/wiki/Git">Git&lt;/a> 和 &lt;a href="https://en.wikipedia.org/wiki/Mercurial">Mercurial&lt;/a> 幸运的流传开来，时至今日，Git 终于在版本控制领域风头正劲，独占鳌头。&lt;/p>
+&lt;h3 id="12-git-的发展史">1.2 Git 的发展史&lt;/h3>
+&lt;p>2005 年，开发 BitKeeper 的商业公司同 Linux 内核开源社区的合作关系结束，他们收回了 Linux 内核社区免费使用 BitKeeper 的权利。Linus Torvalds 花了十天时间编写了 Git 的第一个版本，Git 的故事由此展开。&lt;/p>
+&lt;p>Git 原本只能在 Linux 上运行，随着开源社区的参与，Git 也逐渐能在各个平台上运行，在 Windows 上，最初有两个方案，一个是让 Git 在 Cygwin 的环境下编译，Cygwin 是 Windows 上的 POSIX 兼容层，但 Cygwin 的缺陷是需要带一大堆的 DLL。另一个方案是 msysgit，基于 MSYS 运行时，MYSY 是更小的 POSIX 兼容环境。到了 2015 年，msysgit 不再维护，主要开发者基于 MSYS2 环境推出了 &lt;a href="https://github.com/git-for-windows/git">Git for Windows&lt;/a>。而 MSYS2 的核心运行时基于 Cygwin 进行了定制。值得一提的是，在 Git for Windows 中，Git 命令并不是基于 MSYS2 运行时，而是原生的 Windows 程序，到了今天我们已经可以使用 Visual C++ 编译 Git 源码了，Git for Windows 的维护者 &lt;a href="https://github.com/dscho">Johannes Schindelin&lt;/a> 加入了微软后，在 Windows 上使用 Git 的体验也越来越好。&lt;/p>
+&lt;p>2008 年 11 月 &lt;a href="https://github.com/spearce">Shawn O. Pearce&lt;/a> 写下了 &lt;a href="https://github.com/libgit2/libgit2">libgit2&lt;/a> 的第一个提交，2009 年 9 月，Shawn 写下了 &lt;a href="https://github.com/eclipse/jgit">JGit&lt;/a> 的第一个提交，libgit2/jgit 被代码托管平台，Git 客户端广泛使用，比如 Github 使用 libgit2 的 Ruby 绑定 &lt;a href="https://github.com/libgit2/rugged">rugged&lt;/a> 提供页面读写存储库能力。遗憾的是 Shawn 已经离开这个世界两年多了。&lt;/p>
+&lt;p>回顾 Git 的一些大事件，2008 年 Github 诞生，Github 是最成功的代码托管平台，几乎以一己之力带来了 Git 的繁荣。2008 年 BitBucket 诞生，最初 BitBucket 还支持 Mercurial，到了 2020 年则不再支持 Mercurial。2011 年 Gitlab 诞生，而国内的 Gitee 也是基于 Gitlab 发展而来的。2014 年 CODING 成立，国内国外代码托管平台百花齐放。2018 年，微软花费 75 亿美元收购 Github，大家才猛然发现，基于 Git 的代码托管平台已经有了这样大的价值。&lt;/p>
+&lt;p>Git 是一个充满活力的版本控制系统，每一年，Git 的开发者们都在将他们新的知识，经验实施到 Git 之中，2018 年 5 月，在谷歌工作的 Git 开发者们发布了 Git Wire Protocol，这解决了 Git 协议中最低效的部分，到了 2020 年 10 月，Git 实验性的支持 SHA256 哈希算法，在 SHA1 被破解几年后，我们终于可以在 Git 中尝试淘汰 SHA1 了。&lt;/p>
+&lt;p>Git 的发展必然会挤占其他版本控制系统份额，随着 Git 的越来越流行，更多的项目也从其他的版本控制系统迁移到 Git 上来：&lt;/p>
+&lt;ul>
+&lt;li>编译器基础设施 LLVM 从 SVN 迁移到 Git&lt;/li>
+&lt;li>FreeBSD 从 SVN 迁移到 Git&lt;/li>
+&lt;li>GCC (仍处于迁移过程中) 从 SVN 迁移到 Git&lt;/li>
+&lt;li>Windows 源码（已经迁移到 Git，使用 VFS for Git 技术）&lt;/li>
+&lt;li>VIM 迁移到 Github&lt;/li>
+&lt;li>OpenJDK 从 Mercurial 迁移到 Git&lt;/li>
+&lt;/ul>
+&lt;p>2016 年，Git 诞生11年之后，&lt;a href="https://github.com/bitkeeper-scm/bitkeeper">BitKeeper&lt;/a> 宣布采用 Apache 2.0 许可协议开源，如果再回到 2005 年，BitKeeper 又会做出怎样的抉择呢？&lt;/p>
+&lt;h2 id="2-git-的存储原理">2. Git 的存储原理&lt;/h2>
+&lt;p>对于代码托管从业人员来说，只了解 Git 的使用并不足以去参与代码托管平台服务的开发，架构的优化，所以了解 Git 的一些原理则非常必要。&lt;/p>
+&lt;h3 id="21-git-的目录结构">2.1 Git 的目录结构&lt;/h3>
+&lt;p>首先，我们可以去了解一下 Git 存储库的目录结构，Git 存储库分为常规存储库和 Bare （裸）存储库，普通用户从远程克隆下来的存储库或者本地初始化的存储库大多是常规存储库，这类存储库和特定的工作区相关联；另一类是没有工作区的存储库，就是裸存储库，在代码托管平台的服务器上面，存储库几乎都是以裸存储库的方式存储的。对于常规存储库而言，其存储库真正的路径是工作区根目录下的 &lt;code>.git&lt;/code> 文件夹，或者 &lt;code>.git&lt;/code> 文件指向的目录，后者通常用于 Git 子模块。&lt;/p>
+&lt;p>我们知道了 Git 存储库的位置，就可以查看存储库的目录结构，下面是一个查看存储库的截图。&lt;/p>
+&lt;p>&lt;img src="https://s3.ax1x.com/2021/01/20/sWRsc8.png" alt="">&lt;/p>
+&lt;p>不同的目录具备不同的作用，大致如下：&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>路径&lt;/th>
+&lt;th>属性&lt;/th>
+&lt;th>作用&lt;/th>
+&lt;th>备注&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>HEAD&lt;/td>
+&lt;td>&lt;code>R&lt;/code>&lt;/td>
+&lt;td>存储当前检出的引用或者提交 ID&lt;/td>
+&lt;td>在远程服务器上用于展示默认分支&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>config&lt;/td>
+&lt;td>&lt;code>R&lt;/code>&lt;/td>
+&lt;td>存储库配置&lt;/td>
+&lt;td>存储库配置优先级高于用户配置，用户配置优先级高于系统配置&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>branches&lt;/td>
+&lt;td>&lt;code>D&lt;/code>&lt;/td>
+&lt;td>&lt;code>deprecated&lt;/code>&lt;/td>
+&lt;td>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>description&lt;/td>
+&lt;td>&lt;code>R&lt;/code>&lt;/td>
+&lt;td>&lt;code>depracated&lt;/code>&lt;/td>
+&lt;td>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>hooks&lt;/td>
+&lt;td>&lt;code>D&lt;/code>&lt;/td>
+&lt;td>Git 钩子目录，包括服务端钩子和客户端钩子&lt;/td>
+&lt;td>当设置了 &lt;code>core.hooksPath&lt;/code> 时，则会从设置的钩子目录查找钩子&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>info&lt;/td>
+&lt;td>&lt;code>D&lt;/code>&lt;/td>
+&lt;td>存储库信息&lt;/td>
+&lt;td>dump 协议依赖，但目前 dump 协议已经无人问津&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>objects&lt;/td>
+&lt;td>&lt;code>D&lt;/code>&lt;/td>
+&lt;td>存储库对象存储目录&lt;/td>
+&lt;td>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>refs&lt;/td>
+&lt;td>&lt;code>D&lt;/code>&lt;/td>
+&lt;td>存储库引用存储目录&lt;/td>
+&lt;td>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>packed-refs&lt;/td>
+&lt;td>&lt;code>R&lt;/code>&lt;/td>
+&lt;td>存储库打包引用存储文件&lt;/td>
+&lt;td>该文件可能不存在，运行 &lt;code>git pack-refs&lt;/code> 或者 &lt;code>git gc&lt;/code> 后出现&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>在这些目录或者文件中，最重要的是 &lt;code>objects&lt;/code> 和 &lt;code>refs&lt;/code> 这只需要两个目录的数据就可以重建存储库了。在 &lt;code>objects&lt;/code> 目录下，Git 对象可能以松散对象也可能以打包对象的形式存储：&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>路径&lt;/th>
+&lt;th>描述&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>&lt;code>objects/[0-9a-f][0-9a-f]&lt;/code>&lt;/td>
+&lt;td>松散对象存储目录，最多有 256 个这样的子目录&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;code>objects/pack&lt;/code>&lt;/td>
+&lt;td>打包对象目录，除了打包对象，还有打包对象索引，多包索引等&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;code>objects/info&lt;/code>&lt;/td>
+&lt;td>存储存储库扩展信息&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;code>objects/info/packs&lt;/code>&lt;/td>
+&lt;td>哑协议依赖&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;code>objects/info/alternates&lt;/code>&lt;/td>
+&lt;td>存储库对象借用技术&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;code>objects/info/http-alternates&lt;/code>&lt;/td>
+&lt;td>存储库对象借用，用于 HTTP fetch&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>Git 在实现其复杂功能的时候还会创建一些其他目录，更详细的细节可以查阅：&lt;a href="https://github.com/git/git/blob/master/Documentation/gitrepository-layout.txt">Git Repository Layout&lt;/a>。&lt;/p>
+&lt;h3 id="22-git-对象的存储">2.2 Git 对象的存储&lt;/h3>
+&lt;p>Git 的对象可以按照松散对象的格式存储，也可以按照打包对象的格式存储，用户将文件纳入版本控制时，Git 会将文件的类型标记为 &lt;code>blob&lt;/code>，将文件长度和 &lt;code>\x00&lt;/code> 以及文件内容合并在一起计算 SHA1 哈希值后，使用 Deflate 压缩，存储到存储库的 objects 目录下，路径匹配正则为 &lt;code>objects\/[0-9a-f]{2}\/[0-9a-f]{38}$&lt;/code> ，当然，如果使用 SHA256 则应该匹配 &lt;code>objects\/[0-9a-f]{2}\/[0-9a-f]{62}$&lt;/code>，松散对象的空间布局如下：&lt;/p>
+&lt;p>&lt;img src="https://s3.ax1x.com/2021/01/20/sWRocT.png" alt="">&lt;/p>
+&lt;p>Git 使用的 Deflate 是 &lt;a href="https://en.wikipedia.org/wiki/Phil_Katz">Phil Katz&lt;/a> 为 PKZIP 创建的压缩算法，也是使用最广泛的压缩算法之一，其变体 GZIP 也被广泛用于 POSIX 文件压缩和 HTTP 压缩，git 命令行，libgit2 目前依赖 zlib 提供 deflate 算法，jgit 则使用 Java 提供的 deflate 实现，Golang 则在 &lt;code>compress/zlib&lt;/code> 包中提供 &lt;code>deflate&lt;/code> 支持，但算法实现在 &lt;code>compress/flate&lt;/code>，严格来说 Git 使用的是 deflate 的 zlib 包装，比如我们使用 zlib 创建 zip 压缩包时会使用 &lt;code>-15&lt;/code> 作为 &lt;code>WindowBits&lt;/code>，而在创建 GZIP 时会使用 &lt;code>31&lt;/code> 作为 &lt;code>WindowBits&lt;/code>，在 Git 中，则会使用 &lt;code>15&lt;/code> 作为 &lt;code>WindowBits&lt;/code>。&lt;/p>
+&lt;p>在 Git 中，除了有 &lt;code>blob&lt;/code> 对象，还有 &lt;code>commit&lt;/code> ，&lt;code>tag&lt;/code>，以及 &lt;code>tree&lt;/code> ，&lt;code>commit&lt;/code> 对象存储了用户的提交信息，&lt;code>tree&lt;/code> 顾名思义，存储的是目录结构。下面是一个 commit 对象的内容：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>tree d8329fc1cc938780ffdd9f94e0d364e0ea74f579
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>author Scott Chacon &amp;lt;schacon@gmail.com&amp;gt; 1243040974 -0700
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>committer Scott Chacon &amp;lt;schacon@gmail.com&amp;gt; 1243040974 -0700
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>First commit
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>下面是 tree 对象的内容：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>100644 blob a906cb2a4a904a152e80877d4088654daad0c859 README
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>100644 blob 8f94139338f9404f26296befa88755fc2598c289 Rakefile
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>040000 tree 99f1a6d12cb4b6f19c8655fca46c3ecf317074e0 lib
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>解析松散对象非常容易，我们只需要使用能够解析 &lt;code>zlib&lt;/code> 的库就可以完成这一操作，这里有一个例子可以参考 &lt;a href="https://gist.github.com/fcharlie/2dde5a491d08dbc45c866cb370b9fa07">https://gist.github.com/fcharlie/2dde5a491d08dbc45c866cb370b9fa07&lt;/a>。&lt;/p>
+&lt;p>想要了解更多的 Git 对象的细节可以参考: &lt;a href="https://git-scm.com/book/en/v2/Git-Internals-Git-Objects">Git Internals - Git Objects&lt;/a>。&lt;/p>
+&lt;p>站在文件系统的角度上看，数量巨大的小文件性能通常会急剧下降，而松散对象就是这样的小文件，Git 的解决方案是引入了打包文件，打包文件就是将多个松散对象依次存储到打包文件的存储空间之中，相关的布局如下：&lt;/p>
+&lt;p>&lt;img src="https://s3.ax1x.com/2021/01/20/sWRqHJ.png" alt="">&lt;/p>
+&lt;p>Pack 文件的路径正则为 &lt;code>objects\/pack\/pack-[0-9a-f]{40}.pack$&lt;/code>，当存储库使用 SHA256 哈希算法时，相应的路径正则为&lt;code>objects\/pack\/pack-[0-9a-f]{64}.pack$&lt;/code>，Pack 文件的魔数是 &lt;code>'P','A','C','K'&lt;/code>，随后的 4字节是版本信息，版本可以为 2，也可以为 3，后者是 SHA256 支持的前提。我们在读取 Pack 文件版本的时候需要注意，Git 使用网络字节序存储数据，也就是常说的大端，目前 Windows 全部使用小端字节序，macOS/iOS 等也是这样，Linux x86/AMD64 也是小端，ARM/ARM64 事实上也使用小端，使用大端的平台非常少。版本后紧接着是 4 字节的数字，用于表示这个包中有多少个 Git 对象，4字节意味着单个 Pack 中最多只能有 2&lt;sup>32&lt;/sup>-1 个 Git 对象。接下来的事情就稍微复杂一些，Git 存储对象时使用 &lt;code>3-bit&lt;/code>表示对象类型，&lt;code>(n-1)*7+4&lt;/code> bit 表示文件长度，这种机制主要是支持大于 4G 的文件和支持 &lt;code>OBJ_OFS_DELTA &lt;/code>，也就是说，尽管 Git 是基于快照的，但是在 pack 文件中，我们依然可以看到一些对象使用差异存储，这样的好处是节省空间，坏处就是查看对象复杂度上升，因此，Git 会倾向于将历史久远的用 &lt;code>OBJ_OFS_DELTA&lt;/code> 存储，以降低影响，不管怎么说，都是权衡利弊，保证存储和读取的平衡。最后是 20 字节的 &lt;code>checksum SHA1&lt;/code>，当然如果是 SHA-256 存储库，则需要使用 SHA-256 计算 &lt;code>checksum&lt;/code>。&lt;/p>
+&lt;p>上图一目了然，如果没有其他措施，我们要在 Pack 文件中查找某个对象是非常难的，所幸这个问题一开始就被重视了，在 pack 文件的同级目录下存在文件后缀名为 &lt;code>.idx&lt;/code> 的文件，就是 Pack Index，其布局如下：&lt;/p>
+&lt;p>&lt;img src="https://s3.ax1x.com/2021/01/20/sWWkEd.png" alt="">&lt;/p>
+&lt;p>版本1的 Pack-Index 现在已经很难见到，原因很简单，不支持 Pack 文件大于 4 GB，版本2格式非常有趣，魔数为 &lt;code>'\377','t','O','c'&lt;/code>，第二个 4 字节就是版本信息，随后是 &lt;code>256 * 4&lt;/code> 的扇区表，&lt;code>0~254&lt;/code> 分别表示前缀从 &lt;code>0x00&lt;/code>~&lt;code>0xFE&lt;/code> 的对象数量，而 &lt;code>fanout[255]&lt;/code> 则表示所有对象的数量，随后对象 ID 按字典排序到 &lt;code>sha listing&lt;/code>，紧接着是相应的 &lt;code>crc checksums&lt;/code>，然后是 &lt;code>packfile offsets&lt;/code>，&lt;code>packfile offsets&lt;/code> 是 4 字节的，这并不能支持 Pack 大于 4 GB。而后续的 &lt;code>large packfile offsets&lt;/code> 则支持了 Pack 大于 4 GB。当 4byte offset 最高位是1时说明需要从 &lt;code>large packfile offsets&lt;/code> 读取长度。&lt;/p>
+&lt;p>Pack Index 文件很好的解决了 Pack 文件的随机读取的问题，按照其特性，我们在查找 Git 对象时，使用二分法查找，最多 8 次就可以在找到对象在 pack 中的偏移，进一步读取文件。&lt;/p>
+&lt;p>但如果 Pack 文件数量特别多时，还是会遇到查找对象性能较多，微软在将 Windows 源码迁移到 Git 后也遇到了这个问题，后来在微软工程师的努力下，multi-pack-index (MIDX) 出现了，存在多个 Pack 文件时，MIDX 便可以加快 Git 对象的查找。&lt;/p>
+&lt;p>既然我们已经对 Git 的存储有了个简单的认识，那么要找到某个文件也不在话下，分支对应了一个提交，提交有一个 ID，我们可以在松散对象或者打包对象中找到该 ID，然后获得提交的内容，找到 tree 后，按照路径一级级的往下找，找到路径匹配的 blob，该 blob 解压后的内容就是文件的原始内容，一个简单的流程如下：&lt;/p>
+&lt;p>&lt;img src="https://s3.ax1x.com/2021/01/20/sWW3Us.png" alt="">&lt;/p>
+&lt;p>对于引用而言，通常存储在 &lt;code>refs&lt;/code> 目录下，和松散对象一样，这种机制可能存在性能问题，因此，在运行 &lt;code>git gc&lt;/code> 后，引用会被打包到 &lt;code>packed-refs&lt;/code> 文件中集中管理，为了加快引用的查询，引用名会使用字典排序，git 同样会使用二分法查找在 packed-refs 中查找引用。尽管查找引用的速度非常快，但面对 Android 这样引用数量巨大的项目，git 依然会显得心有余而力不足，这需要人们设计一个好的方案解决其性能问题。&lt;/p>
+&lt;h3 id="23-git-存储原理的运用">2.3 Git 存储原理的运用&lt;/h3>
+&lt;p>了解到 Git 的存储原理后，我们可以基于其原理做一些有趣的事情，比如我们要快速的找到存储库中存在哪些大文件，我们可以通过分析 Pack Index，将文件的偏移按照递减的顺序排列，依次相减就可以知道某一对象在 Pack 中占据的大致大小，这样就可以实现大文件的检测。这种机制要比从 Pack 中依次读取文件大小高效的多，同时对于平台而言，尽管存在一些误差，但这种方案却是十分经济有效的。&lt;/p>
+&lt;p>另外，在实现代码托管平台存储库快照的功能时，可以通过研究存储库引用的存储机制，利用引用名称空间实现存储库的快照，相对于直接克隆快照的方案，存储空间的节省是非常大的。&lt;/p>
+&lt;h2 id="3-git-的传输协议">3. Git 的传输协议&lt;/h2>
+&lt;p>对于现代版本控制系统而言，传输协议与代码托管平台的关系更为密切，只要支持了该版本控制系统的传输协议才意味着，平台支持这个版本控制系统，要支持 Git，代码托管平台也就需要了解 git 的传输协议。&lt;/p>
+&lt;h3 id="31-传输协议的发展">3.1 传输协议的发展&lt;/h3>
+&lt;p>和版本控制系统的不断发展类似，Git 的传输协议也是在不断的发展，以适应新的情况。谈到 Git 传输协议，我们最常用的是&lt;strong>智能协议&lt;/strong>，除了智能协议，git 还有本地协议，哑协议（Dump Protocol），以及有线协议（Wire Protocol/v2 Protocol）。本地协议通常指通过文件系统路径或者 &lt;code>file://&lt;/code> 协议路径访问本机上的存储库的协议，该协议本质上是通过命令调用将其他目录的存储库拷贝到指定目录，这类协议的用处较少，其中有一个细节需要讲清楚，基于文件系统路径的克隆，也就是非 &lt;code>file://&lt;/code> 协议克隆，会将源存储库的对象，这里通常是 &lt;code>.pack&lt;/code> 文件通过硬链接的方式共享，这实际上是利用了 git 对象的只读特性，也就是只能删除和新增而不能修改，另外，两个目录并不在同一个分区则不支持硬链接，也就不能使用硬链接共享对象。&lt;/p>
+&lt;p>哑协议旨在为服务端没有 git 服务时提供只读的 Git Over HTTP 访问支持，正因为不支持写操作，目前几乎所有的公共代码托管平台均已经不在支持哑协议了。&lt;/p>
+&lt;p>既然哑协议不堪重任，那么也只能另起炉灶，设计一个好的协议了，这就有了智能协议，但随着 git 被广泛使用，智能协议也显得有一些先天性缺陷，这不就有了有线传输协议。&lt;/p>
+&lt;h3 id="32-智能传输协议">3.2 智能传输协议&lt;/h3>
+&lt;p>git 目前主要支持的网络协议有三种，分别是 &lt;code>http(s)://&lt;/code>，&lt;code>ssh://&lt;/code>，&lt;code>git://&lt;/code> 无论哪种协议，拉取实质上都是 &lt;code>git-fetch-pack/git-upload-pack&lt;/code> 的数据交换，推送都是 &lt;code>git-send-pack/git-receive-pack&lt;/code> 的数据交换，在 2018 年以前，均是采用智能传输协议，我们可用使用 Wireshark 这样的工具抓包分析其传输流程，也可以使用 &lt;code>GIT_CURL_VERBOSE=2&lt;/code> &lt;code>GIT_TRACE_PACKET=2&lt;/code> 这样设置环境变量后运行相关命令调试 Git，在 Windows 中可以使用我编写的包管理器 &lt;a href="https://github.com/baulk/baulk">baulk&lt;/a> 中的命令运行器 &lt;code>baulk-exec&lt;/code> 运行相关命令，如：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>baulk-exec &lt;span style="color:#58a1dd">GIT_CURL_VERBOSE&lt;/span>&lt;span style="color:#ff636f">=&lt;/span>&lt;span style="color:#a6be9d">1&lt;/span> &lt;span style="color:#58a1dd">GIT_TRACE_PACKET&lt;/span>&lt;span style="color:#ff636f">=&lt;/span>&lt;span style="color:#a6be9d">2&lt;/span> git ls-remote https://github.com/baulk/baulk.git
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>分析协议的方法已经有了，我们就可以轻易的知道智能协议的流程，以 &lt;code>http(s)://&lt;/code> 为例，我们把传输的第一个步骤叫做&lt;strong>引用发现&lt;/strong>，客户端根据存储库的 URL 使用 &lt;code>GET&lt;/code> 请求到 &lt;code>/repo.git/info/refs?service=git-upload-pack&lt;/code> 这样的地址，服务端则以 &lt;code>--advertise-refs&lt;/code> &lt;code>--stateless-rpc&lt;/code> 这样的参数启动 &lt;code>git-upload-pack&lt;/code>，该命令启动后将存储库目前的 &lt;code>HEAD&lt;/code>commitID，存储库支持的 &lt;code>capabilities&lt;/code>，以及 &lt;code>HEAD&lt;/code> 对应的 &lt;code>symref&lt;/code> 以及所有的引用名及其 commitID 返回给客户端，客户端根据这些信息，以及本地的存储库已经存在的对象清点出需要的 &lt;code>want&lt;/code> 和存在的 &lt;code>have&lt;/code> commitID，然后通过 &lt;code>POST /repo,git/git-upload-pack&lt;/code> 发送给服务端，服务端通过执行 &lt;code>git-upload-pack --stateless-rpc /path/to/repo.git&lt;/code> 将打包好的对象返回给客户端，待客户端清点好对象，传输就结束了了，对于 &lt;code>git pull&lt;/code> 请求还需要将更新的文件检出到工作目录。&lt;/p>
+&lt;p>这里需要注意，实施 Git Over HTTP 服务器时，git 客户端需要在 POST 请求响应最开始添加 &lt;code>001e# service=git-upload-pack\n0000&lt;/code>，另外我们还需要正确的设置 &lt;code>Content-Type&lt;/code>，服务端处理&lt;code>POST&lt;/code> 请求时，请求体可能使用 &lt;code>gzip&lt;/code> 编码，需要解压缩处理。&lt;/p>
+&lt;p>&lt;img src="https://s3.ax1x.com/2021/01/20/sWWJCq.png" alt="">&lt;/p>
+&lt;p>推送的传输协议流程类似，但服务变为 &lt;code>git-receive-pack&lt;/code>，相关的流程如下：&lt;/p>
+&lt;p>&lt;img src="https://s3.ax1x.com/2021/01/20/sWWt2V.png" alt="">&lt;/p>
+&lt;p>在推送时，git 协议本身的权限验证机制极其有限，一些分支权限控制等安全功能基本上只能通过钩子实现，而钩子的标准错误实际上也会被 git 命令行捕获作为响应返回给客户端，如果客户端的 git 恰好运行在 Windows Terminal、Mintty，iTerm 等等终端中，那么我们就可以将一些带有信息以彩色的形式输出给用户，这些信息使用 ANSI 转义的。&lt;/p>
+&lt;p>&lt;code>ssh://&lt;/code> 协议和 &lt;code>git://&lt;/code> 协议同样支持智能传输协议，实现起来只需要把为客户端连接和 &lt;code>git-upload-pack/git-receive-pack&lt;/code> 的&lt;strong>标准输入和输出&lt;/strong>建立数据交换的通道即可。在实施 Git Over SSH SSH 服务器时，像 Gitlab 会直接使用 OpenSSH，但 OpenSSH 可定制性有限，在分布式 Git 平台上需要实现模拟的 git-upload-pack/git-receive-pack 这样的命令，效率较低。像 Github 早期使用了 libssh 实现了 Git Over SSH 服务，BitBucket 使用了 Apache Mina SSHD，还有一些平台使用了 Golang &lt;a href="https://github.com/golang/crypto/tree/master/ssh">crypto/ssh&lt;/a>，无论采用什么样的技术，都应该经过慎重考虑，是否契合平台的架构，维护成本是否合适等等。在实施 Git Over TCP (&lt;code>git://&lt;/code>) 服务器时，只需要解析第一个 &lt;code>pktline&lt;/code> 数据包即可，&lt;code>git://&lt;/code> 协议简单，表达能力有限，没有足够的权限验证，公有云除了 Github 其他平台使用的较少，但我在设计读写分离和高可用时，会优先考虑使用 &lt;code>git://&lt;/code> 协议作为内部传输协议以降低内部负载。&lt;/p>
+&lt;p>&lt;code>ssh://&lt;/code> 协议和 &lt;code>git://&lt;/code> 协议可以支持数据的多次往返，而 &lt;code>http(s)://&lt;/code> 协议只能是 &lt;code>Request--&amp;gt;Response&lt;/code> 这样的一个来回，不同的来回实际上状态已经丢失，所以需要指定为 &lt;code>State Less&lt;/code> 也就是无状态。&lt;/p>
+&lt;p>智能协议虽然非常简单，但我们在 Git Over HTTP 上支持 &lt;code>shallow clone&lt;/code> 时却不得不注意一些细节，在协商 &lt;code>commit deepin&lt;/code> 时，客户端和服务端都在等待对方的响应，这时候，我们只能通过提前关闭服务端的标准输入中断一方的等待，这就是智能传输协议的大问题，HTTP 传输实现复杂，不支持扩展。另外随着 VFS for Git 这样技术的诞生，使得一个问题浮现在公众面前：“巨型存储库如何优化克隆”。VFS for Git 重新设计了传输协议更显得智能传输协议在这上面显得尤为不足。&lt;/p>
+&lt;h3 id="33-有线传输协议">3.3 有线传输协议&lt;/h3>
+&lt;p>Google 开发者的思路是，通过一个特殊的环境变量开关控制协议的切换，从外表看，传输协议仍然是几组命令的输入输出交换，但从内在看，新的传输协议更像是利用低级别的命令实现功能的扩展。我们依然可以使用上面的调试方法分析 git 有线协议的传输流程，在新的协议中，服务端先返回了版本信息，支持的命令，过滤器，对象格式等等，客户端再次发送请求需要使用 &lt;code>ls-refs&lt;/code> 发现引用，然后是 &lt;code>fetch&lt;/code> 命令（一下截图中没有这一操作）获得数据。&lt;/p>
+&lt;p>&lt;img src="https://s3.ax1x.com/2021/01/20/sWWDa9.png" alt="">&lt;/p>
+&lt;p>实施 Git 有线传输协议非常简单，只需要升级 git 命令，检测客户端请求是否为 &lt;code>GIT_PROTOCOL=2&lt;/code>，然后以环境变量 &lt;code>GIT_PROTOCOL=2&lt;/code> 启动上述命令即可，在我们的博客&lt;a href="https://forcemz.net/git/2018/06/24/GitWireProtocol/">《Git Wire 协议杂谈》&lt;/a> 也有介绍。&lt;/p>
+&lt;p>Git Wire 协议是 Git 的一次大的改变，在协议中添加了命令，filter 等机制，有效的解决了传输协议中最 低效的部分，增强了可扩展性，比如我们使用部分克隆时，需要添加 blob filter，即我不需要我就可以不下载文件，支持 SHA256 时，告诉服务端，我需要 &lt;code>object-format=sha256&lt;/code>，这为 git 增加了无限可能。目前 git 的部分克隆，SHA256 存储库都依赖有线传输协议。&lt;/p>
+&lt;p>实际上集中式版本控制系统 SVN 早就利用子命令扩展了协议能力，SVN 协议使用 ABNF 描述协议，要比 git 的有线协议解析起来复杂一些。&lt;/p>
+&lt;p>Git Wire 协议虽然是一个重大的变革，但同时也是一个新事物，也就意味着可能存在一些设计和实现上的不足，没有经历足够的考验，我们在支持该协议的时候就需要特别注意测试和验证。比如我就反馈过，当用户基于 v2 协议使用错误的 &lt;code>--shallow-since&lt;/code> 克隆存储库时，服务端在传输流程结束后，客户端并不会正确的退出，Github Issue: &lt;a href="https://github.com/gitgitgadget/git/issues/457">Protocol v2: The wrong &amp;ndash;shallow-since time format causes git to wait indefinitely&lt;/a>，最近，我们在使用 v2 for git 协议浅表克隆时，也发现了了类似的问题，问题出现在服务端，现象是 git-upload-pack 无限等待，该问题差一点照成了严重的事故。&lt;/p>
+&lt;h3 id="34-git-数据的交换">3.4 Git 数据的交换&lt;/h3>
+&lt;p>我们了解了 Git 的存储结构和传输协议后，再建立宏观上的 Git 数据交换映像就容易的多，我们对 Git 的操作实际上是发生在三个区域，工作区是我们实质上修 改，添加，删除文件的地方，通过 git add/commit/checkout 等命令，我们就将工作区的文件纳入版本 管理了，通过 git push/fetch 等命令，就将本地存储库和远程建立了关联。这里需要注意，git pull 实际 上是 git fetch+ git checkout（没有 merge 的情况下），大致如下图：&lt;/p>
+&lt;p>&lt;img src="https://s3.ax1x.com/2021/01/20/sWWyP1.png" alt="">&lt;/p>
+&lt;h2 id="4-大型-git-代码托管平台的关键问题">4. 大型 &lt;strong>Git&lt;/strong> 代码托管平台的关键问题&lt;/h2>
+&lt;p>随着平台规模的增长，代码托管从业人员也会遇到一些问题难以解决，在我职业生涯中同样如此，解决问题的过程是艰辛的，一些经验被积累下来，分享给读者，或许可以使人有所增益。去年年底，我曾经写过一篇文章：&lt;a href="https://forcemz.net/git/2020/12/25/performance-scalability-and-high-availability-for-git/">《性能，可扩展性和高可用 - 大型 Git 代码托管平台的关键问题》&lt;/a>，文章的内容与本节内容相似，这里重新回顾一下。&lt;/p>
+&lt;h3 id="41-大型存储库的优化">4.1 大型存储库的优化&lt;/h3>
+&lt;p>目前国内 IT 行业版本控制系统都在往 Git 迁移，一些大型企业，软件源码历史悠久，存储的文件各种各样，在迁移到 Git 时，体积巨大的存储库给代码托管平台带来了压力，首先映入眼前的是，从其他版本控制系统迁移到 git 耗时太长。&lt;/p>
+&lt;p>git 在安装了 svn 的前提下，支持 &lt;code>git svn&lt;/code> 命令访问 svn 仓库，从 svn 仓库迁移到 git 的逻辑很简单，就是从 Rev0 开始，递归的创建 git 提交，如果这个存储库历史悠久，提交特别多，文件特别多，那么转换耗时将非常长。网络上也一种优化方案，直接在 svn 中央存储库，通过解析存储库元数据，直接在上面创建 git 提交，这种方案的耗时可能是原本的数十分之一。KDE 团队维护的 &lt;a href="https://github.com/svn-all-fast-export/svn2git">svn-all-fast-export aka svn2git&lt;/a> 就是其中一款。&lt;/p>
+&lt;p>转移到 git 后，如果存储库包含很多的二进制文件，存储库体积巨大，那么用户拉取的时间还是会很长，一种解决方案是将不同的数据分离，也就是将体积大的二进制文件，通过 git 扩展 &lt;code>git lfs&lt;/code> 追踪，从源码中排除，通过这种措施，存储库的体积减小，平台的压力降低，而这些大文件可以存储到其他的设备上，比如对象存储，利用 CDN 优化，也就能提升用户的体验，实现 git lfs 服务器可以参考我之前的博客&lt;a href="https://forcemz.net/git/2017/04/16/Moses/">《Git LFS 服务器实现杂谈》&lt;/a>。&lt;/p>
+&lt;p>如果存储库小文件特别多，这个时候 Git LFS 的作用反而没有那么大了，Git LFS 并不存在打包机制，也没有压缩，如果大量文件使用 Git LFS 跟踪，那么 HTTP 请求数会变得非常多和传输时间也会特别长。微软在将 Windows 源码迁移到 git 做技术选型便遇到了问题，Windows 源码数百 GB，引用数量数十万，这些传统方案和 Git LFS 完全不能解决。于是微软的开发者推出了 &lt;a href="https://en.wikipedia.org/wiki/Virtual_File_System_for_Git">VFS of Git&lt;/a> 用来解决这个问题，简单来说，VFSforGit 的手段是只获得浅表 commit 以及相应的 tree 对象，然后在文件系统建立虚拟文件，也就是用户空间文件系统 &lt;a href="https://en.wikipedia.org/wiki/Filesystem_in_Userspace">Filesystem in Userspace (FUSE)&lt;/a> 创建占位符文件，但向这种文件发起 IO 操作时，驱动会触发 VFSforGit 客户端取请求远程服务器，获得这些文件，在 Windows 上 VFSforGit 的 FUSE 使用了 NTFS 重解析点特性，其 TAG 为 &lt;code>IO_REPARSE_TAG_PROJFS&lt;/code>，微软前员工 &lt;a href="https://www.linkedin.com/in/saeednoursalehi">Saeed Noursalehi&lt;/a>（现已加入 Facebook）曾写过一些 VFSforGit 的文章，比如 &lt;a href="https://docs.microsoft.com/en-us/azure/devops/learn/git/git-at-scale">《Git at Scale》&lt;/a>以及&lt;a href="https://docs.microsoft.com/en-us/azure/devops/learn/git/gvfs-design-history">《Git Virtual File System Design History》&lt;/a>，大家有兴趣可以看一下。VFSforGit 惊艳的架构也吸引了 Github 的注意，当时 Github 还未被 Microsoft 收购，Github 创建了 &lt;a href="https://github.com/github/libprojfs">Linux projected filesystem library&lt;/a> 项目试图在 Linux 上创建类似 Windows 平台的 projfs，以支持 VFSforGit 在 Linux 上运行，但该项目一直没有被完成。&lt;/p>
+&lt;p>VFSforGit 的设计是独树一帜的，但也很难推广开来，目前除了 Microsoft 的 Azure，其他平台几乎都没有支持 VFSforGit，最重要的原因就是 git 客户端支持难度高。正因如此，在 VFSforGit 诞生后 git 的一些开发者提议在 git 中实现部分克隆，经过几年的努力，终于支持部分克隆，该方案和 VFSforGit 类似，使用有线传输协议的 &lt;strong>filter&lt;/strong> 机制，实现一个 &lt;code>blob filter&lt;/code> 过滤掉 &lt;code>blob&lt;/code>，与 VFSforGit 存在差异的是，没有 FUSE 加成，终究依然是使用有限，至于是否能够有其他手段提升部分克隆的实用性，还有待 Git 贡献者们进一步的努力了。&lt;/p>
+&lt;p>最近，Git 贡献者还增加了 &lt;a href="https://github.com/git/git/blob/master/Documentation/technical/packfile-uri.txt">Packfile URIs&lt;/a> 设计，该方案旨在将对象通过 CDN 存储，然后客户端根据返回的地址请求到合适的 CDN 下载存储库对象，该方案仍处于早期，还有许多细节要处理，最终能做到什么程度有待观察。&lt;/p>
+&lt;p>&lt;strong>2021-07-05 更新&lt;/strong>，在代码托管领域，我们将单一大库称之为 &lt;code>Monorepo&lt;/code>，显然，Microsoft 的 Windows 源代码存储库算得上，Microsoft 基于 Git 支持了单一大库；在使用 &lt;a href="https://www.perforce.com/">Perforce&lt;/a> 多年后，Google 开发了自己的 &lt;code>Piper&lt;/code>（&lt;a href="https://cacm.acm.org/magazines/2016/7/204032-why-google-stores-billions-of-lines-of-code-in-a-single-repository/fulltext">相关阅读&lt;/a>），Facebook 更喜欢使用 &lt;code>Mercurial&lt;/code>，他们在 Github 上开源了 &lt;code>Monorepo&lt;/code> 解决方案，使用 Rust 编写的，带有 Mercurial 特色的 &lt;a href="https://github.com/facebookexperimental/eden">EdenSCM&lt;/a>，EdenSCM 和 VFSforGit 类似之处就是 EdenFS 在 Linux/macOS 上使用 FUSE，在 Windows 上使用 Projected FS 来提高用户的检出效率，做到按需拉取，按需下载。&lt;/p>
+&lt;h3 id="42-代码托管平台伸缩性">4.2 代码托管平台伸缩性&lt;/h3>
+&lt;p>大型代码托管平台面临的另一个问题则是系统的伸缩性，在架构上具备良好的伸缩性则意味着平台能做到多大的规模，比如 Gitea/Gogs 这种倾向于单节点的开源代码托管平台要做到大型分布式代码托管平台就麻烦得多，而 Gitlab 则更容易搭建分布式可扩展的代码托管平台。&lt;/p>
+&lt;p>在讨论伸缩性之前，我们要解释一下分布式文件系统为什么不适合大型代码托管平台。&lt;/p>
+&lt;ol>
+&lt;li>Git 的计算压力并没有随着分布式文件系统的扩展性而分摊。&lt;/li>
+&lt;li>分布式文件系统很难解决 Git 小文件的问题，特别是小文件带来的系统调用，IO 问题。&lt;/li>
+&lt;li>分布式文件系统反而会带来平台内部网络数据的消耗，文件的元数据，以及文件的数据。&lt;/li>
+&lt;li>国内外厂商的生产事故历历在目。&lt;/li>
+&lt;/ol>
+&lt;p>当了解到分布式文件系统不合适之后，我们也就只能采用笨办法，&lt;strong>分片&lt;/strong>，将存储库分布在不同的存储节点，git 命令也在这个节点上运行，这样无论是计算还是 I/O 都能够通过存储节点的扩展实现扩容，这就是 Git 目前最主要的分布式解决方案。&lt;/p>
+&lt;p>通过这样的方案实现平台的伸缩性时，还需要解决一些分布式环境常见的问题，比如存储库的分布，存储库队列等等，当然这些都有可用的方案，在这里也就没有必要细说了。&lt;/p>
+&lt;h3 id="44-主从同步读写分离和多写高可用架构探讨">4.4 主从同步，读写分离和多写高可用架构探讨&lt;/h3>
+&lt;p>无论是公共代码托管平台还是私有化部署的代码托管服务，当代平台发展到一定程度，高可用这个问题就会被反复提及，分布式系统的架构设计难度较高，与传统的单机服务有很大的差别，而 git 代码托管平台分布式系统与普通的分布式系统有更大的差异，高可用的设计不仅要吸纳主流的分布式系统的架构经验，还需要迎合 git 的特性，另外还需要考虑到架构的经济性。&lt;/p>
+&lt;p>首先我们先看一下分布式大型代码托管平台的简易架构（下图的架构是精简版本，与实际架构还是有一些差距），从下图我们可以看到，用户的 git 请求实际上并不是直接请求到存储节点上的 git 服务，而是通过代理服务转发过去，这些代理服务通过路由模块获得存储库位于那个存储节点，从架构上讲，这些代理服务都可以做到无状态，从过部署多个服务副本再在前端入口添加负载均衡健康检查可以很好的做到这些代理服务的高可用，但这个架构也意味着存储节点上的存储库并不能支持高可用。&lt;/p>
+&lt;p>&lt;img src="https://s3.ax1x.com/2021/01/20/sWWc26.png" alt="">&lt;/p>
+&lt;p>存储库要支持高可用，应该在不同的存储节点上都存在副本，在一个副本所在的节点无法正常提供服务时，需要其他副本所在的节点能够顶上来提供服务，高可用这些副本要始终保持一致，如果不一致，在切换的时候就会出现数据紊乱，这显然是不符合用户期望的。高可用可分为&lt;strong>主从同步高可用&lt;/strong>，以及&lt;strong>读写分离高可用&lt;/strong>，还有&lt;strong>同时多写高可用（多写高可用）&lt;/strong>，设计一个简单的主从同步高可用系统，我们首先的保证存储库的一致性，这里我们可以通过 git hooks 触发存储库实时同步，存储库副本分布在不同的节点，在用户推送代码后，被更新的存储库副本及时将数据通过内部传输协议同步到其他副本。早期 Github 使用 DRDB 实现同步，目前大多使用 git 传输协议实现同步，我个人更偏好于实现自定义的 &lt;code>git://&lt;/code> 提供存储库同步功能。&lt;/p>
+&lt;p>&lt;img src="https://s3.ax1x.com/2021/01/20/sWWgxK.png" alt="">&lt;/p>
+&lt;p>存储库实现了实时同步，还需要有一种机制保证存储库数据一致，Github 的方案是循环哈希校验和，而我的方案是使用 BLAKE3 计算引用哈希，原理很简单，就是将存储库的引用按字典排序计算哈希值，哈希值一致意味着两个存储库的引用一致，引用一致存储库克隆获得的数据也就是一致的，两个存储库肯定一致啊。&lt;/p>
+&lt;p>这里&lt;strong>主从同步高可用&lt;/strong>如果支持将读取请求转发到其他副本而不仅是主副本，那么这种情况就叫&lt;strong>读写分离高可用（简称读写分离）&lt;/strong>，读写分离的好处就是对于特别活跃的存储库能够提供更高的并发。当然无论是看似简单的主从同步，还是复杂的读写分离，内里考虑的细节并不少，环环相扣，需要对整个代码托管架构有一个清晰的认识。&lt;/p>
+&lt;p>实施类似 &lt;a href="https://github.blog/2017-10-13-stretching-spokes/">Github Spokes&lt;/a> (DGit is now Spokes) 一样的&lt;strong>多写高可用&lt;/strong>要复杂一些，主要难点是要支持同时写入到多个副本，要做到这一点需要实现一些约束性条件：&lt;/p>
+&lt;ul>
+&lt;li>写入到多个副本的前提是多个副本的数据是一致的，Github 使用了三阶段提交协议先判断是否可以写入，写入的前提就是服务正常，存储库一致。&lt;/li>
+&lt;li>存储库的引用更新应该是事物的，也就是说可以回滚事务，这样在写入到其中一个节点失败后，其他的节点上实时回滚。这一点可以考虑使用原子更新引用，可以修改 git receive-pack 源码增强实现该功能。&lt;/li>
+&lt;li>代码托管平台常常使用 git 钩子实现一些功能，这些钩子的操作是否等幂，也就是说，钩子的执行结果在不同的副本上退出码必须一致，如果不同副本中执行钩子不做区别，我们要保证钩子中请求 API 授权的结果一致，避免内部服务故障照成影响，执行 post-receive 钩子产生动态或者触发 WebHook 时需要进行消息去重，避免多次执行。当然还有一种方案就是只执行一次钩子，然后使用协调机制将钩子的结果广播到其他副本，共同进退。&lt;/li>
+&lt;li>存储库在不一致，或者从停机中恢复后，多写高可用依然需要考虑存储库的同步，以保证不同节点的一致性。&lt;/li>
+&lt;/ul>
+&lt;p>要设计好高可用，应该实现一套良好的故障检测机制，合理的方案多种，第一种可以用专门的服务检测磁盘是否可用，服务是否联通，出现故障时标记不可用，恢复后直接标记为正常即可。还可以通过学习，将前端服务与存储节点通信的错误采集分离，进行健康评估，在节点故障时将其下线。两者都需要不断的汲取经验，故障的错误标记往往是灾难性的，Github 就出现过这样的事故，给其声誉带来了一定的影响。&lt;/p>
+&lt;p>无论是主从同步还是读写分离以及实时多写架构，都需要给存储库创建多个副本，这就意味着存储空间的消耗加倍，每个存储库有一个副本，存储空间的消耗就要增加一倍，两个副本就增加两倍，所以在设计高可用系统的时候就需要考虑到经济因素对架构的影响，这也是国内代码托管行业高可用架构发展并不顺利的原因之一。另一方面，运行良好的代码托管平台实施高可用也不是一蹴而就的，这也和平台的历史债务和规模息息相关，太急迫的话反而容易在设计和实施的过程中出现纰漏。&lt;/p>
+&lt;p>在开发多写高可用系统时如果能修改 git 源码来优化一些细节，这将对架构设计有更大的好处，设计上留有余地，环节可以优化，比如通过修改 git 源码实现主动非侵入数据流的原子更新要比拦截请求模拟原子更新要好得多，在 &lt;code>receive-pack&lt;/code> 中修改执行钩子的逻辑，也更容易符合读写系统的设计。然而现实往往并不能令人满意，国内代码托管平台几乎都缺乏足够的人手参与 git 贡献，长期的偏向业务的研发也没有足够的能力反思 git 代码托管平台的架构。这样的现状也就阻碍了国内代码托管行业的创新，平台也很容易陷入苦苦跟随的地步。&lt;/p>
+&lt;h2 id="5-思考">5. 思考&lt;/h2>
+&lt;p>代码托管早期有 &lt;a href="https://sourceforge.net/">SourceForge&lt;/a>，我刚刚工作时，构建的 &lt;code>Clang On Windows&lt;/code> 便是发布在 SourceForge 上分发的，现在已经好几年没登录 SourceForge 了，Git 的发展说快不快，说慢也不慢，但终归是流行起来了，Github 把其他平台施虐干净，真有点所向披靡的样子，国内得益于政策环境，Github 想进来并不容易，国内也就有了一番天地，做到 Github 那样的规模并不容易，做到 Github 那样的技术更不容易，罗马不是一天建成的，需要很多人的持续努力罢了。&lt;/p>
+&lt;h2 id="6-引用">6. 引用&lt;/h2>
+&lt;ul>
+&lt;li>&lt;a href="https://github.com/git/git/blob/master/Documentation/gitrepository-layout.txt">Git Repository Layout&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://git-scm.com/book/en/v2/Git-Internals-Git-Objects">Git Internals - Git Objects&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://docs.microsoft.com/en-us/azure/devops/learn/git/gvfs-design-history">Git Virtual File System Design History&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://docs.microsoft.com/en-us/azure/devops/learn/git/git-at-scale">Git at Scale&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://forcemz.net/git/2020/12/25/performance-scalability-and-high-availability-for-git/">《性能，可扩展性和高可用 - 大型 Git 代码托管平台的关键问题》&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://forcemz.net/git/2020/08/16/ExploreSomeIssuesWithGit/">《探讨 Git 版本控制系统的若干问题 - 2020 版》&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://forcemz.net/git/2019/10/01/ExploreSomeIssuesWithGitHost/">《探讨 Git 代码托管平台的若干问题 - 2019 版》&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://forcemz.net/git/2019/07/31/GNKServerSide/">《服务端 Git 钩子的妙用》&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://forcemz.net/git/2018/11/18/GitNamespaceSnapshot/">《基于 Git Namespace 的存储库快照方案》&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://forcemz.net/git/2019/03/16/MakeAGitSSHServer/">《构建恰当的 Git SSH Server》&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://forcemz.net/git/2017/11/22/GitNativeHookDepthOptimization/">《Git 原生钩子的深度优化》&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://www.atlassian.com/git/tutorials/monorepos">Monorepos in Git&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://github.blog/2021-04-29-scaling-monorepo-maintenance/">Scaling monorepo maintenance&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://engineering.fb.com/2014/01/07/core-data/scaling-mercurial-at-facebook/">Scaling Mercurial at Facebook&lt;/a>&lt;/li>
+&lt;/ul>
+&lt;h2 id="7-感谢">7. 感谢&lt;/h2>
+&lt;p>之前写过多篇 Git 相关原理介绍的文章，也写过探讨代码托管平台架构的文章，虽然文章数量多，但比较离散，行文中偶尔夹杂的代码如果没有阅读源码的背景也不容易理解，总之并不是尽善尽美，尽管如此，我一直以来也没有想法写一篇这样的文章，最近受相关人士的邀请在公司内做了一次题为《代码托管从业者 Git 指南》的分享，也准备了讲义，分享完后，相关人士又帮忙安排了一篇外宣稿子，于是就写下了这篇文章，也算是对从业多年的一个技术总结吧。粗鄙文章分享，如有错误可以在 &lt;a href="https://github.com/fcharlie/fcharlie.github.io/issues">https://github.com/fcharlie/fcharlie.github.io/issues&lt;/a> 指出，感谢朋友们的阅读，特别感谢相关人士促成这次分享。&lt;/p>
+- https://forcemz.net/posts/2021/2021-01-20-git-guide-for-code-hosting-practitioners/ - Copyright (c) 2009-2024 J23</description></item><item><title>性能，可扩展性和高可用 - 大型 Git 代码托管平台的关键问题</title><link>https://forcemz.net/posts/2020/2020-12-25-performance-scalability-and-high-availability-for-git/</link><pubDate>Fri, 25 Dec 2020 20:00:00 +0800</pubDate><guid>https://forcemz.net/posts/2020/2020-12-25-performance-scalability-and-high-availability-for-git/</guid><description>Charlie's Rethinking https://forcemz.net/posts/2020/2020-12-25-performance-scalability-and-high-availability-for-git/ -&lt;h2 id="前言">前言&lt;/h2>
+&lt;p>2019 年我写了 &lt;a href="https://forcemz.net/git/2019/10/01/ExploreSomeIssuesWithGitHost/">《探讨 Git 代码托管平台的若干问题 - 2019 版》&lt;/a> 从技术栈，功能，伸缩性等方面比较了业内一些代码托管平台（或者开源项目），是第一次对行业的反思。随着事物的不断变化，人们的认识也是不断发展的，在吸收了新的知识，做出了新的实践，换了新的工作后，我对于代码托管平台的认识也有了更多的想法。在实现大型代码托管平台时，&lt;strong>性能&lt;/strong>，&lt;strong>可扩展性&lt;/strong>，&lt;strong>高可用&lt;/strong> 这些问题不断的跃入眼前，随着时机成熟，我觉得很有必要粗略的探讨一些这类问题的解决方案，分享给感兴趣的人。&lt;/p>
+&lt;h2 id="关键问题的定义">关键问题的定义&lt;/h2>
+&lt;p>对于分布式系统而言，&lt;strong>可扩展性&lt;/strong>（也可称之为 &lt;strong>伸缩性&lt;/strong>），&lt;strong>高可用&lt;/strong>，&lt;strong>性能&lt;/strong> 是制约平台发展的关键性问题，也就是说只有在解决这些问题后才能够支撑更大的用户规模，服务更多的用户，创造更多的社会价值，对于代码托管平台而言，这也是一个普适的道理。&lt;/p>
+&lt;p>系统具备&lt;strong>可扩展性&lt;/strong>则意味着系统可以横向扩展，能够支撑更大的用户规模，存储更多的数据。&lt;br>
+系统支持&lt;strong>高可用&lt;/strong>则意味着用户几乎能够随时访问系统，系统出现软硬件故障时依然能够继续给用户提供完整的或者有限的服务，避免服务完全降级。&lt;br>
+提升系统的&lt;strong>性能&lt;/strong>则有助于加快数据处理，提高用户的访问速度，改善用户操作体验。&lt;/p>
+&lt;h2 id="git-的关键性能">Git 的关键性能&lt;/h2>
+&lt;p>Git 代码托管平台与常规的 Web 服务有着很大的不同，Git 要比其他 Web 服务需要更多的 CPU 计算时间和 IO 读写速度，这也是我经常给一些客户，开发人员传递的信息。我们回忆一下 &lt;a href="https://forcemz.net/git/2016/07/10/GitStorage/">Git 存储结构&lt;/a>，目录结构通常如下：&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>路径&lt;/th>
+&lt;th>目录\文件 (D\F)&lt;/th>
+&lt;th>描述&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>objects&lt;/td>
+&lt;td>D&lt;/td>
+&lt;td>松散对象和包文件&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>refs&lt;/td>
+&lt;td>D&lt;/td>
+&lt;td>引用，包括头引用，标签引用，和远程引用&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>packed-refs&lt;/td>
+&lt;td>F&lt;/td>
+&lt;td>打包的引用，通常运行 &lt;code>git pack-refs&lt;/code> (git gc 也是如此) 后产生&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>HEAD&lt;/td>
+&lt;td>F&lt;/td>
+&lt;td>当前指向的引用或者 oid，例如 &lt;code>ref: refs/heads/master&lt;/code>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>config&lt;/td>
+&lt;td>F&lt;/td>
+&lt;td>存储库的配置，可以覆盖全局配置&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>branches&lt;/td>
+&lt;td>D&lt;/td>
+&lt;td>-&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>hooks&lt;/td>
+&lt;td>D&lt;/td>
+&lt;td>请查看 Documentation/githooks.txt&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>index&lt;/td>
+&lt;td>F&lt;/td>
+&lt;td>git index file, Documentation/technical/index-format.txt&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;code>sharedindex.&amp;lt;SHA-1&amp;gt;&lt;/code>&lt;/td>
+&lt;td>F&lt;/td>
+&lt;td>-&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>info&lt;/td>
+&lt;td>D&lt;/td>
+&lt;td>存储库信息,哑协议依赖 info/refs&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>remotes&lt;/td>
+&lt;td>D&lt;/td>
+&lt;td>-&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>logs&lt;/td>
+&lt;td>D&lt;/td>
+&lt;td>运行 git log 可以查看提交记录&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>shallow&lt;/td>
+&lt;td>F&lt;/td>
+&lt;td>-&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>commondir&lt;/td>
+&lt;td>D&lt;/td>
+&lt;td>-&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>modules&lt;/td>
+&lt;td>D&lt;/td>
+&lt;td>子模块的 git 目录&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>worktrees&lt;/td>
+&lt;td>D&lt;/td>
+&lt;td>工作目录，更新后的文档与 git 多个工作目录有关&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>Git 在未打包的时候，把引用按照引用文件的方式存储在 &lt;code>refs&lt;/code> 目录下，比如分支 &lt;code>dev&lt;/code> 对应的引用文件名就是 &lt;code>refs/heads/dev&lt;/code>，分支的 CommitID 16 进制值就是 &lt;code>refs/heads/dev&lt;/code> 的文件内容。打包后，分支文件名和文件内容就会在使用字典排序后存储到 &lt;code>packed-refs&lt;/code> 文件中，文件格式如下：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-txt" data-lang="txt">&lt;span style="display:flex;">&lt;span># pack-refs with: peeled fully-peeled sorted
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>0b7bd57e0d9d9a549c9ca03cd9d9cc4ae5de25dc refs/heads/dev
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>这里有一点需要注意，引用文件的优先级要高于 &lt;code>packed-refs&lt;/code>，由于文件系统的文件时间是能够通过系统调用或者 API 修改，因此要靠文件时间去比较优先级并不可靠。&lt;/p>
+&lt;p>Git 真正的对象存储在 &lt;code>objects&lt;/code> 目录，当使用 &lt;code>git add&lt;/code> 命令添加时，会使用 zlib 将文件压缩后生成松散的对象，这种对象会在松散目录中使用 16 进制作为文件名分片存储，16 进制对象 ID 的前两个作为目录名，后 38（SHA256 62）作为文件名，比如对象 &lt;code>24b603b4d0de4a52d76ec6e780e4a22836e427cd&lt;/code> 的松散路径肯定是 &lt;code>objects/24/b603b4d0de4a52d76ec6e780e4a22836e427cd&lt;/code>。git 还支持将松散对象打包到 pack 文件以提高存储库读取性能，其中的细节在这里也就不详述了，有兴趣的可以查看：&lt;a href="https://github.com/git/git/blob/master/Documentation/technical/pack-format.txt">Git pack format&lt;/a>。&lt;/p>
+&lt;p>讲完这些我们可以知道，Git 通常需要直接读写文件系统，如果文件数量特别多的时候，势必会带来巨大的文件 IO 压力，举个例子，Linux 内核存储库目前的对象数目是 7870377，如果这些对象全部以松散对象的方式存储，占据的文件系统空间为（Linux 文件系统文件占据空间一般为 4K 的整倍数），那么磁盘占用是 30 GB 左右，如果对象大小大于 4KB 这个体积要更大一些，因此 Git 引入了打包机制提高存储库读取性能。我们知道 Linux 读取文件首先需要打开文件句柄，使用 &lt;code>open&lt;/code>，然后调用 &lt;code>read&lt;/code>，如果一次性读不完还需要调用更多的 &lt;code>read&lt;/code>，最后还需要调用 &lt;code>close&lt;/code> 关掉文件句柄。7870377 个文件的读取也至少需要 &lt;em>23611131&lt;/em> 直接系统调用，内核态用户态的切换也将耗费非常多的 CPU 时间。&lt;/p>
+&lt;p>有些人提出疑问，是否可用使用分布式文件系统或者对象存储，这里我们如果使用分布式文件系统，这么多小文件，文件的元数据累计起来，耗费的数据包真的不少，除了直接系统调用，分布式文件系统的套接字系统调用也不会少的。前面也提到 git 会使用打包机制将引用或者对象打包到对应的文件中以提高存储库读取效率，但对于代码托管平台而言，不断有用户读写存储库，松散对象和未打包的引用数量肯定不会少，使用分布式文件系统或者对象存储库很容易遇到性能问题，以国内外的厂商的失败为鉴，Git 目前使用物理磁盘或许是更好的选择。&lt;/p>
+&lt;h3 id="优化压缩解压">优化压缩解压&lt;/h3>
+&lt;p>前文我们知道，Git 使用了 zlib 库将文件按照 deflate 算法压缩的变体 zlib。压缩算法的效率对存储库的操作性能影响很大，我们将文件纳入版本管理需要使用 deflate 压缩，检出查看存储库文件需要使用 deflate 的解压缩方法 &lt;code>inflate&lt;/code> 解压对象，在服务器上，用户推送代码到远程服务器，计算用户的贡献度也需要 &lt;code>inflate&lt;/code> 解压对象然后按行比较，用户通常不会注意到通过网页查看文件之前也需要 &lt;code>inflate&lt;/code> 对象，下载压缩包需要 inflate 然后 deflate （或者 GZ），在线提交需要 deflate。我们如果能优化 Git 的压缩解压效率则很有可能提高 git 操作性能。&lt;/p>
+&lt;p>与其他压缩库相比，zstd 除开许可证的宽松，使用广泛有非常大的优势，压缩算法 deflate 本身并不具备很大的优势，deflate 的压缩比和压缩速度都不是最优。目前压缩率压缩比综合较好的压缩库（算法）是 facebook 开源的 &lt;a href="https://github.com/facebook/zstd">zstd&lt;/a>，zstd 开发者给 zstd/zlib 做过一些基准测试如下：&lt;/p>
+&lt;blockquote>
+&lt;p>For reference, several fast compression algorithms were tested and compared
+on a server running Arch Linux (&lt;code>Linux version 5.5.11-arch1-1&lt;/code>),
+with a Core i9-9900K CPU @ 5.0GHz,
+using &lt;a href="https://github.com/inikep/lzbench">lzbench&lt;/a>, an open-source in-memory benchmark by @inikep
+compiled with &lt;a href="https://gcc.gnu.org/">gcc&lt;/a> 9.3.0,
+on the &lt;a href="http://sun.aei.polsl.pl/~sdeor/index.php?page=silesia">Silesia compression corpus&lt;/a>.&lt;/p>
+&lt;/blockquote>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>Compressor name&lt;/th>
+&lt;th>Ratio&lt;/th>
+&lt;th>Compression&lt;/th>
+&lt;th>Decompress.&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>&lt;strong>zstd 1.4.5 -1&lt;/strong>&lt;/td>
+&lt;td>2.884&lt;/td>
+&lt;td>500 MB/s&lt;/td>
+&lt;td>1660 MB/s&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>zlib 1.2.11 -1&lt;/td>
+&lt;td>2.743&lt;/td>
+&lt;td>90 MB/s&lt;/td>
+&lt;td>400 MB/s&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>brotli 1.0.7 -0&lt;/td>
+&lt;td>2.703&lt;/td>
+&lt;td>400 MB/s&lt;/td>
+&lt;td>450 MB/s&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;strong>zstd 1.4.5 &amp;ndash;fast=1&lt;/strong>&lt;/td>
+&lt;td>2.434&lt;/td>
+&lt;td>570 MB/s&lt;/td>
+&lt;td>2200 MB/s&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;strong>zstd 1.4.5 &amp;ndash;fast=3&lt;/strong>&lt;/td>
+&lt;td>2.312&lt;/td>
+&lt;td>640 MB/s&lt;/td>
+&lt;td>2300 MB/s&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>quicklz 1.5.0 -1&lt;/td>
+&lt;td>2.238&lt;/td>
+&lt;td>560 MB/s&lt;/td>
+&lt;td>710 MB/s&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;strong>zstd 1.4.5 &amp;ndash;fast=5&lt;/strong>&lt;/td>
+&lt;td>2.178&lt;/td>
+&lt;td>700 MB/s&lt;/td>
+&lt;td>2420 MB/s&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>lzo1x 2.10 -1&lt;/td>
+&lt;td>2.106&lt;/td>
+&lt;td>690 MB/s&lt;/td>
+&lt;td>820 MB/s&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>lz4 1.9.2&lt;/td>
+&lt;td>2.101&lt;/td>
+&lt;td>740 MB/s&lt;/td>
+&lt;td>4530 MB/s&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;strong>zstd 1.4.5 &amp;ndash;fast=7&lt;/strong>&lt;/td>
+&lt;td>2.096&lt;/td>
+&lt;td>750 MB/s&lt;/td>
+&lt;td>2480 MB/s&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>lzf 3.6 -1&lt;/td>
+&lt;td>2.077&lt;/td>
+&lt;td>410 MB/s&lt;/td>
+&lt;td>860 MB/s&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>snappy 1.1.8&lt;/td>
+&lt;td>2.073&lt;/td>
+&lt;td>560 MB/s&lt;/td>
+&lt;td>1790 MB/s&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>Compression Speed vs Ratio&lt;/th>
+&lt;th>Decompression Speed&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>&lt;img src="https://s1.ax1x.com/2020/08/16/dVpadK.png" alt="Compression Speed vs Ratio" title="Compression Speed vs Ratio">&lt;/td>
+&lt;td>&lt;img src="https://s1.ax1x.com/2020/08/16/dVp0iD.png" alt="Decompression Speed" title="Decompression Speed">&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>如果能换一种现代的压缩算法，Git 或者能够给人眼前一亮，但是切换压缩算法会破坏 Git 的兼容，很多时候可能是得不偿失的，因此不可行。除了切换压缩算法，我们还可以改进 zlib 自身，zlib 作为一个历史悠久的开源算法压缩库，需要支持各种平台，具备很好的通用性，但是却没有利用好平台的特性进行优化，缺少注册 SIMD 这样的指令优化，因此，开源界则有一些优化方案，比如 Intel 提供了一个针对 Intel CPU 优化的 &lt;a href="https://github.com/jtkukunas/zlib">zlib 版本&lt;/a>，也有一群人维护了 &lt;a href="https://github.com/zlib-ng/zlib-ng">zlib-ng&lt;/a> 项目，该项目为 zlib 添加了 x86/arm/s390/power SIMD 指令支持，chromium 也提供了一个 zlib 优化版本 &lt;a href="https://github.com/chromium/chromium/tree/master/third_party/zlib">chromium zlib&lt;/a>，性能相当不错。除此之外还有一个速度非常快的 deflate 实现 &lt;a href="https://github.com/ebiggers/libdeflate">libdeflate&lt;/a>，遗憾的是，libdeflate 并不支持流式压缩，这就很难被 git 使用。&lt;/p>
+&lt;h3 id="解决拉取时的性能问题">解决拉取时的性能问题&lt;/h3>
+&lt;p>Git 代码托管平台需要提供的核心能力至少包括推送和拉取，拉取代码包括 &lt;code>git fetch&lt;/code> 和 &lt;code>git clone&lt;/code>，我们只讨论简单的智能传输（smart）协议，不讨论 Wire（v2） 协议，以 git fetch（HTTP） 为例：&lt;/p>
+&lt;ol>
+&lt;li>客户端请求 &lt;code>GET /path/repo.git/info/refs?service=git-upload-pack&lt;/code>&lt;/li>
+&lt;li>服务端返回引用列表&lt;/li>
+&lt;li>客户端按引用发送已存在的、需要的 commit 信息&lt;/li>
+&lt;li>服务端按照所需、已存在的 commit 清点对象，打包返回给客户端&lt;/li>
+&lt;/ol>
+&lt;p>我们逐一分析，在这个过程中会存在哪些性能问题，当客户端需要服务端的引用列表时，服务端上的 git 要将存储库中的引用及其 commit 一一返回给客户端，我们知道，git 的引用存储在存储库的 &lt;code>refs&lt;/code>目录下按文件存储，每一个引用对应一个文件，也可以打包存储到 &lt;code>packed-refs&lt;/code> 中，如果存储库引用较少，分支较少，那么这通常不是问题，但是，如果存在一个像 Windows/Chrome 这样的项目，几万个分支，如果这些分支都未打包到 packed-refs，在服务发现的过程我们就会发现，&lt;a href="https://linux.die.net/man/3/open">open()&lt;/a> 系统调用就有几万个，几十上百个请求过来都是几百万的系统调用了，这还能不影响性能吗？解决这个问题的方法 git 早已经提供了，&lt;strong>packed-refs&lt;/strong>，将引用打包存储到一个文件中，作为代码托管平台而言该怎么做呢？定期 GC，使引用被打包。&lt;/p>
+&lt;p>如果引用数目较多，这也就意味着一次性传输的数据较多，但这些数据并不一定全部是用户需要的，引用发现还是一股脑的返回了。如何解决这个问题，2018 年 5 月 Git Wire Protocol 出现了，Wire 协议可以使用 ls-refs 命令获得仅需的引用信息。&lt;/p>
+&lt;p>在这个流程中，如果 git 存储库的对象比较多，那么清点对象的时间可能非常长，之前清点对象的原理如下：&lt;/p>
+&lt;ol>
+&lt;li>列出本地所有分支最新的一个commit&lt;/li>
+&lt;li>列出远程所有分支最新的一个commit&lt;/li>
+&lt;li>两者进行比较，只要有不同，就意味着分支发生变动&lt;/li>
+&lt;li>每一个发生变动的commit，都清点其中具体变动的子目录和文件&lt;/li>
+&lt;li>追溯到当前commit的父节点，重复第四步，直至本地与远程的历史一致为止&lt;/li>
+&lt;li>加总所有需要变动的对象&lt;/li>
+&lt;/ol>
+&lt;p>早期清点 Linux 内核源码这样的仓库需要 8 分钟，这太慢了能解决吗？ Github 贡献了 &lt;a href="https://github.blog/2015-09-22-counting-objects/">Git Bitmap&lt;/a> 通过空间换时间解决了这个问题，具体的实现细节可以阅读相关博客和规范。对于代码托管平台而言，及时更新 Git 版本，配置好 bitmap 设置如 &lt;code>repack.writeBitmaps=true&lt;/code> 通常能获得更好的体验。&lt;/p>
+&lt;h3 id="缩短推送耗时">缩短推送耗时&lt;/h3>
+&lt;p>对于 Git 推送，目前依然使用的是智能传输协议，其流程如下：&lt;/p>
+&lt;ol>
+&lt;li>客户端请求 &lt;code>GET /path/repo.git/info/refs?service=git-receive-pack&lt;/code>&lt;/li>
+&lt;li>服务端返回引用列表及其他能力信息（包括原子更新等等）&lt;/li>
+&lt;li>客户端清点打包需要上传的对象&lt;/li>
+&lt;li>服务端接受对象包，解包，更新引用，返回更新结果。&lt;/li>
+&lt;/ol>
+&lt;p>随着用户需求的多样化，平台提供的特性越来越多，为了实现这类功能（比如针对 Git 做细粒度的权限控制，开发规范检查），我们通常是非侵入式的通过钩子实现，而通过钩子实现必然有一定的逻辑，这也会带来一定的时间消耗，比如，平台限制用户推送较大的文件，那么在钩子中就需要找出此次推送是否包含大文件，在之前的博客中，我就分享过如何优化钩子使其能够更快的找到大文件 &lt;a href="https://forcemz.net/git/2017/11/22/GitNativeHookDepthOptimization/">《Git 原生钩子的深度优化》&lt;/a>，这篇文章中还包含了钩子的其他场景优化。&lt;/p>
+&lt;h3 id="其他场景的优化">其他场景的优化&lt;/h3>
+&lt;p>有些平台，比如 Gitee 为企业级用户提供了存储库的快照功能，望文生义，快照就是每一次都做一次备份，那这么做会不会存在什么性能问题？如果每次都是全量的拉取存储库，大量数据带来的不仅仅是网络流量还有磁盘空间，CPU 时间消耗，因此在 2018 年，我就分享了 &lt;a href="https://forcemz.net/git/2018/11/18/GitNamespaceSnapshot/">《基于 Git Namespace 的存储库快照方案》&lt;/a>，通过名称空间变换实现 Git 存储库快照功能，通过优化极大的减少数据的传输。&lt;/p>
+&lt;p>比较两个存储库的数据是否一致，意味着它们拥有共同的对象，同样的引用，同样的 HEAD，但这种指标过于绝对，应当排除存储库中已经脱离版本控制的对象，如果存储库完整，我们只要一一比较存储库的引用是否一一对应且对象 ID 一致即可，如果我们需要跨机器比较，那么比较的市场一定和引用发现的时间和传输引用的时间相关，引用发现的时间不能缩短，那么我们可以优化引用传输的时间，我们通过在存储库中按照引用排序计算 BLAKE3 的哈希值，计算完毕后通过传输 BLAKE3 的哈希值比较两个存储库是否一致，这样就能优化存储库的比较。&lt;/p>
+&lt;h3 id="性能优化的总结">性能优化的总结&lt;/h3>
+&lt;p>故不积跬步，无以至千里；不积小流，无以成江海。Git 代码托管平台的性能提升也不是一蹴而就的，通常是一点一点的攻坚经过日积月累，也不一定被人所知，用的人不觉得差便已经足够。&lt;/p>
+&lt;h2 id="解决平台的扩展性">解决平台的扩展性&lt;/h2>
+&lt;p>与超级计算机相比，普通的计算机基本上是一个 CPU，内存大小较小，磁盘 IO 速度较低，而代码托管平台基本上是运行在这些普通计算机上的，这就意味着，从硬件层面来看，当计算机数量有限时，能够支撑的用户规模是有限的。而对于一个平台而言，如何基于整个平台实现其扩展性，为更多的用户提供服务，存储更多的存储库，这是实现大型 Git 代码托管平台的关键问题。&lt;/p>
+&lt;p>首先，服务器的存储是有限的，这一个问题毋庸置疑，随着硬件的不断发展，在代码托管平台中，我们可以为一台服务器挂载数 TB 的硬盘，更大的硬盘能够存储更多的内容，但是我们需要注意，硬盘的容量的价格曲线并不是线性的，因此，容量巨大的硬盘可能价格并不经济，另外单块硬盘的读写速度也是有限制的，因此早期，人们可以将多块硬盘挂载到一台机器以提高容量，但通常提高的容量比较有限。&lt;/p>
+&lt;h3 id="分布式文件系统的歧途">分布式文件系统的歧途&lt;/h3>
+&lt;p>人类的历史是螺旋发展的，有对的尝试也有错误的尝试，而代码托管的发展历史也是如此，现在我们谈论 Git 代码托管服务的可扩展性的时候，一般不建议使用分布式文件系统，前面我们已经讲了 Git 对于 IO/CPU 的要求很高，分布式文件系统并不能解决这个问题，冒然尝试该方案，很容易出现大的事故。2014 年，笔者加入开源中国，最初的工作是在 Git 代码托管平台实现兼容的 SVN 接入，彼时，为了支撑更多的存储库，当时的 Gitee（当时没有品牌，域名为： git.oschina.net）使用的是 NFS 将多台机器挂载到一台机器上，在这台机器上提供读写存储库的能力，按照现在的知识背景评价这种方案，我们能轻易的发现其中的问题：通过 NFS 读写文件的效率低于本机读写，NFS 存在缓存导致文件锁不能及时删除，git 的计算压力集中在 NFS client 端&amp;hellip;.. 当年的情况正是如此，后来为了解决这一问题，开发团队选择 ceph 文件系统替换 NFS. 这次变更堪称灾难性的，周末上线周一宕机，在海量 git 小文件面前，ceph 不堪一击，后来开发团队不得不回退到 NFS 方案。&lt;/p>
+&lt;p>分析各个大型代码托管平台的技术栈，我们也没发现任何平台坚守分布式文件系统，也就没有分布式文件系统在 Git 上运用的成功案例。&lt;/p>
+&lt;p>无论是 NFS 还是 Ceph 都无法解决 Git 的存储扩展问题，后来 Gitee 研发团队决心使用分片解决平台的扩展性，刚好我也完成 SVN 接入后工作，便参与进来，经过几年演进架构演进，才成了今天中国第一大代码托管平台。虽然已经离开了 Gitee，但这几年做的这些工作还是有很大的价值。&lt;/p>
+&lt;h3 id="git-的分片技术">Git 的分片技术&lt;/h3>
+&lt;p>要实现 Git 平台的可扩展，对资源进行合理的分片尤为重要，分片的方案很多，采用不同的分片方案往往与当时的技术背景相关，也与当时的认知背景相关，在 Gitee 最开始分片时，开发团队选择的是基于用户(Team)，也就是 &lt;code>namespace&lt;/code>，这种策略的缺点很明显，创建仓库不能直接创建到空闲机器，负载并不均衡。后来 Gitee 切换到按照存储库分片，试图解决之前方案的不足，但由于历史包袱，这一过程持续了很长的时间。&lt;/p>
+&lt;p>我们在考虑 Git 的分片技术时，应该将存储库的真实路径与存储库 URL 分离，否则，在提供用户改名或者存储库改名，存储库转移的时候带来不必要的麻烦。&lt;/p>
+&lt;p>为了管理好这些存储库，我们除了需要做好分片还需要为其提供完整的配套维护方案，比如存储库分布在不同的存储节点，有的节点负载较高，有的节点较为空闲，这个时候我们可以将一些存储库迁移到空闲的机器，因此我们需要开发一套合适的迁移方案，另外在新建存储库的落点选择上，还需要设计一个周到的落点机制，让新建的存储库尽量落点到负载较轻的节点。&lt;/p>
+&lt;p>如果平台提供了 fork 这样的功能，那么对节点之间的存储库克隆同步等操作也应该实现内部传输机制，尽量避免通过公网传输消耗网络流量。&lt;/p>
+&lt;h3 id="公共存储库的优化">公共存储库的优化&lt;/h3>
+&lt;p>公共 Git 代码托管平台很容易遇到一些热点问题，比如体积巨大的活跃存储库，在提供 fork 功能之后，这些存储库可能存在数量巨大的 fork 数。为了避免 fork 带来的海量存储问题，我们可以使用 git 的对象借用实现 fork 功能，以降低存储消耗。&lt;/p>
+&lt;p>当然&lt;strong>公共存储库的优化&lt;/strong>是一个非常复杂的问题，在本文中就不再赘述了。&lt;/p>
+&lt;h2 id="代码托管平台的高可用">代码托管平台的高可用&lt;/h2>
+&lt;p>对于平台而言，服务的高可用是平台的重要质量指标，服务稳定运行，故障较少，这也是用户优先选择的因素之一，无论是代码托管公有云还是私有化部署，用户对高可用的需要总是存在的。而实现 Git 代码托管平台的高可用一直是业内的一大挑战，尽管 Git 代码托管平台数量并不少，但大多数平台并未有有效的高可用解决方案，拥有解决方案的平台对其中的细节也语焉不详。这样看来，Git 代码托管高可用像极了一个黑盒。我在研究代码托管平台高可用方案时也耗费了很多精力，所幸有了自己的见解。&lt;/p>
+&lt;p>作为一个职业生涯与 Git 息息相关的开发者，如果让我选择一个职业上比较有成就感的事，目前我可能会说是为前东家的 Gitee 设计和实现的 &lt;strong>Git 代码托管平台分布式读写分离架构&lt;/strong>。这一方案是目前比较经济划算的商用方案，据了解 Gitee 为了支持华为鸿蒙操作系统开源，专门将相应的存储库存储到读写分离机器组中，另外还有国内某大型国有银行内部使用了该方案实现其代码托管的高可用。&lt;/p>
+&lt;p>随着认识的不断深入，我对实现 Git 代码托管平台高可用的认知也不断加深，架构设计也有了新的想法，反思以往总总，放眼未来，把我所知与诸君共享，也希望有人能够有灵光一现，也算得上前赴后继，共创繁华。&lt;/p>
+&lt;h3 id="基于事件驱动型读写分离">基于事件驱动型读写分离&lt;/h3>
+&lt;p>我们谈论到高可用，通常能够想到的方案是主从实时同步，这种机制也能被 Git 使用以实现代码托管的高可用。比如 Gitee 的分布式读写分离架构还是腾云扣钉的高可用架构本质上都是此类，二者的由于硬件和基础架构的差异，因此对高可用的需求重点并不相同，因此在叫法和实现上有一些区别，比如 Gitee 是一个公共的代码托管平台，用户规模巨大，请求量多，因此需要通过读写分离分散负载，读写分离架构需要解决的就是这种场景，而腾云扣钉则更多的为私有化服务，公有云规模稍低，保证数据的可靠性反而是重中之重，高可用的设计也就没有考虑到读写分离。（关于 Gitee 的架构之路，有兴趣的伙伴可以查看 Gitee 负责人周凯的公开课 &lt;a href="https://www.infoq.cn/article/fgr6dk9dw0bkeiqyucf2">《技术深解码 - Gitee 代码托管平台之架构洞察》&lt;/a>）&lt;/p>
+&lt;p>Git 读写分离的逻辑大致是将存储库的副本存储在多个节点，节点可以交叉存储，也可以按机器划分，然后一个节点作为主节点或者一个存储库副本作为主副本，用户的写入请求将被转发到主节点或者主副本，在存储库一致时，其它节点或者其他副本将能够处理用户的读取请求，也就是拉取（git pull/git fetch），这里有一点需要注意，主节点和主副本也能处理读取请求。现实世界的经验告诉我们，通常读取请求的数量要远高于写入去请求，在 Git 世界我们也面临这样的难题，因此提高 Git 读取能力也是读写分离的初衷之一。存储库副副本要提供读取首先的保证数据和存储库主副本一致，这就要求我们实现内部同步服务，这个服务通常只在内网运行，为了提高效率我们通常使用 &lt;code>git://&lt;/code> 协议，内部传输服务还需要提供默认分支同步机制，以保证用户修改存储库默认分支后能够及时更新。除了要实现内部同步服务，我们还需要实现一套存储库一致性校验算法，随着引用数量的增长，直接比较引用是否一致花费的代价也不断增长，我通常会选择使用类似 BLAKE3 这样现代的哈希算法通过将一一比较引用转变为比较哈希值，这样一来也就不必要传输大量的网络数据了。该架构一个简单的流程图如下：&lt;/p>
+&lt;p>&lt;img src="https://s3.ax1x.com/2020/12/24/r2oQzj.png" alt="">&lt;/p>
+&lt;p>在此架构中，用户在推送代码后，会触发钩子创建 Latest 事件，然后事件关联的任务被存储到队列，然后被 Git 后台服务消费，将存储库同步到其他副本，完成后消除存储库的 Latest 状态。我将此种读写分离称之为基于事件驱动型读写分离，状态由事件产生，因事件消除。在这个事件驱动的模型中，我们可以看到，存储库的同步是异步的，基于 Git 的使用场景来看，读多写少意味着我们总能得到足够收益，但从数据一致性上来说，这种妥协还是需要我们在保证存储库数据安全上需要添加一些补救措施，比如推送事件会产生存储库 Latest 状态，出现 Latest 状态意味着存储库的 Slave 副本变得不可读，必须由同步服务消除 Latest 后才能写取，同样的在 Master 发生故障时存储库也只能在没有 Latest 状态时才能在新的 Master 节点上为用户提供读写。&lt;/p>
+&lt;p>这种方案如果其他副本存储库不提供读取，那么就会退化成单纯的高可用，但是从技术的复杂度上将，单纯的高可用与支持读写分离的高可用复杂度相差无几。&lt;/p>
+&lt;h3 id="实时性多写高可用设计">实时性多写高可用设计&lt;/h3>
+&lt;p>我们假设一下，如果用户请求时同时写入多个副本，那么是不是不用考虑同步的问题，是不是也能实现更好的一致性？这个问题也是我反复思考的问题。我们知道，git 在功能上比较孱弱，需要通过钩子增强，如果不考虑到钩子的影响，两个完全一样的存储库，在接收到一样的数据，git 版本都兼容时，那么预期的结果将是一致的，也就是两个相同的存储库数据都被更新到相同的状态，也就是说这是等幂的。如果把钩子考虑进来，那么现状就会发生变化，钩子在不同存储库上执行可能有先后顺序，也许会通过网络请求 API，这些操作实际上已经破坏了等幂性。那么解决问题的思路就出现了，一种是绕开等幂约束，一种是让推送过程回复等幂。&lt;/p>
+&lt;p>等幂性的破坏可以从几个维度去分析，比如我们在增强 Git 功能时，会使用 Git Hooks，Git Hooks 可能需要调用 API，受网络影响，API 调用可能失败，如果一个节点上的钩子 API 调用成功，另一个执行失败，这就会导致执行钩子输出的结果不再相同，也就不能算作是等幂的。另外 API 服务在处理各个节点的钩子请求，可能并不是同时性的，而是有先后，如果在两个节点请求的中间，用户修改了一些设置，那么获得的数据也就不再一致，那么钩子的数据结果也就可能不再相同。那么不同节点上的副本也就会出现数据差异，存储库变得不再一致。好了，我们看一看服务器上有哪些钩子，在服务端，Git 2.29 支持的钩子如下：&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>钩子名&lt;/th>
+&lt;th>参数运行细节&lt;/th>
+&lt;th>使用场景&lt;/th>
+&lt;th>备注&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>&lt;code>pre-receive&lt;/code>&lt;/td>
+&lt;td>该钩子没有参数，一次推送执行一次，从标准输入中按照 &lt;code>&amp;lt;old-value&amp;gt; SP &amp;lt;new-value&amp;gt; SP &amp;lt;ref-name&amp;gt; LF&lt;/code> 接收每一个引用的变更，失败导致整个推送失败&lt;/td>
+&lt;td>由于该钩子具备环境隔离机制，因此可以更好的被运用到大文件和存储库体积限制功能上，当然也能被运用到保护分支等功能中&lt;/td>
+&lt;td>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;code>update&lt;/code>&lt;/td>
+&lt;td>该钩子参数为 &lt;code>&amp;lt;ref-name&amp;gt; &amp;lt;old-value&amp;gt; &amp;lt;new-value&amp;gt;&lt;/code>, 每更新一个分支执行一次，失败导致当前引用更新失败&lt;/td>
+&lt;td>该钩子可以被用户实现保护分支，邮箱检测，以及只读目录等功能&lt;/td>
+&lt;td>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;code>proc-receive&lt;/code>&lt;/td>
+&lt;td>&lt;a href="https://git-scm.com/docs/githooks#proc-receive">proc-receive&lt;/a>&lt;/td>
+&lt;td>主要目的是场景是支持 Gerrit 工作流&lt;/td>
+&lt;td>阿里巴巴开发者贡献&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;code>post-receive&lt;/code>&lt;/td>
+&lt;td>运行细节与 pre-receive 相同，但运行结果不影响存储库更新。&lt;/td>
+&lt;td>主要用于存储库推送事件的发生&lt;/td>
+&lt;td>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;code>post-update&lt;/code>&lt;/td>
+&lt;td>参数与 update 相同&lt;/td>
+&lt;td>主要用于通知，不影响存储库更新结果，但平台基本上没有使用&lt;/td>
+&lt;td>-&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;code>reference-transaction&lt;/code>&lt;/td>
+&lt;td>标准输入读取 &lt;code>&amp;lt;old-value&amp;gt; SP &amp;lt;new-value&amp;gt; SP &amp;lt;ref-name&amp;gt; LF&lt;/code> 引用更新事务钩子&lt;/td>
+&lt;td>-&lt;/td>
+&lt;td>-&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;code>push-to-checkout&lt;/code>&lt;/td>
+&lt;td>&lt;a href="https://git-scm.com/docs/githooks#_push_to_checkout">&lt;/a>&lt;/td>
+&lt;td>-&lt;/td>
+&lt;td>-&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>我们在使用钩子实现相关功能时，流水线也被拉长了，新增的环节可能出出现各种各样的异常，我们辛辛苦苦追求的等幂也就只能另辟蹊径了。&lt;/p>
+&lt;p>我们在实现实时多写的问题时，一种解决方案是绕过等幂限制，我们在执行钩子的时候，仅在一个节点（这里用功能节点代称）以完整功能执行钩子，其他节点上，我们则将钩子转变为观察者，观测功能节点的执行结果，进行一致性协商后共同进退。&lt;/p>
+&lt;p>在这个过程中，我们为了提高执行结果的一致性，可以引入 &lt;code>balance_atomic&lt;/code> 这样的原子更新机制，主动的为存储库开启原子更新，还需要实现一个 balance hook 将原子更新的结果同步协商共同进退，这样在推送时，一个节点失败，则所有的节点也都会执行失败，建议的 git 补丁如下：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-diff" data-lang="diff">&lt;span style="display:flex;">&lt;span>diff --git a/builtin/receive-pack.c b/builtin/receive-pack.c
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>index bb9909c52e..bca3843f00 100644
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>--- a/builtin/receive-pack.c
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>--- b/builtin/receive-pack.c
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>@@ -60,6 +60,7 @@ static int report_status;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> static int report_status_v2;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> static int use_sideband;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> static int use_atomic;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>+static int use_balanced_atomic;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> static int use_push_options;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> static int quiet;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> static int prefer_ofs_delta = 1;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>@@ -226,6 +227,11 @@ static int receive_pack_config(const char *var, const char *value, void *cb)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> return 0;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>+ if (strcmp(var, &amp;#34;receive.balancedatomic&amp;#34;) == 0) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>+ use_balanced_atomic = git_config_bool(var, value);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>+ return 0;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>+ }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>+
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> if (strcmp(var, &amp;#34;receive.advertisepushoptions&amp;#34;) == 0) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> advertise_push_options = git_config_bool(var, value);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> return 0;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>@@ -1844,6 +1850,8 @@ static void execute_commands_atomic(struct command *commands,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> goto failure;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>+ // TODO: check balance-update hook
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>+
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> if (ref_transaction_commit(transaction, &amp;amp;err)) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> rp_error(&amp;#34;%s&amp;#34;, err.buf);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> reported_error = &amp;#34;atomic transaction failed&amp;#34;;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>@@ -1951,7 +1959,7 @@ static void execute_commands(struct command *commands,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> (cmd-&amp;gt;run_proc_receive || use_atomic))
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> cmd-&amp;gt;error_string = &amp;#34;fail to run proc-receive hook&amp;#34;;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>- if (use_atomic)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>+ if (use_atomic || use_balanced_atomic)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> execute_commands_atomic(commands, si);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> else
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> execute_commands_non_atomic(commands, si);
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>此方案需要设计合适的分布式信号量机制（基于强制同步的 Redis 也可以使用实现的信号量机制），钩子感知信号灯标识，继续或者退出。&lt;/p>
+&lt;p>另一种方案是，钩子在执行过程中，不通过网络而是通过环境变量传递获得功能权限等设置的信息，然后只需要轻度的协商即可，而 post-receive 这样的钩子事件绑定到唯一的 ID，然后插入到事件队列时去重，但此种方案的缺陷是可扩展性不强，给钩子新增功能，需要操作多个环节。&lt;/p>
+&lt;p>我们需要注意 Git 实时同步多写系统，如果支持多数节点写入成功这种特性而不是全部节点写入成功才算成功，那么，我们在设计系统的时候也就必须将前面的高可用方案完整的引入进来，上述的多写系统每一个环节也需要修补，这样一来，系统的复杂性大大的增加了。&lt;/p>
+&lt;h2 id="用户代码的可靠性和安全性">用户代码的可靠性和安全性&lt;/h2>
+&lt;p>除了存储库多副本，我们还可以实现存储库快照功能，这样一来用户的代码安全就是非常可靠的，遇到节点故障，其他节点上的存储库副本能够继续提供服务，遇到存储库被恶意删除，使用存储库快照可以快速恢复。存储库快照功能可以参考：&lt;a href="https://forcemz.net/git/2018/11/18/GitNamespaceSnapshot/">《基于 Git Namespace 的存储库快照方案》&lt;/a>。&lt;/p>
+&lt;p>除了存储库本身的安全能提高用户代码的可靠性，平台做好一些其他的功能也能避免用户的数据丢失，被窃取。比如使用强度和计算较快的密码哈希算法 &lt;code>argon2&lt;/code> 加密用户密码，在设计 Token 系统的时候设计细粒度的权限机制，HTTP 协议使用最新的 TLS1.3，SSH 使用 ED25519 这样的加密算法，或者 RSA 使用更高的位数。另外还要设计合理的运维机制，避免出现删库跑路事故。&lt;/p>
+&lt;h2 id="研发困境">研发困境&lt;/h2>
+&lt;p>作为一个专门的代码托管研发人员，我认为在解决代码托管平台的这些关键问题并不是难乎其难，相反，这些问题从技术上都可以设计出系统的解决方案。然而事实总是与理想相悖，研发上的困境使得各种美好的设想停留纸面。既没有足够的人来添砖加瓦，又没有足够的耐心来步步为营，也没有破釜沉舟改天换地的勇气，徒呼奈何。&lt;/p>
+&lt;h2 id="终">终&lt;/h2>
+&lt;p>日复一日，想了又想，写了又写，天黑了天亮了，写下一篇粗鄙文章。&lt;/p>
+- https://forcemz.net/posts/2020/2020-12-25-performance-scalability-and-high-availability-for-git/ - Copyright (c) 2009-2024 J23</description></item><item><title>探讨 Git 版本控制系统的若干问题 - 2020 版</title><link>https://forcemz.net/posts/2020/2020-08-16-explore-some-issues-with-git/</link><pubDate>Sun, 16 Aug 2020 20:00:00 +0800</pubDate><guid>https://forcemz.net/posts/2020/2020-08-16-explore-some-issues-with-git/</guid><description>Charlie's Rethinking https://forcemz.net/posts/2020/2020-08-16-explore-some-issues-with-git/ -&lt;h2 id="前言">前言&lt;/h2>
+&lt;p>自 2014 年大学毕业以来，我一直从事代码托管相关工作，工作的内容和 git 相关，期间积累了很多心得体会，这大概是一般的 git 使用者很少会感知到的，一直以来，我也想将这些见解分享给大家，之前我写过《探讨 Git 代码托管平台的若干问题 - 2019 版》，这篇文章主要偏向代码托管平台的开发，与普通开发者存在一定的距离，快一年过去了，我又有了新的体会，写一篇关于 Git 版本控制系统的若干问题也就有了动机。&lt;/p>
+&lt;h2 id="git-flow-与-git-的表与里">Git Flow 与 Git 的表与里&lt;/h2>
+&lt;p>在使用 Git 进行团队协作的时候，网络上铺天盖地的推荐方案是使用 Git Flow 工作流，什么是 &lt;code>Git Flow&lt;/code>？Git Flow 由 Vincent Driessen 在 2010 年，在文章 &lt;a href="https://nvie.com/posts/a-successful-git-branching-model/">A successful Git branching model&lt;/a> 中提出，Atlassian 也写了一篇文章：&lt;a href="https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow">Gitflow Workflow&lt;/a> 对其有个介绍，大致流程图如下：&lt;/p>
+&lt;p>&lt;img src="https://s1.ax1x.com/2020/08/16/dES0SA.png" alt="">&lt;/p>
+&lt;p>简而言之，就是在 &lt;code>develop&lt;/code> 分支快速迭代，将 &lt;code>master&lt;/code> 作为稳定分支，使用 &lt;code>feature&lt;/code> 分支添加新的功能。说实话，我并不是很喜欢 Gitflow，Git 的分支和 SVN 这样的版本控制系统相比，足够轻量，比如 SVN 新建分支需要拷贝分支，而 git 就是创建对某个 commit 的引用即可，这样看来，git 中的分支都是均权的，Gitflow 的概念就像话术了，比如我们完全可以把稳定分支命名未 &lt;code>stable&lt;/code> 或者 &lt;code>release&lt;/code>，把快速迭代分支命名为 &lt;code>trunk&lt;/code>。实际上有一些开发者明确反对 Git Flow，比如 George Stocker 就写过 &lt;a href="https://georgestocker.com/2020/03/04/please-stop-recommending-git-flow/">Please stop recommending Git Flow!&lt;/a>，而 Vincent Driessen 本人在今年也认为 Git flow 是一种教条。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-txt" data-lang="txt">&lt;span style="display:flex;">&lt;span>Note of reflection (March 5, 2020)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>This model was conceived in 2010, now more than 10 years ago, and not very long after Git itself came into being. In those 10 years, git-flow (the branching model laid out in this article) has become hugely popular in many a software team to the point where people have started treating it like a standard of sorts — but unfortunately also as a dogma or panacea.
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>During those 10 years, Git itself has taken the world by a storm, and the most popular type of software that is being developed with Git is shifting more towards web apps — at least in my filter bubble. Web apps are typically continuously delivered, not rolled back, and you don&amp;#39;t have to support multiple versions of the software running in the wild.
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>This is not the class of software that I had in mind when I wrote the blog post 10 years ago. If your team is doing continuous delivery of software, I would suggest to adopt a much simpler workflow (like GitHub flow) instead of trying to shoehorn git-flow into your team.
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>If, however, you are building software that is explicitly versioned, or if you need to support multiple versions of your software in the wild, then git-flow may still be as good of a fit to your team as it has been to people in the last 10 years. In that case, please read on.
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>To conclude, always remember that panaceas don&amp;#39;t exist. Consider your own context. Don&amp;#39;t be hating. Decide for yourself.
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>在 git 的世界中，我们理解了分支和最终纳入版本控制的文件是如何组织的，就能更好的思考应该使用什么样的工作流。Git 的存储结构太多文章和文档有过说明，这里详述繁琐且没必要，简单的说一下，在 &lt;code>refs&lt;/code> 目录或者 &lt;code>packed-refs&lt;/code> 存储了 git 存储库的引用信息，引用名（&lt;code>refs/heads/master&lt;/code>）与特定的 commit ID 映射，引用只有唯一的 commit ID，commit ID 却可以跟多个引用关联，比如我们使用 &lt;code>git checkout -b&lt;/code> 或者 &lt;code>git switch -c&lt;/code> 就可以基于当前的分支的 commit 创建新的分支。分支是包含特定前缀 &lt;code>refs/heads/&lt;/code> 的引用。&lt;/p>
+&lt;p>Git commit 是 git 对象的顶层数据，在 git 对象中，包含 &lt;code>commit&lt;/code>，&lt;code>tree&lt;/code>，&lt;code>blob&lt;/code> 这样的对象，一个 commit 有一个 tree，零个或者多个 parent commit，我们可以使用特定的命令查看 commit 的内容：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#828b96;font-style:italic"># https://github.com/BLAKE3-team/BLAKE3.git&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>git cat-file -p 107f5c089f356334ee4abaeeca8c31704661f37d
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>其内容可能如下&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>tree 107f5c089f356334ee4abaeeca8c31704661f37d
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>parent f2005678f84a8222be69c54c3d5457c6c40e87d2
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>author Jack O&amp;#39;Connor &amp;lt;jack.oconnor@zoom.us&amp;gt; 1593462857 -0400
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>committer Jack O&amp;#39;Connor &amp;lt;jack.oconnor@zoom.us&amp;gt; 1593463133 -0400
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>stop being a jerk and add the context string to test_vectors.json
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Git tree 对象存储了存储库的目录结构，tree 的格式为特殊的二进制格式，我们同样可以用 &lt;code>git cat-file&lt;/code> 查看 tree 对象。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>git cat-file -p 107f5c089f356334ee4abaeeca8c31704661f37d
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>tree 对象的 &lt;code>pretty&lt;/code> 输出如下：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>040000 tree c44c5f00bbfd67a6e5597292b811055fa5f90034 .github
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>100644 blob fa8d85ac52f19959d6fc9942c265708b4b3c2b04 .gitignore
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>100644 blob 3a605f255e8cfd344c202bef8fe1645fd49a2095 CONTRIBUTING.md
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>100644 blob 720e9a4ab4976211fe78ea44681150460cf9ed81 Cargo.toml
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>100644 blob f5892efc3b9bac4beeb60e554e85f32e8692599e LICENSE
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>100644 blob c9f8bd517d5e8da7b178cf15804ea46ddb9e35c9 README.md
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>040000 tree 6391f865df6b772571669f0193cfa84eb4a0ad40 b3sum
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>040000 tree 278f91232f481d861dfda22ca6825a39bc3dd41c benches
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>100644 blob 38fc722db514b11c3febff8c9aad887b6b62c86d build.rs
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>040000 tree aa2ca2f0ab338bdf2effa1ad2333f09f70025a94 c
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>040000 tree d0d0767a68d9cc36a2f27c390a07b974216e8ddc media
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>040000 tree e6826f60f7ad5377a8d05313db87c743174757af reference_impl
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>040000 tree 9118932371d77760db085bfc7341b41128486eb1 src
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>040000 tree 13786a8e749207634046e73490725bcfc2714ca9 test_vectors
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>040000 tree ade669b07438519f8133e02a575ffac3cf588250 tools
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>在 git 中 blob 存储的就是文件本身，其格式为 &lt;code>type SPACE OCT_LENGTH NUL $FILE_CONTENT&lt;/code>，存储在磁盘的内容是使用 Deflate 压缩的，文件名在压缩前由 SHA1 计算文件头和文件内容得来，也就是说使用 Deflate 解压缩后，使用 SHA1 就可以获得与之匹配的 Blob ID，我们可以通过 &lt;code>git cat-file&lt;/code> 查看文件内容&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>git cat-file -p fa8d85ac52f19959d6fc9942c265708b4b3c2b04
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-txt" data-lang="txt">&lt;span style="display:flex;">&lt;span>Cargo.lock
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>target
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>&lt;img src="https://s1.ax1x.com/2020/08/16/dEOQc6.png" alt="">&lt;/p>
+&lt;p>这里分享一个基于 Golang 编写的 Blob 细节查看演示程序（&lt;a href="https://gist.github.com/fcharlie/2dde5a491d08dbc45c866cb370b9fa07">Gist&lt;/a>）：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-go" data-lang="go">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#ff636f">package&lt;/span> &lt;span style="color:#58a1dd">main&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#ff636f">import&lt;/span> (
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6be9d">&amp;#34;compress/zlib&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6be9d">&amp;#34;crypto/sha1&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6be9d">&amp;#34;encoding/hex&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6be9d">&amp;#34;errors&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6be9d">&amp;#34;fmt&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6be9d">&amp;#34;hash&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6be9d">&amp;#34;io&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6be9d">&amp;#34;os&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6be9d">&amp;#34;strconv&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#828b96;font-style:italic">// git blob view
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#828b96;font-style:italic">&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#828b96;font-style:italic">// BlobViewer todo
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#828b96;font-style:italic">&lt;/span>&lt;span style="color:#ff636f">type&lt;/span> &lt;span style="color:#58a1dd">BlobViewer&lt;/span> &lt;span style="color:#ff636f">struct&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">w&lt;/span> &lt;span style="color:#58a1dd">io&lt;/span>.&lt;span style="color:#58a1dd">Writer&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">zr&lt;/span> &lt;span style="color:#58a1dd">io&lt;/span>.&lt;span style="color:#58a1dd">ReadCloser&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">fd&lt;/span> &lt;span style="color:#ff636f">*&lt;/span>&lt;span style="color:#58a1dd">os&lt;/span>.&lt;span style="color:#58a1dd">File&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">h&lt;/span> &lt;span style="color:#58a1dd">hash&lt;/span>.&lt;span style="color:#58a1dd">Hash&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#828b96;font-style:italic">// NewBlobViewer new blob viewer
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#828b96;font-style:italic">&lt;/span>&lt;span style="color:#ff636f">func&lt;/span> &lt;span style="color:#58a1dd">NewBlobViewer&lt;/span>(&lt;span style="color:#58a1dd">p&lt;/span> &lt;span style="color:#ff636f">string&lt;/span>, &lt;span style="color:#58a1dd">w&lt;/span> &lt;span style="color:#58a1dd">io&lt;/span>.&lt;span style="color:#58a1dd">Writer&lt;/span>) (&lt;span style="color:#ff636f">*&lt;/span>&lt;span style="color:#58a1dd">BlobViewer&lt;/span>, &lt;span style="color:#ff636f">error&lt;/span>) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">fd&lt;/span>, &lt;span style="color:#58a1dd">err&lt;/span> &lt;span style="color:#ff636f">:=&lt;/span> &lt;span style="color:#58a1dd">os&lt;/span>.&lt;span style="color:#58a1dd">Open&lt;/span>(&lt;span style="color:#58a1dd">p&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#ff636f">if&lt;/span> &lt;span style="color:#58a1dd">err&lt;/span> &lt;span style="color:#ff636f">!=&lt;/span> &lt;span style="color:#ff636f">nil&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#ff636f">return&lt;/span> &lt;span style="color:#ff636f">nil&lt;/span>, &lt;span style="color:#58a1dd">err&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#ff636f">return&lt;/span> &lt;span style="color:#ff636f">&amp;amp;&lt;/span>&lt;span style="color:#58a1dd">BlobViewer&lt;/span>{&lt;span style="color:#58a1dd">fd&lt;/span>: &lt;span style="color:#58a1dd">fd&lt;/span>, &lt;span style="color:#58a1dd">w&lt;/span>: &lt;span style="color:#58a1dd">w&lt;/span>, &lt;span style="color:#58a1dd">h&lt;/span>: &lt;span style="color:#58a1dd">sha1&lt;/span>.&lt;span style="color:#58a1dd">New&lt;/span>()}, &lt;span style="color:#ff636f">nil&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#ff636f">func&lt;/span> (&lt;span style="color:#58a1dd">bv&lt;/span> &lt;span style="color:#ff636f">*&lt;/span>&lt;span style="color:#58a1dd">BlobViewer&lt;/span>) &lt;span style="color:#58a1dd">readUntil&lt;/span>(&lt;span style="color:#58a1dd">delim&lt;/span> &lt;span style="color:#ff636f">byte&lt;/span>) ([]&lt;span style="color:#ff636f">byte&lt;/span>, &lt;span style="color:#ff636f">error&lt;/span>) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#ff636f">var&lt;/span> &lt;span style="color:#58a1dd">buf&lt;/span> [&lt;span style="color:#a6be9d">1&lt;/span>]&lt;span style="color:#ff636f">byte&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">value&lt;/span> &lt;span style="color:#ff636f">:=&lt;/span> &lt;span style="color:#58a1dd">make&lt;/span>([]&lt;span style="color:#ff636f">byte&lt;/span>, &lt;span style="color:#a6be9d">0&lt;/span>, &lt;span style="color:#a6be9d">16&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#ff636f">for&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#ff636f">if&lt;/span> &lt;span style="color:#58a1dd">n&lt;/span>, &lt;span style="color:#58a1dd">err&lt;/span> &lt;span style="color:#ff636f">:=&lt;/span> &lt;span style="color:#58a1dd">bv&lt;/span>.&lt;span style="color:#58a1dd">zr&lt;/span>.&lt;span style="color:#58a1dd">Read&lt;/span>(&lt;span style="color:#58a1dd">buf&lt;/span>[:]); &lt;span style="color:#58a1dd">err&lt;/span> &lt;span style="color:#ff636f">!=&lt;/span> &lt;span style="color:#ff636f">nil&lt;/span> &lt;span style="color:#ff636f">&amp;amp;&amp;amp;&lt;/span> (&lt;span style="color:#58a1dd">err&lt;/span> &lt;span style="color:#ff636f">!=&lt;/span> &lt;span style="color:#58a1dd">io&lt;/span>.&lt;span style="color:#58a1dd">EOF&lt;/span> &lt;span style="color:#ff636f">||&lt;/span> &lt;span style="color:#58a1dd">n&lt;/span> &lt;span style="color:#ff636f">==&lt;/span> &lt;span style="color:#a6be9d">0&lt;/span>) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#ff636f">if&lt;/span> &lt;span style="color:#58a1dd">err&lt;/span> &lt;span style="color:#ff636f">==&lt;/span> &lt;span style="color:#58a1dd">io&lt;/span>.&lt;span style="color:#58a1dd">EOF&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#ff636f">return&lt;/span> &lt;span style="color:#ff636f">nil&lt;/span>, &lt;span style="color:#58a1dd">errors&lt;/span>.&lt;span style="color:#58a1dd">New&lt;/span>(&lt;span style="color:#a6be9d">&amp;#34;invalid header&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#ff636f">return&lt;/span> &lt;span style="color:#ff636f">nil&lt;/span>, &lt;span style="color:#58a1dd">err&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">bv&lt;/span>.&lt;span style="color:#58a1dd">h&lt;/span>.&lt;span style="color:#58a1dd">Write&lt;/span>(&lt;span style="color:#58a1dd">buf&lt;/span>[:])
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#ff636f">if&lt;/span> &lt;span style="color:#58a1dd">buf&lt;/span>[&lt;span style="color:#a6be9d">0&lt;/span>] &lt;span style="color:#ff636f">==&lt;/span> &lt;span style="color:#58a1dd">delim&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#ff636f">return&lt;/span> &lt;span style="color:#58a1dd">value&lt;/span>, &lt;span style="color:#ff636f">nil&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">value&lt;/span> = &lt;span style="color:#58a1dd">append&lt;/span>(&lt;span style="color:#58a1dd">value&lt;/span>, &lt;span style="color:#58a1dd">buf&lt;/span>[&lt;span style="color:#a6be9d">0&lt;/span>])
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#828b96;font-style:italic">// Header Lookup header
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#828b96;font-style:italic">&lt;/span>&lt;span style="color:#ff636f">func&lt;/span> (&lt;span style="color:#58a1dd">bv&lt;/span> &lt;span style="color:#ff636f">*&lt;/span>&lt;span style="color:#58a1dd">BlobViewer&lt;/span>) &lt;span style="color:#58a1dd">Header&lt;/span>() &lt;span style="color:#ff636f">error&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">raw&lt;/span>, &lt;span style="color:#58a1dd">err&lt;/span> &lt;span style="color:#ff636f">:=&lt;/span> &lt;span style="color:#58a1dd">bv&lt;/span>.&lt;span style="color:#58a1dd">readUntil&lt;/span>(&lt;span style="color:#a6be9d">&amp;#39; &amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#ff636f">if&lt;/span> &lt;span style="color:#58a1dd">err&lt;/span> &lt;span style="color:#ff636f">!=&lt;/span> &lt;span style="color:#ff636f">nil&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#ff636f">return&lt;/span> &lt;span style="color:#58a1dd">err&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">fmt&lt;/span>.&lt;span style="color:#58a1dd">Fprintf&lt;/span>(&lt;span style="color:#58a1dd">os&lt;/span>.&lt;span style="color:#58a1dd">Stderr&lt;/span>, &lt;span style="color:#a6be9d">&amp;#34;object type is: \x1b[34m%s\x1b[0m\n&amp;#34;&lt;/span>, &lt;span style="color:#58a1dd">raw&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#ff636f">if&lt;/span> &lt;span style="color:#58a1dd">raw&lt;/span>, &lt;span style="color:#58a1dd">err&lt;/span> = &lt;span style="color:#58a1dd">bv&lt;/span>.&lt;span style="color:#58a1dd">readUntil&lt;/span>(&lt;span style="color:#a6be9d">0&lt;/span>); &lt;span style="color:#58a1dd">err&lt;/span> &lt;span style="color:#ff636f">!=&lt;/span> &lt;span style="color:#ff636f">nil&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#ff636f">return&lt;/span> &lt;span style="color:#58a1dd">err&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">size&lt;/span>, &lt;span style="color:#58a1dd">err&lt;/span> &lt;span style="color:#ff636f">:=&lt;/span> &lt;span style="color:#58a1dd">strconv&lt;/span>.&lt;span style="color:#58a1dd">ParseInt&lt;/span>(&lt;span style="color:#58a1dd">string&lt;/span>(&lt;span style="color:#58a1dd">raw&lt;/span>), &lt;span style="color:#a6be9d">10&lt;/span>, &lt;span style="color:#a6be9d">64&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#ff636f">if&lt;/span> &lt;span style="color:#58a1dd">err&lt;/span> &lt;span style="color:#ff636f">!=&lt;/span> &lt;span style="color:#ff636f">nil&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#ff636f">return&lt;/span> &lt;span style="color:#58a1dd">err&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">fmt&lt;/span>.&lt;span style="color:#58a1dd">Fprintf&lt;/span>(&lt;span style="color:#58a1dd">os&lt;/span>.&lt;span style="color:#58a1dd">Stderr&lt;/span>, &lt;span style="color:#a6be9d">&amp;#34;object size: \x1b[34m%d\x1b[0m\n&amp;#34;&lt;/span>, &lt;span style="color:#58a1dd">size&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#ff636f">return&lt;/span> &lt;span style="color:#ff636f">nil&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#828b96;font-style:italic">//Lookup blob details
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#828b96;font-style:italic">&lt;/span>&lt;span style="color:#ff636f">func&lt;/span> (&lt;span style="color:#58a1dd">bv&lt;/span> &lt;span style="color:#ff636f">*&lt;/span>&lt;span style="color:#58a1dd">BlobViewer&lt;/span>) &lt;span style="color:#58a1dd">Lookup&lt;/span>() &lt;span style="color:#ff636f">error&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">zr&lt;/span>, &lt;span style="color:#58a1dd">err&lt;/span> &lt;span style="color:#ff636f">:=&lt;/span> &lt;span style="color:#58a1dd">zlib&lt;/span>.&lt;span style="color:#58a1dd">NewReader&lt;/span>(&lt;span style="color:#58a1dd">bv&lt;/span>.&lt;span style="color:#58a1dd">fd&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#ff636f">if&lt;/span> &lt;span style="color:#58a1dd">err&lt;/span> &lt;span style="color:#ff636f">!=&lt;/span> &lt;span style="color:#ff636f">nil&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#ff636f">return&lt;/span> &lt;span style="color:#58a1dd">err&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">bv&lt;/span>.&lt;span style="color:#58a1dd">zr&lt;/span> = &lt;span style="color:#58a1dd">zr&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">bv&lt;/span>.&lt;span style="color:#58a1dd">Header&lt;/span>()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">mw&lt;/span> &lt;span style="color:#ff636f">:=&lt;/span> &lt;span style="color:#58a1dd">io&lt;/span>.&lt;span style="color:#58a1dd">MultiWriter&lt;/span>(&lt;span style="color:#58a1dd">bv&lt;/span>.&lt;span style="color:#58a1dd">w&lt;/span>, &lt;span style="color:#58a1dd">bv&lt;/span>.&lt;span style="color:#58a1dd">h&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">_&lt;/span>, &lt;span style="color:#58a1dd">_&lt;/span> = &lt;span style="color:#58a1dd">io&lt;/span>.&lt;span style="color:#58a1dd">Copy&lt;/span>(&lt;span style="color:#58a1dd">mw&lt;/span>, &lt;span style="color:#58a1dd">bv&lt;/span>.&lt;span style="color:#58a1dd">zr&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#ff636f">return&lt;/span> &lt;span style="color:#ff636f">nil&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#828b96;font-style:italic">// Close close blob viewer
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#828b96;font-style:italic">&lt;/span>&lt;span style="color:#ff636f">func&lt;/span> (&lt;span style="color:#58a1dd">bv&lt;/span> &lt;span style="color:#ff636f">*&lt;/span>&lt;span style="color:#58a1dd">BlobViewer&lt;/span>) &lt;span style="color:#58a1dd">Close&lt;/span>() &lt;span style="color:#ff636f">error&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#ff636f">if&lt;/span> &lt;span style="color:#58a1dd">bv&lt;/span>.&lt;span style="color:#58a1dd">zr&lt;/span> &lt;span style="color:#ff636f">!=&lt;/span> &lt;span style="color:#ff636f">nil&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">bv&lt;/span>.&lt;span style="color:#58a1dd">zr&lt;/span>.&lt;span style="color:#58a1dd">Close&lt;/span>()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">fmt&lt;/span>.&lt;span style="color:#58a1dd">Fprintf&lt;/span>(&lt;span style="color:#58a1dd">os&lt;/span>.&lt;span style="color:#58a1dd">Stderr&lt;/span>, &lt;span style="color:#a6be9d">&amp;#34;Hash: %s\n&amp;#34;&lt;/span>, &lt;span style="color:#58a1dd">hex&lt;/span>.&lt;span style="color:#58a1dd">EncodeToString&lt;/span>(&lt;span style="color:#58a1dd">bv&lt;/span>.&lt;span style="color:#58a1dd">h&lt;/span>.&lt;span style="color:#58a1dd">Sum&lt;/span>(&lt;span style="color:#ff636f">nil&lt;/span>)))
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#ff636f">if&lt;/span> &lt;span style="color:#58a1dd">bv&lt;/span>.&lt;span style="color:#58a1dd">fd&lt;/span> &lt;span style="color:#ff636f">!=&lt;/span> &lt;span style="color:#ff636f">nil&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#ff636f">return&lt;/span> &lt;span style="color:#58a1dd">bv&lt;/span>.&lt;span style="color:#58a1dd">fd&lt;/span>.&lt;span style="color:#58a1dd">Close&lt;/span>()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#ff636f">return&lt;/span> &lt;span style="color:#ff636f">nil&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#ff636f">func&lt;/span> &lt;span style="color:#58a1dd">main&lt;/span>() {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#ff636f">if&lt;/span> &lt;span style="color:#58a1dd">len&lt;/span>(&lt;span style="color:#58a1dd">os&lt;/span>.&lt;span style="color:#58a1dd">Args&lt;/span>) &amp;lt; &lt;span style="color:#a6be9d">2&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">fmt&lt;/span>.&lt;span style="color:#58a1dd">Fprintf&lt;/span>(&lt;span style="color:#58a1dd">os&lt;/span>.&lt;span style="color:#58a1dd">Stderr&lt;/span>, &lt;span style="color:#a6be9d">&amp;#34;usage: %s blob-id\n&amp;#34;&lt;/span>, &lt;span style="color:#58a1dd">os&lt;/span>.&lt;span style="color:#58a1dd">Args&lt;/span>[&lt;span style="color:#a6be9d">0&lt;/span>])
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">os&lt;/span>.&lt;span style="color:#58a1dd">Exit&lt;/span>(&lt;span style="color:#a6be9d">1&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">bv&lt;/span>, &lt;span style="color:#58a1dd">err&lt;/span> &lt;span style="color:#ff636f">:=&lt;/span> &lt;span style="color:#58a1dd">NewBlobViewer&lt;/span>(&lt;span style="color:#58a1dd">os&lt;/span>.&lt;span style="color:#58a1dd">Args&lt;/span>[&lt;span style="color:#a6be9d">1&lt;/span>], &lt;span style="color:#58a1dd">os&lt;/span>.&lt;span style="color:#58a1dd">Stdout&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#ff636f">if&lt;/span> &lt;span style="color:#58a1dd">err&lt;/span> &lt;span style="color:#ff636f">!=&lt;/span> &lt;span style="color:#ff636f">nil&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">fmt&lt;/span>.&lt;span style="color:#58a1dd">Fprintf&lt;/span>(&lt;span style="color:#58a1dd">os&lt;/span>.&lt;span style="color:#58a1dd">Stderr&lt;/span>, &lt;span style="color:#a6be9d">&amp;#34;open: %s error %v\n&amp;#34;&lt;/span>, &lt;span style="color:#58a1dd">os&lt;/span>.&lt;span style="color:#58a1dd">Args&lt;/span>[&lt;span style="color:#a6be9d">1&lt;/span>], &lt;span style="color:#58a1dd">err&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">os&lt;/span>.&lt;span style="color:#58a1dd">Exit&lt;/span>(&lt;span style="color:#a6be9d">1&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#ff636f">defer&lt;/span> &lt;span style="color:#58a1dd">bv&lt;/span>.&lt;span style="color:#58a1dd">Close&lt;/span>()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#ff636f">if&lt;/span> &lt;span style="color:#58a1dd">err&lt;/span> &lt;span style="color:#ff636f">:=&lt;/span> &lt;span style="color:#58a1dd">bv&lt;/span>.&lt;span style="color:#58a1dd">Lookup&lt;/span>(); &lt;span style="color:#58a1dd">err&lt;/span> &lt;span style="color:#ff636f">!=&lt;/span> &lt;span style="color:#ff636f">nil&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">fmt&lt;/span>.&lt;span style="color:#58a1dd">Fprintf&lt;/span>(&lt;span style="color:#58a1dd">os&lt;/span>.&lt;span style="color:#58a1dd">Stderr&lt;/span>, &lt;span style="color:#a6be9d">&amp;#34;lookup: %s error %v\n&amp;#34;&lt;/span>, &lt;span style="color:#58a1dd">os&lt;/span>.&lt;span style="color:#58a1dd">Args&lt;/span>[&lt;span style="color:#a6be9d">1&lt;/span>], &lt;span style="color:#58a1dd">err&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#58a1dd">os&lt;/span>.&lt;span style="color:#58a1dd">Exit&lt;/span>(&lt;span style="color:#a6be9d">1&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>git 的内里还是十分简单的，无论分支名怎样变，内部的组织结构并没有显著差别，是一种简单的轻量的分支形式，因此，我们在选择 Git Workflow 时，或许应该解放思想，实事求是，遵循自己的业务模型。&lt;/p>
+&lt;p>像操作系统，比如 Windows，Linux 内核，FreeBSD，以及 LLVM，GCC 这样的大型软件，需要定期发布新版本，然后给新版本执行一个生命周期，开发流程类似于 &lt;code>Trunk-Release-Tag&lt;/code> 在 Git 语义下，我们认为是 &lt;code>Master-Release-Tag&lt;/code>，即在主干分支上不断演进，定期从主干创建特定的 Release 分支，然后 Release 不添加新的功能，只修复 BUG，按照发布路线图和实际测试情况发布新的 Release (也就是 Tag)。一般的大型软件均会采取这种演进模型。&lt;/p>
+&lt;p>对于 Web 服务而言，类似 Git Flow 的模型确实是合适的选择，快速演进能够及时修复问题和增加新的功能，但如果服务不仅仅提供给公有云用户，那么还是需要考虑到版本化，Git Flow 不是灵丹妙药，需要开发者按照实际需求来。&lt;/p>
+&lt;h2 id="git-的错付">Git 的错付&lt;/h2>
+&lt;p>git 是个优秀的版本控制系统也避免不了用户的不恰当使用，最后反而导致用户体验的下降。如果 Git 是个人，估计会大声说 “臣妾做不到啊”，这就是 Git 的错付了。&lt;/p>
+&lt;h3 id="git-我不做网盘">Git: 我不做网盘&lt;/h3>
+&lt;p>作为代码托管的业内人士，我遇到过非常多的使用 Git 当网盘，存储二进制，做图床的场景，这种使用经常给平台带来了很高的 QPS，也会可能导致用户的存储库超出体积限制。要解释这个问题，我们要理解 Git 是基于文件快照的，当使用 git 将文件纳入版本控制时，git 实际上将文件内容原样合成 blob 压缩后存储，此时，比如我们使用 git 管理一个 50MB 大小的文件，那么，修改 20 次后，如果按照 50% 的压缩率，那么，光这个文件的历史记录累计的体积也就达到了 500MB，这非常可观。&lt;/p>
+&lt;p>Git 存储文件会被压缩，如果做图床，不做优化的情况下，每次下载图片时，都需要解压 Blob，这实际上会给平台带来性能问题，消耗掉计算资源。另外，图片格式通常是一种压缩格式，按照香农信息论，特定的字节数所承载的信息是有上限的，也就是说，文件是不能被无限压缩的，因此，Git 存储被压缩的文件实际上效果并不明显，反而浪费 CPU。为了避免图床的场景影响平台的负载，大多数 Git 代码托管平台都会使用 &lt;code>RAW&lt;/code> 缓存，以避免这类请求拖累系统。当网盘和图床场景类似。&lt;/p>
+&lt;h3 id="lfs-我不会压缩">LFS: 我不会压缩&lt;/h3>
+&lt;p>为了解决大文件存储问题，Github 推出了 Git LFS 管理 Git 大文件，避免大文件频繁更改导致存储库体积过度膨胀。但 Git LFS 并不是万能灵药，一些不合适的使用场景可能会导致反常的预期。&lt;/p>
+&lt;p>比如我最近接触到一个场景下，有开发者使用 Git LFS 管理 JDK8 二进制，将大多数 Java 命令和 Jar 等文件使用 LFS 追踪，如果完全使用 Git 管理，存储库的体积是 175MB，这就意味着下载的数据量为 175MB。但 Git LFS 并不会压缩文件，下载数据时，使用 HTTP GET 请求依次下载，我们查看 &lt;code>lfs/objects&lt;/code> 目录的文件大小为 366MB，而查看 LFS 文件数量，大致是 199 个，那么，需要发送的 HTTP 请求为 199 次，这种场景下，势必会导致 LFS 服务器 QPS 过高，用户下载数据缓慢。&lt;/p>
+&lt;p>回过头来看，Git LFS 的使用是有边界的，只要在特定的条件下，才具备相应的优势，否则会降低用户体验，造成客户端和服务端的双输。&lt;/p>
+&lt;h3 id="git-我就这样了">Git: 我就这样了&lt;/h3>
+&lt;p>Git 虽然强大，但有一些功能也是不容易做到，比如完整的目录权限控制，尽管我们告诉私有化客户，可以做到目录级别权限控制，但那仅仅只能做到写入控制，而无法做到读取控制。另外 Git 还不能真正的做到类似 SVN 一样的部分检出，尽管目前增加了部分克隆功能，但在协议上，仍然做不到 SVN 那种层度。&lt;/p>
+&lt;p>作为一个代码托管平台开发者，有时候需要和用户解释为什么不那么做也挺累的。&lt;/p>
+&lt;h2 id="git-的重新思考">Git 的重新思考&lt;/h2>
+&lt;p>Git 虽然强大，但并不完美，比如哈希算法选择的是不安全的 SHA1，压缩算法选择的是 Deflate，如果创建个新的版本控制系统确实可以好好思考了。&lt;/p>
+&lt;h3 id="对象存储的重新思考">对象存储的重新思考&lt;/h3>
+&lt;p>Git 存储文件的对象叫做 Blob，Blob 格式的设计比较简单，格式如下图上侧，Type 的类型用户标识是 Blob 还是 Commit 还是 Tree。数据按图所示拼接计算出哈希值后，将哈希值作为对象的 ID，然后使用 Deflate 压缩，这种机制并不是很完美的，比如不能按原样存储，文件不能无限压缩，因此，git 并不适合存储压缩文件，二进制文件。&lt;/p>
+&lt;p>今年以来，我曾参与 minizip，libzip，archiver 的 ZIP 格式对 Zstd 压缩算法的支持，了解到 ZIP 中的 Store 存储机制，ZIP 可以将其他 ZIP 文件按照 Store 的方式原样存储到新的 ZIP 文件中，这无疑可以避免重复的压缩文件，浪费 CPU。因此，理想中的 Git 对象存储变成了下图下侧，文件的哈希不包含文件的长度，类型和压缩算法，仅与文件的原始内容相关。&lt;/p>
+&lt;p>&lt;img src="https://s1.ax1x.com/2020/08/16/dVwjE9.png" alt="">&lt;/p>
+&lt;p>Git 选择的 Deflate 并不是一个优异的压缩算法，无论是压缩率还是压缩速度都不是最佳的，如果在重新设计 Git 的时候，Zstd 应该是一个更好的选择。下表是 Zstd 与 Zlib(Deflate) 压缩比和速度的一个对比。&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>Compressor name&lt;/th>
+&lt;th>Ratio&lt;/th>
+&lt;th>Compression&lt;/th>
+&lt;th>Decompress.&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>&lt;strong>zstd 1.4.5 -1&lt;/strong>&lt;/td>
+&lt;td>2.884&lt;/td>
+&lt;td>500 MB/s&lt;/td>
+&lt;td>1660 MB/s&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>zlib 1.2.11 -1&lt;/td>
+&lt;td>2.743&lt;/td>
+&lt;td>90 MB/s&lt;/td>
+&lt;td>400 MB/s&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>brotli 1.0.7 -0&lt;/td>
+&lt;td>2.703&lt;/td>
+&lt;td>400 MB/s&lt;/td>
+&lt;td>450 MB/s&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;strong>zstd 1.4.5 &amp;ndash;fast=1&lt;/strong>&lt;/td>
+&lt;td>2.434&lt;/td>
+&lt;td>570 MB/s&lt;/td>
+&lt;td>2200 MB/s&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;strong>zstd 1.4.5 &amp;ndash;fast=3&lt;/strong>&lt;/td>
+&lt;td>2.312&lt;/td>
+&lt;td>640 MB/s&lt;/td>
+&lt;td>2300 MB/s&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>quicklz 1.5.0 -1&lt;/td>
+&lt;td>2.238&lt;/td>
+&lt;td>560 MB/s&lt;/td>
+&lt;td>710 MB/s&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;strong>zstd 1.4.5 &amp;ndash;fast=5&lt;/strong>&lt;/td>
+&lt;td>2.178&lt;/td>
+&lt;td>700 MB/s&lt;/td>
+&lt;td>2420 MB/s&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>lzo1x 2.10 -1&lt;/td>
+&lt;td>2.106&lt;/td>
+&lt;td>690 MB/s&lt;/td>
+&lt;td>820 MB/s&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>lz4 1.9.2&lt;/td>
+&lt;td>2.101&lt;/td>
+&lt;td>740 MB/s&lt;/td>
+&lt;td>4530 MB/s&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;strong>zstd 1.4.5 &amp;ndash;fast=7&lt;/strong>&lt;/td>
+&lt;td>2.096&lt;/td>
+&lt;td>750 MB/s&lt;/td>
+&lt;td>2480 MB/s&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>lzf 3.6 -1&lt;/td>
+&lt;td>2.077&lt;/td>
+&lt;td>410 MB/s&lt;/td>
+&lt;td>860 MB/s&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>snappy 1.1.8&lt;/td>
+&lt;td>2.073&lt;/td>
+&lt;td>560 MB/s&lt;/td>
+&lt;td>1790 MB/s&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>下图是压缩解压的对比（来源于 &lt;a href="https://github.com/facebook/zstd">Zstandard&lt;/a>）：&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>Compression Speed vs Ratio&lt;/th>
+&lt;th>Decompression Speed&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>&lt;img src="https://s1.ax1x.com/2020/08/16/dVpadK.png" alt="Compression Speed vs Ratio" title="Compression Speed vs Ratio">&lt;/td>
+&lt;td>&lt;img src="https://s1.ax1x.com/2020/08/16/dVp0iD.png" alt="Decompression Speed" title="Decompression Speed">&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h3 id="哈希算法的选择">哈希算法的选择&lt;/h3>
+&lt;p>自从 SHA1 被破解以来，Git 选择新的哈希算法便提上了日程，经过多次讨论，Git 开发者最终选择了不是最佳的 SHA256。SHA256 是最佳选择吗？不见得，我写过一个 Kisasum 的压缩工具，比较了 SHA256，BLAKE3，KangarooTwelve，SHA3，SM3 等压缩算法，SHA256 的速度位于下游，BLAKE3 官方有个测评，如下：&lt;/p>
+&lt;p>&lt;img src="https://s1.ax1x.com/2020/08/16/dVPRdx.png" alt="">&lt;/p>
+&lt;p>使用 &lt;code>Measure-Command&lt;/code> 命令测评 SHA256 和 BLAKE3 计算 224MB 的 &lt;code>sarasa-gothic-ttf-0.12.14.7z&lt;/code> ，实测速度差距如下：&lt;/p>
+&lt;p>&lt;img src="https://s1.ax1x.com/2020/08/16/dVFM8S.png" alt="">&lt;/p>
+&lt;p>SHA256 耗费了 1884ms，BLAKE3 耗费了 331ms，差距已经有 5 倍了，而且这里 Kisasum 的 BLAKE3 没有使用多线程，差距还可能更大。如果让我选择哈希算法，我可能选择 BLAKE3 或者 KangarooTwelve。&lt;/p>
+&lt;h3 id="版本控制系统的下一步">版本控制系统的下一步&lt;/h3>
+&lt;p>优秀的版本控制系统是 DevOps 生态中重要的一环，除了提供版本控制的功能之外，还要有利于 DevOps 功能整合，下图是我对版本控制系统下一步增强的期许，而现实情况下，Git 实现下面的功能比较复杂，并不是那么方便，从业人员也经常不得不曲线救国。&lt;/p>
+&lt;p>&lt;img src="https://s1.ax1x.com/2020/08/16/dVE8DH.png" alt="">&lt;/p>
+&lt;h2 id="最后">最后&lt;/h2>
+&lt;p>Git 已经诞生十五年了，Git 的取代者是谁？&lt;/p>
+- https://forcemz.net/posts/2020/2020-08-16-explore-some-issues-with-git/ - Copyright (c) 2009-2024 J23</description></item></channel></rss>
