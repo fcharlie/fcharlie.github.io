@@ -24,7 +24,7 @@ categories = "toolset"
 
 ## Baulk 有哪些特色
 
-在 baulk 的 ReadMe 页面，介绍了 baulk 的一些特色，但很繁杂，并不是很容易了解全，这里再次简单的介绍一下。
+在 baulk 的 README 页面，介绍了 baulk 的一些特色，但很繁杂，并不是很容易了解全，这里再次简单的介绍一下。
 
 ### Baulk 是一个绿色的包管理器
 
@@ -108,5 +108,5 @@ Wall:     231.9762ms
 
 ## Baulk 的其他功能
 
-baulk 还实现了许多其他的功能，限于篇幅长度也就不一一说了，有兴趣可以访问 [[baulk/ReadMe.zh-CN.md at master · baulk/baulk (github.com)](https://github.com/baulk/baulk/issues)] 提出建议或者参与到项目的贡献当中。
+baulk 还实现了许多其他的功能，限于篇幅长度也就不一一说了，有兴趣可以访问 [baulk/baulk (github.com)](https://github.com/baulk/baulk/issues) 提出建议或者参与到项目的贡献当中。
 
