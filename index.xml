@@ -65,7 +65,7 @@
 &lt;p>使用 PowerShell 开发的 devi 缺点也很明显，慢，尽管我是一个 PowerShell 粉丝，但事实我也需要说出来，PowerShell 的加载速度慢，毕竟它需要加载 PowerShell 解析引擎，如果还加载一些启动配置文件，那个速度就很感人了。&lt;/p>
 &lt;p>2020 年上半年，我终于开始不再忍受基于 PowerShell 的 devi，于是就开始使用 C++17（后来升级为 C++20） 开发新的包管理器 baulk，在 Windows 上有 scoop、chocolatey 这样优秀的开源包管理器，但它们都是基于 PowerShell（C#） 开发，然后在环境变量和安装机制上也与 Baulk 有一些分歧。这些不同之处也是 baulk 存在的原因。&lt;/p>
 &lt;h2 id="baulk-有哪些特色">Baulk 有哪些特色&lt;/h2>
-&lt;p>在 baulk 的 ReadMe 页面，介绍了 baulk 的一些特色，但很繁杂，并不是很容易了解全，这里再次简单的介绍一下。&lt;/p>
+&lt;p>在 baulk 的 README 页面，介绍了 baulk 的一些特色，但很繁杂，并不是很容易了解全，这里再次简单的介绍一下。&lt;/p>
 &lt;h3 id="baulk-是一个绿色的包管理器">Baulk 是一个绿色的包管理器&lt;/h3>
 &lt;p>在 baulk 的设计哲学中，便携，绿色是其管理软件的宗旨，这衍生出来一些特性，baulk 在安装软件的过程中所执行的动作只有：&lt;/p>
 &lt;ol>
@@ -128,7 +128,7 @@
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Exit: 231.0306ms
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Wall: 231.9762ms
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="baulk-的其他功能">Baulk 的其他功能&lt;/h2>
-&lt;p>baulk 还实现了许多其他的功能，限于篇幅长度也就不一一说了，有兴趣可以访问 [&lt;a href="https://github.com/baulk/baulk/issues">baulk/ReadMe.zh-CN.md at master · baulk/baulk (github.com)&lt;/a>] 提出建议或者参与到项目的贡献当中。&lt;/p>
+&lt;p>baulk 还实现了许多其他的功能，限于篇幅长度也就不一一说了，有兴趣可以访问 &lt;a href="https://github.com/baulk/baulk/issues">baulk/baulk (github.com)&lt;/a> 提出建议或者参与到项目的贡献当中。&lt;/p>
 - https://forcemz.net/posts/2021/2021-07-20-baulk-talk/ - Copyright (c) 2009-2024 J23</description></item><item><title>调查报告：你想待在这个城市吗？</title><link>https://forcemz.net/posts/2021/2021-03-12-report-workers-2021/</link><pubDate>Fri, 12 Mar 2021 16:00:00 +0800</pubDate><guid>https://forcemz.net/posts/2021/2021-03-12-report-workers-2021/</guid><description>江二十三的思考 https://forcemz.net/posts/2021/2021-03-12-report-workers-2021/ -&lt;h2 id="0x0-调查的缘由">0x0 调查的缘由&lt;/h2>
 &lt;p>一个人的观点要结合实际情况，当我要评价人们对一个城市的归属感时，也不能道听途说，人云亦云。那么我要掌握实际情况该怎么做？问卷调查是一种不错的方法，于是我就编辑了一个调查问卷，在 v2ex 上分享，然后也转发给一些同事朋友，请求他们的协助。&lt;/p>
 &lt;h2 id="0x1-调查问卷的回收">0x1 调查问卷的回收&lt;/h2>
