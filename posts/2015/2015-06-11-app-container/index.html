@@ -1,5 +1,4 @@
-<!doctype html><html lang=en><head><title>Windows AppContainer 降权，隔离与安全</title>
-<meta charset=utf-8><meta name=X-UA-Compatible content="IE=edge"><meta name=google-site-verification content><meta content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=5" name=viewport><meta content="telephone=no" name=format-detection><meta name=description content><meta name=renderer content="webkit"><meta name=theme-color content="#ffffff"><script src=/js/toc.js></script><link type=text/css rel=stylesheet href=/vendor/css/bootstrap.min.css><link rel=stylesheet href=/scss/dark-mode.min.cb53f1bee2b8900cb4f082afbf00175d6618f281cf9a2fe8619e3b52d20b5721.css integrity="sha256-y1PxvuK4kAy08IKvvwAXXWYY8oHPmi/oYZ47UtILVyE=" media=screen><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Material+Icons"></head><body><div id=app><div class=single-column-drawer-container id=drawer v-bind:class="{ 'single-column-drawer-container-active': isDrawerOpen }"><div class=drawer-content><div class=drawer-menu><a class="a-block drawer-menu-item active" href=/posts>归档
+<!doctype html><html lang=en><head><title>Windows AppContainer 降权，隔离与安全</title><meta charset=utf-8><meta name=X-UA-Compatible content="IE=edge"><meta name=google-site-verification content><meta content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=5" name=viewport><meta content="telephone=no" name=format-detection><meta name=description content><meta name=renderer content="webkit"><meta name=theme-color content="#ffffff"><script src=/js/toc.js></script><link type=text/css rel=stylesheet href=/vendor/css/bootstrap.min.css><link rel=stylesheet href=/scss/dark-mode.min.cb53f1bee2b8900cb4f082afbf00175d6618f281cf9a2fe8619e3b52d20b5721.css integrity="sha256-y1PxvuK4kAy08IKvvwAXXWYY8oHPmi/oYZ47UtILVyE=" media=screen><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Material+Icons"></head><body><div id=app><div class=single-column-drawer-container id=drawer v-bind:class="{ 'single-column-drawer-container-active': isDrawerOpen }"><div class=drawer-content><div class=drawer-menu><a class="a-block drawer-menu-item active" href=/posts>归档
 </a><a class="a-block drawer-menu-item false" href=/categories>分类
 </a><a class="a-block drawer-menu-item false" href=/tags>标签
 </a><a class="a-block drawer-menu-item false" href=/about>关于
@@ -65,17 +64,17 @@
 </span></span><span style=display:flex><span>  }
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>  <span style=color:#828b96;font-style:italic>// Open the desktop shell process in order to query it (get the token)
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>  <span style=color:#58a1dd>hShellProcess</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>OpenProcess</span>(<span style=color:#58a1dd>PROCESS_QUERY_INFORMATION</span>, <span style=color:#58a1dd>FALSE</span>, <span style=color:#58a1dd>dwPID</span>);
+</span></span></span><span style=display:flex><span>  <span style=color:#58a1dd>hShellProcess</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>OpenProcess</span>(<span style=color:#58a1dd>PROCESS_QUERY_INFORMATION</span>, <span style=color:#58a1dd>FALSE</span>, <span style=color:#58a1dd>dwPID</span>);
 </span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>hShellProcess</span>) {
 </span></span><span style=display:flex><span>    <span style=color:#58a1dd>dwLastErr</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>GetLastError</span>();
 </span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#58a1dd>HRESULT</span>(<span style=color:#a6be9d>5</span>);
 </span></span><span style=display:flex><span>  }
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>  <span style=color:#828b96;font-style:italic>// From this point down, we have handles to close, so make sure to clean up.
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
+</span></span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>  <span style=color:#ff636f>bool</span> <span style=color:#58a1dd>retval</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>false</span>;
 </span></span><span style=display:flex><span>  <span style=color:#828b96;font-style:italic>// Get the process token of the desktop shell.
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>  <span style=color:#58a1dd>ret</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>OpenProcessToken</span>(<span style=color:#58a1dd>hShellProcess</span>, <span style=color:#58a1dd>TOKEN_DUPLICATE</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>hShellProcessToken</span>);
+</span></span></span><span style=display:flex><span>  <span style=color:#58a1dd>ret</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>OpenProcessToken</span>(<span style=color:#58a1dd>hShellProcess</span>, <span style=color:#58a1dd>TOKEN_DUPLICATE</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>hShellProcessToken</span>);
 </span></span><span style=display:flex><span>  <span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>ret</span>) {
 </span></span><span style=display:flex><span>    <span style=color:#58a1dd>dwLastErr</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>GetLastError</span>();
 </span></span><span style=display:flex><span>    <span style=color:#58a1dd>hr</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>HRESULT</span>(<span style=color:#a6be9d>6</span>);
@@ -83,9 +82,9 @@
 </span></span><span style=display:flex><span>  }
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>  <span style=color:#828b96;font-style:italic>// Duplicate the shell&#39;s process token to get a primary token.
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>  <span style=color:#828b96;font-style:italic>// Based on experimentation, this is the minimal set of rights required for
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>  <span style=color:#828b96;font-style:italic>// CreateProcessWithTokenW (contrary to current documentation).
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>  <span style=color:#ff636f>const</span> <span style=color:#58a1dd>DWORD</span> <span style=color:#58a1dd>dwTokenRights</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>TOKEN_QUERY</span> <span style=color:#ff636f>|</span> <span style=color:#58a1dd>TOKEN_ASSIGN_PRIMARY</span> <span style=color:#ff636f>|</span>
+</span></span></span><span style=display:flex><span>  <span style=color:#828b96;font-style:italic>// Based on experimentation, this is the minimal set of rights required for
+</span></span></span><span style=display:flex><span>  <span style=color:#828b96;font-style:italic>// CreateProcessWithTokenW (contrary to current documentation).
+</span></span></span><span style=display:flex><span>  <span style=color:#ff636f>const</span> <span style=color:#58a1dd>DWORD</span> <span style=color:#58a1dd>dwTokenRights</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>TOKEN_QUERY</span> <span style=color:#ff636f>|</span> <span style=color:#58a1dd>TOKEN_ASSIGN_PRIMARY</span> <span style=color:#ff636f>|</span>
 </span></span><span style=display:flex><span>                              <span style=color:#58a1dd>TOKEN_DUPLICATE</span> <span style=color:#ff636f>|</span> <span style=color:#58a1dd>TOKEN_ADJUST_DEFAULT</span> <span style=color:#ff636f>|</span>
 </span></span><span style=display:flex><span>                              <span style=color:#58a1dd>TOKEN_ADJUST_SESSIONID</span>;
 </span></span><span style=display:flex><span>  <span style=color:#58a1dd>ret</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>DuplicateTokenEx</span>(<span style=color:#58a1dd>hShellProcessToken</span>, <span style=color:#58a1dd>dwTokenRights</span>, <span style=color:#ff636f>nullptr</span>,
@@ -96,7 +95,7 @@
 </span></span><span style=display:flex><span>    <span style=color:#ff636f>goto</span> <span style=color:#58a1dd>cleanup</span>;
 </span></span><span style=display:flex><span>  }
 </span></span><span style=display:flex><span>  <span style=color:#828b96;font-style:italic>// Start the target process with the new token.
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>  <span style=color:#ff636f>wchar_t</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>cmdArgsT</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>_wcsdup</span>(<span style=color:#58a1dd>cmdArgs</span>);
+</span></span></span><span style=display:flex><span>  <span style=color:#ff636f>wchar_t</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>cmdArgsT</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>_wcsdup</span>(<span style=color:#58a1dd>cmdArgs</span>);
 </span></span><span style=display:flex><span>  <span style=color:#58a1dd>ret</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>CreateProcessWithTokenW</span>(<span style=color:#58a1dd>hPrimaryToken</span>, <span style=color:#a6be9d>0</span>, <span style=color:#58a1dd>exePath</span>, <span style=color:#58a1dd>cmdArgsT</span>, <span style=color:#a6be9d>0</span>, <span style=color:#ff636f>nullptr</span>,
 </span></span><span style=display:flex><span>                                <span style=color:#58a1dd>workDirectory</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>si</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>pi</span>);
 </span></span><span style=display:flex><span>  <span style=color:#58a1dd>free</span>(<span style=color:#58a1dd>cmdArgsT</span>);
@@ -111,7 +110,7 @@
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span><span style=color:#58a1dd>cleanup</span>:
 </span></span><span style=display:flex><span>  <span style=color:#828b96;font-style:italic>// Clean up resources
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>  <span style=color:#58a1dd>CloseHandle</span>(<span style=color:#58a1dd>hShellProcessToken</span>);
+</span></span></span><span style=display:flex><span>  <span style=color:#58a1dd>CloseHandle</span>(<span style=color:#58a1dd>hShellProcessToken</span>);
 </span></span><span style=display:flex><span>  <span style=color:#58a1dd>CloseHandle</span>(<span style=color:#58a1dd>hPrimaryToken</span>);
 </span></span><span style=display:flex><span>  <span style=color:#58a1dd>CloseHandle</span>(<span style=color:#58a1dd>hShellProcess</span>);
 </span></span><span style=display:flex><span>  <span style=color:#ff636f>return</span> <span style=color:#58a1dd>hr</span>;
@@ -124,18 +123,18 @@ Windows Vista 定义了四个完整性级别:</p><blockquote><p>低 (SID: S-1-16
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;cstring&gt;</span><span style=color:#828b96;font-style:italic>
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;wchar.h&gt;</span><span style=color:#828b96;font-style:italic>
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;iostream&gt;</span><span style=color:#828b96;font-style:italic>
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
+</span></span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#pragma comment(lib,&#34;kernel32&#34;)
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#pragma comment(lib,&#34;Advapi32&#34;)
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#pragma comment(lib,&#34;user32&#34;)
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
+</span></span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span><span style=color:#58a1dd>BOOL</span> <span style=color:#58a1dd>WINAPI</span> <span style=color:#58a1dd>CreateLowLevelProcess</span>(<span style=color:#58a1dd>LPCWSTR</span> <span style=color:#58a1dd>lpCmdLine</span>) {
 </span></span><span style=display:flex><span>  <span style=color:#58a1dd>BOOL</span> <span style=color:#58a1dd>b</span>;
 </span></span><span style=display:flex><span>  <span style=color:#58a1dd>HANDLE</span> <span style=color:#58a1dd>hToken</span>;
 </span></span><span style=display:flex><span>  <span style=color:#58a1dd>HANDLE</span> <span style=color:#58a1dd>hNewToken</span>;
 </span></span><span style=display:flex><span>  <span style=color:#828b96;font-style:italic>// PWSTR szProcessName = L&#34;LowClient&#34;;
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>  <span style=color:#58a1dd>PWSTR</span> <span style=color:#58a1dd>szIntegritySid</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;S-1-16-4096&#34;</span>;
+</span></span></span><span style=display:flex><span>  <span style=color:#58a1dd>PWSTR</span> <span style=color:#58a1dd>szIntegritySid</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;S-1-16-4096&#34;</span>;
 </span></span><span style=display:flex><span>  <span style=color:#58a1dd>PSID</span> <span style=color:#58a1dd>pIntegritySid</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>NULL</span>;
 </span></span><span style=display:flex><span>  <span style=color:#58a1dd>TOKEN_MANDATORY_LABEL</span> <span style=color:#58a1dd>TIL</span> <span style=color:#ff636f>=</span> {<span style=color:#a6be9d>0</span>};
 </span></span><span style=display:flex><span>  <span style=color:#58a1dd>PROCESS_INFORMATION</span> <span style=color:#58a1dd>ProcInfo</span> <span style=color:#ff636f>=</span> {<span style=color:#a6be9d>0</span>};
@@ -153,16 +152,16 @@ Windows Vista 定义了四个完整性级别:</p><blockquote><p>低 (SID: S-1-16
 </span></span><span style=display:flex><span>  <span style=color:#58a1dd>TIL</span>.<span style=color:#58a1dd>Label</span>.<span style=color:#58a1dd>Sid</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>pIntegritySid</span>;
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>  <span style=color:#828b96;font-style:italic>// Set process integrity levels
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>  <span style=color:#58a1dd>b</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>SetTokenInformation</span>(<span style=color:#58a1dd>hNewToken</span>, <span style=color:#58a1dd>TokenIntegrityLevel</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>TIL</span>,
+</span></span></span><span style=display:flex><span>  <span style=color:#58a1dd>b</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>SetTokenInformation</span>(<span style=color:#58a1dd>hNewToken</span>, <span style=color:#58a1dd>TokenIntegrityLevel</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>TIL</span>,
 </span></span><span style=display:flex><span>                          <span style=color:#ff636f>sizeof</span>(<span style=color:#58a1dd>TOKEN_MANDATORY_LABEL</span>) <span style=color:#ff636f>+</span>
 </span></span><span style=display:flex><span>                              <span style=color:#58a1dd>GetLengthSid</span>(<span style=color:#58a1dd>pIntegritySid</span>));
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>  <span style=color:#828b96;font-style:italic>// Set process UI privilege level
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>  <span style=color:#828b96;font-style:italic>/*b = SetTokenInformation(hNewToken, TokenIntegrityLevel,
+</span></span></span><span style=display:flex><span>  <span style=color:#828b96;font-style:italic>/*b = SetTokenInformation(hNewToken, TokenIntegrityLevel,
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>  &amp;TIL, sizeof(TOKEN_MANDATORY_LABEL) + GetLengthSid(pIntegritySid)); */</span>
 </span></span><span style=display:flex><span>  <span style=color:#ff636f>wchar_t</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>lpCmdLineT</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>_wcsdup</span>(<span style=color:#58a1dd>lpCmdLine</span>);
 </span></span><span style=display:flex><span>  <span style=color:#828b96;font-style:italic>// To create a new low-integrity processes
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>  <span style=color:#58a1dd>b</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>CreateProcessAsUserW</span>(<span style=color:#58a1dd>hNewToken</span>, <span style=color:#58a1dd>NULL</span>, <span style=color:#58a1dd>lpCmdLineT</span>, <span style=color:#58a1dd>NULL</span>, <span style=color:#58a1dd>NULL</span>, <span style=color:#58a1dd>FALSE</span>, <span style=color:#a6be9d>0</span>,
+</span></span></span><span style=display:flex><span>  <span style=color:#58a1dd>b</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>CreateProcessAsUserW</span>(<span style=color:#58a1dd>hNewToken</span>, <span style=color:#58a1dd>NULL</span>, <span style=color:#58a1dd>lpCmdLineT</span>, <span style=color:#58a1dd>NULL</span>, <span style=color:#58a1dd>NULL</span>, <span style=color:#58a1dd>FALSE</span>, <span style=color:#a6be9d>0</span>,
 </span></span><span style=display:flex><span>                          <span style=color:#58a1dd>NULL</span>, <span style=color:#58a1dd>NULL</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>StartupInfo</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>ProcInfo</span>);
 </span></span><span style=display:flex><span>  <span style=color:#58a1dd>CloseHandle</span>(<span style=color:#58a1dd>hToken</span>);  
 </span></span><span style=display:flex><span>  <span style=color:#58a1dd>CloseHandle</span>(<span style=color:#58a1dd>hNewToken</span>);
@@ -184,7 +183,7 @@ Windows Vista 定义了四个完整性级别:</p><blockquote><p>低 (SID: S-1-16
 </span></span></code></pre></div><p>第一步获得当前进程的 Token ,然后使用这个令牌创建一个新的令牌，由 SID <code>S-1-16-4096</code> 得到一个 SID 指针，将 SID 指针添加到 <code>TOKEN_MANDATORY_LABEL</code> 结构中，而后用 <code>SetTokenInformation</code> 将令牌与 完整性级别结合在一起，最后使用 <code>CreateProcessAsUser</code> 创建进程。通过完整性级别启动的进程是没有多少权限的，譬如打开一个记事本，新建一个文件另存为，基本上都无法写入。 使用 Process Explorer 可以查看启动进程的权限属性。</p><p><img src=https://raw.githubusercontent.com/fstudio/Phoenix/master/doc/Container/Images/LowLevelSava.png alt=MIC></p><p>强制完整性运用最多的应该是 IE 浏览器，从 IE8 开始，IE 浏览器的保护模式就是 MIC，而 MIC 是 Windows 权限细粒度的一次重大的发展，在前几年，在学校开发 ACM 在线测评系统之时，评测系统就是基于 MIC+Job Object 实现的。</p><h2 id=appconatiner>AppConatiner</h2><p>从 Windows 8 开始，微软引入了新的安全机制，AppConatiner 所有的 Store App 就是运行在应用容器之中，并且 IETab 也是运行在应用容器之中，应用容器在权限的管理上非常细致，也就是说非常“细粒度”。
 微软也为传统的 Desktop 应用程序提供了一系列的API来创建一个 AppContainer，并且使进程在 AppContainer 中启动。比如使用<code>CreateAppContainerProfile</code> 创建一个容器SID，使用 <code>DeleteAppContainerProfile</code> 查找一个已知容器名的SID，删除一个容器<code>DeleteAppContainerProfile</code> 配置文件。<code>GetAppContainerFolderPath</code> 获得容器目录。</p><p>通过 AppContainer 启动进程的一般流程是，通过 <code>CreateAppContainerProfile</code> 创建一个容器配置，得到 SID 指针，为了避免创建失败，先用 <code>DeleteAppContainerProfile</code> 删除此容器配置。细粒度的配置需要 <a href="https://msdn.microsoft.com/en-us/library/windows/desktop/aa379650(v=vs.85).aspx">WELL_KNOWN_SID_TYPE</a><br>得到容器配置后，启动进程时需要使用 <code>STARTUPINFOEX</code> 结构，使用 <code>InitializeProcThreadAttributeList</code> <code>UpdateProcThreadAttribute</code> 将 <code>PSID</code> 和 <code>SECURITY_CAPABILITIES::Capabilities</code> （也就是 <code>WELL_KNOWN_SID_TYPE</code> 得到的权限设置）添加到 <code>STARTUPINFOEX::lpAttributeList</code>
 使用 <code>CreateProcess</code> 中第七个参数 添加 <code>EXTENDED_STARTUPINFO_PRESENT</code>，然后再用 <code>reinterpret_cast</code> 转换 <code>STARTUPFINFOEX</code> 指针变量输入到 <code>CreateProcess</code> 倒数第二个（C语言用强制转换）。</p><p>下面是一个完整的例子。</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-c++ data-lang=c++><span style=display:flex><span><span style=color:#828b96;font-style:italic>// cl app.cc Advapi32.lib Userenv.lib
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;ShlObj.h&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;ShlObj.h&gt;</span><span style=color:#828b96;font-style:italic>
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;Userenv.h&gt;</span><span style=color:#828b96;font-style:italic>
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;functional&gt;</span><span style=color:#828b96;font-style:italic>
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;memory&gt;</span><span style=color:#828b96;font-style:italic>
@@ -193,14 +192,14 @@ Windows Vista 定义了四个完整性级别:</p><blockquote><p>低 (SID: S-1-16
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#define APPCONTAINER_PROFILE_NAME L&#34;Force.Charlie.AppLoader.AppContainer&#34;
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#define APPCONTAINER_PROFILE_DISPLAYNAME L&#34;Force.Charlie.AppLoader.AppContainer&#34;
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#define APPCONTAINER_PROFILE_DESCRIPTION L&#34;AppLoader AppContainer&#34;
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
+</span></span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span><span style=color:#ff636f>class</span> <span style=color:#58a1dd>AppContainerContext</span> {
 </span></span><span style=display:flex><span><span style=color:#ff636f>public</span><span style=color:#ff636f>:</span>
 </span></span><span style=display:flex><span>  <span style=color:#ff636f>typedef</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>vector</span><span style=color:#ff636f>&lt;</span><span style=color:#58a1dd>SID_AND_ATTRIBUTES</span><span style=color:#ff636f>&gt;</span> <span style=color:#58a1dd>TCapabilitiesList</span>;
 </span></span><span style=display:flex><span>  <span style=color:#58a1dd>AppContainerContext</span>() <span style=color:#ff636f>:</span> <span style=color:#58a1dd>appContainerSid</span>(<span style=color:#ff636f>nullptr</span>) {}
 </span></span><span style=display:flex><span>  <span style=color:#ff636f>~</span><span style=color:#58a1dd>AppContainerContext</span>() {
 </span></span><span style=display:flex><span>    <span style=color:#828b96;font-style:italic>///
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>    <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>appContainerSid</span>) {
+</span></span></span><span style=display:flex><span>    <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>appContainerSid</span>) {
 </span></span><span style=display:flex><span>      <span style=color:#58a1dd>FreeSid</span>(<span style=color:#58a1dd>appContainerSid</span>);
 </span></span><span style=display:flex><span>    }
 </span></span><span style=display:flex><span>    <span style=color:#ff636f>for</span> (<span style=color:#ff636f>auto</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>c</span> : <span style=color:#58a1dd>mCapabilities</span>) {

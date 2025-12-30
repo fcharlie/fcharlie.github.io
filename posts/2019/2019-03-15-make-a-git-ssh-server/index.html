@@ -1,5 +1,4 @@
-<!doctype html><html lang=en><head><title>构建恰当的 Git SSH Server</title>
-<meta charset=utf-8><meta name=X-UA-Compatible content="IE=edge"><meta name=google-site-verification content><meta content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=5" name=viewport><meta content="telephone=no" name=format-detection><meta name=description content><meta name=renderer content="webkit"><meta name=theme-color content="#ffffff"><script src=/js/toc.js></script><link type=text/css rel=stylesheet href=/vendor/css/bootstrap.min.css><link rel=stylesheet href=/scss/dark-mode.min.cb53f1bee2b8900cb4f082afbf00175d6618f281cf9a2fe8619e3b52d20b5721.css integrity="sha256-y1PxvuK4kAy08IKvvwAXXWYY8oHPmi/oYZ47UtILVyE=" media=screen><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Material+Icons"></head><body><div id=app><div class=single-column-drawer-container id=drawer v-bind:class="{ 'single-column-drawer-container-active': isDrawerOpen }"><div class=drawer-content><div class=drawer-menu><a class="a-block drawer-menu-item active" href=/posts>归档
+<!doctype html><html lang=en><head><title>构建恰当的 Git SSH Server</title><meta charset=utf-8><meta name=X-UA-Compatible content="IE=edge"><meta name=google-site-verification content><meta content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=5" name=viewport><meta content="telephone=no" name=format-detection><meta name=description content><meta name=renderer content="webkit"><meta name=theme-color content="#ffffff"><script src=/js/toc.js></script><link type=text/css rel=stylesheet href=/vendor/css/bootstrap.min.css><link rel=stylesheet href=/scss/dark-mode.min.cb53f1bee2b8900cb4f082afbf00175d6618f281cf9a2fe8619e3b52d20b5721.css integrity="sha256-y1PxvuK4kAy08IKvvwAXXWYY8oHPmi/oYZ47UtILVyE=" media=screen><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Material+Icons"></head><body><div id=app><div class=single-column-drawer-container id=drawer v-bind:class="{ 'single-column-drawer-container-active': isDrawerOpen }"><div class=drawer-content><div class=drawer-menu><a class="a-block drawer-menu-item active" href=/posts>归档
 </a><a class="a-block drawer-menu-item false" href=/categories>分类
 </a><a class="a-block drawer-menu-item false" href=/tags>标签
 </a><a class="a-block drawer-menu-item false" href=/about>关于
@@ -35,16 +34,16 @@
 </span></span><span style=display:flex><span>	<span style=color:#a6be9d>&#34;github.com/gliderlabs/ssh&#34;</span>
 </span></span><span style=display:flex><span>)
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// Error
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span><span style=color:#ff636f>var</span> (
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// Error</span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>var</span> (
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>ErrPublicKeyNotFound</span>  = <span style=color:#58a1dd>errors</span>.<span style=color:#58a1dd>New</span>(<span style=color:#a6be9d>&#34;Public key not found&#34;</span>)
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>ErrEncodeHandshake</span>    = <span style=color:#58a1dd>errors</span>.<span style=color:#58a1dd>New</span>(<span style=color:#a6be9d>&#34;Handshake encode error&#34;</span>)
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>ErrRepositoryNotFound</span> = <span style=color:#58a1dd>errors</span>.<span style=color:#58a1dd>New</span>(<span style=color:#a6be9d>&#34;Repository Not Found&#34;</span>)
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>ErrUnreachablePath</span>    = <span style=color:#58a1dd>errors</span>.<span style=color:#58a1dd>New</span>(<span style=color:#a6be9d>&#34;Path is unreachable&#34;</span>)
 </span></span><span style=display:flex><span>)
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// StrSplitSkipEmpty skip empty string suggestcap is suggest cap
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span><span style=color:#ff636f>func</span> <span style=color:#58a1dd>StrSplitSkipEmpty</span>(<span style=color:#58a1dd>s</span> <span style=color:#ff636f>string</span>, <span style=color:#58a1dd>sep</span> <span style=color:#ff636f>byte</span>, <span style=color:#58a1dd>suggestcap</span> <span style=color:#ff636f>int</span>) []<span style=color:#ff636f>string</span> {
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// StrSplitSkipEmpty skip empty string suggestcap is suggest cap</span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>func</span> <span style=color:#58a1dd>StrSplitSkipEmpty</span>(<span style=color:#58a1dd>s</span> <span style=color:#ff636f>string</span>, <span style=color:#58a1dd>sep</span> <span style=color:#ff636f>byte</span>, <span style=color:#58a1dd>suggestcap</span> <span style=color:#ff636f>int</span>) []<span style=color:#ff636f>string</span> {
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>sv</span> <span style=color:#ff636f>:=</span> <span style=color:#58a1dd>make</span>([]<span style=color:#ff636f>string</span>, <span style=color:#a6be9d>0</span>, <span style=color:#58a1dd>suggestcap</span>)
 </span></span><span style=display:flex><span>	<span style=color:#ff636f>var</span> <span style=color:#58a1dd>first</span>, <span style=color:#58a1dd>i</span> <span style=color:#ff636f>int</span>
 </span></span><span style=display:flex><span>	<span style=color:#ff636f>for</span> ; <span style=color:#58a1dd>i</span> &lt; <span style=color:#58a1dd>len</span>(<span style=color:#58a1dd>s</span>); <span style=color:#58a1dd>i</span><span style=color:#ff636f>++</span> {
@@ -62,8 +61,8 @@
 </span></span><span style=display:flex><span>	<span style=color:#ff636f>return</span> <span style=color:#58a1dd>sv</span>
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// RepoPathClean todo
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span><span style=color:#ff636f>func</span> <span style=color:#58a1dd>RepoPathClean</span>(<span style=color:#58a1dd>p</span> <span style=color:#ff636f>string</span>) (<span style=color:#ff636f>string</span>, <span style=color:#ff636f>error</span>) {
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// RepoPathClean todo</span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>func</span> <span style=color:#58a1dd>RepoPathClean</span>(<span style=color:#58a1dd>p</span> <span style=color:#ff636f>string</span>) (<span style=color:#ff636f>string</span>, <span style=color:#ff636f>error</span>) {
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>xp</span> <span style=color:#ff636f>:=</span> <span style=color:#58a1dd>path</span>.<span style=color:#58a1dd>Clean</span>(<span style=color:#58a1dd>p</span>)
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>pv</span> <span style=color:#ff636f>:=</span> <span style=color:#58a1dd>StrSplitSkipEmpty</span>(<span style=color:#58a1dd>xp</span>, <span style=color:#a6be9d>&#39;/&#39;</span>, <span style=color:#a6be9d>4</span>)
 </span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> <span style=color:#58a1dd>len</span>(<span style=color:#58a1dd>pv</span>) <span style=color:#ff636f>!=</span> <span style=color:#a6be9d>2</span> <span style=color:#ff636f>||</span> <span style=color:#58a1dd>len</span>(<span style=color:#58a1dd>pv</span>[<span style=color:#a6be9d>0</span>]) &lt; <span style=color:#a6be9d>2</span> {
@@ -72,8 +71,8 @@
 </span></span><span style=display:flex><span>	<span style=color:#ff636f>return</span> <span style=color:#58a1dd>pv</span>[<span style=color:#a6be9d>0</span>] <span style=color:#ff636f>+</span> <span style=color:#a6be9d>&#34;/&#34;</span> <span style=color:#ff636f>+</span> <span style=color:#58a1dd>strings</span>.<span style=color:#58a1dd>TrimSuffix</span>(<span style=color:#58a1dd>pv</span>[<span style=color:#a6be9d>1</span>], <span style=color:#a6be9d>&#34;.git&#34;</span>), <span style=color:#ff636f>nil</span>
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// GetSessionEnv env
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span><span style=color:#ff636f>func</span> <span style=color:#58a1dd>GetSessionEnv</span>(<span style=color:#58a1dd>s</span> <span style=color:#58a1dd>ssh</span>.<span style=color:#58a1dd>Session</span>, <span style=color:#58a1dd>key</span> <span style=color:#ff636f>string</span>) <span style=color:#ff636f>string</span> {
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// GetSessionEnv env</span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>func</span> <span style=color:#58a1dd>GetSessionEnv</span>(<span style=color:#58a1dd>s</span> <span style=color:#58a1dd>ssh</span>.<span style=color:#58a1dd>Session</span>, <span style=color:#58a1dd>key</span> <span style=color:#ff636f>string</span>) <span style=color:#ff636f>string</span> {
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>prefix</span> <span style=color:#ff636f>:=</span> <span style=color:#58a1dd>key</span> <span style=color:#ff636f>+</span> <span style=color:#a6be9d>&#34;=&#34;</span>
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>kl</span> <span style=color:#ff636f>:=</span> <span style=color:#58a1dd>len</span>(<span style=color:#58a1dd>prefix</span>)
 </span></span><span style=display:flex><span>	<span style=color:#ff636f>for</span> <span style=color:#58a1dd>_</span>, <span style=color:#58a1dd>str</span> <span style=color:#ff636f>:=</span> <span style=color:#ff636f>range</span> <span style=color:#58a1dd>s</span>.<span style=color:#58a1dd>Environ</span>() {
@@ -87,8 +86,8 @@
 </span></span><span style=display:flex><span>	<span style=color:#ff636f>return</span> <span style=color:#a6be9d>&#34;&#34;</span>
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// RepoPathStat stat repo
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span><span style=color:#ff636f>func</span> <span style=color:#58a1dd>RepoPathStat</span>(<span style=color:#58a1dd>repo</span> <span style=color:#ff636f>string</span>) (<span style=color:#ff636f>string</span>, <span style=color:#ff636f>error</span>) {
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// RepoPathStat stat repo</span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>func</span> <span style=color:#58a1dd>RepoPathStat</span>(<span style=color:#58a1dd>repo</span> <span style=color:#ff636f>string</span>) (<span style=color:#ff636f>string</span>, <span style=color:#ff636f>error</span>) {
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>r</span> <span style=color:#ff636f>:=</span> <span style=color:#58a1dd>filepath</span>.<span style=color:#58a1dd>Join</span>(<span style=color:#a6be9d>&#34;/home/git/root&#34;</span>, <span style=color:#58a1dd>repo</span>[<span style=color:#a6be9d>0</span>:<span style=color:#a6be9d>2</span>], <span style=color:#58a1dd>repo</span>)
 </span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> !<span style=color:#58a1dd>strings</span>.<span style=color:#58a1dd>HasSuffix</span>(<span style=color:#58a1dd>r</span>, <span style=color:#a6be9d>&#34;.git&#34;</span>) {
 </span></span><span style=display:flex><span>		<span style=color:#58a1dd>r</span> <span style=color:#ff636f>+=</span> <span style=color:#a6be9d>&#34;.git&#34;</span>
@@ -99,11 +98,11 @@
 </span></span><span style=display:flex><span>	<span style=color:#ff636f>return</span> <span style=color:#58a1dd>r</span>, <span style=color:#ff636f>nil</span>
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// GitCommand exe git-*
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span><span style=color:#ff636f>func</span> <span style=color:#58a1dd>GitCommand</span>(<span style=color:#58a1dd>s</span> <span style=color:#58a1dd>ssh</span>.<span style=color:#58a1dd>Session</span>, <span style=color:#58a1dd>scmd</span> <span style=color:#ff636f>string</span>, <span style=color:#58a1dd>repo</span> <span style=color:#ff636f>string</span>) <span style=color:#ff636f>int</span> {
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// GitCommand exe git-*</span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>func</span> <span style=color:#58a1dd>GitCommand</span>(<span style=color:#58a1dd>s</span> <span style=color:#58a1dd>ssh</span>.<span style=color:#58a1dd>Session</span>, <span style=color:#58a1dd>scmd</span> <span style=color:#ff636f>string</span>, <span style=color:#58a1dd>repo</span> <span style=color:#ff636f>string</span>) <span style=color:#ff636f>int</span> {
 </span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> <span style=color:#58a1dd>s</span>.<span style=color:#58a1dd>User</span>() <span style=color:#ff636f>!=</span> <span style=color:#a6be9d>&#34;git&#34;</span> {
-</span></span><span style=display:flex><span>		<span style=color:#828b96;font-style:italic>// filter unallowed user
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>		<span style=color:#58a1dd>fmt</span>.<span style=color:#58a1dd>Fprintf</span>(<span style=color:#58a1dd>s</span>.<span style=color:#58a1dd>Stderr</span>(), <span style=color:#a6be9d>&#34;Permission denied, user: \x1b[31m&#39;%s&#39;\x1b[0m\n&#34;</span>, <span style=color:#58a1dd>s</span>.<span style=color:#58a1dd>User</span>())
+</span></span><span style=display:flex><span>		<span style=color:#828b96;font-style:italic>// filter unallowed user</span>
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>fmt</span>.<span style=color:#58a1dd>Fprintf</span>(<span style=color:#58a1dd>s</span>.<span style=color:#58a1dd>Stderr</span>(), <span style=color:#a6be9d>&#34;Permission denied, user: \x1b[31m&#39;%s&#39;\x1b[0m\n&#34;</span>, <span style=color:#58a1dd>s</span>.<span style=color:#58a1dd>User</span>())
 </span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#a6be9d>127</span>
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>
@@ -112,8 +111,8 @@
 </span></span><span style=display:flex><span>		<span style=color:#58a1dd>fmt</span>.<span style=color:#58a1dd>Fprintf</span>(<span style=color:#58a1dd>s</span>.<span style=color:#58a1dd>Stderr</span>(), <span style=color:#a6be9d>&#34;Permission denied: \x1b[31m%v\x1b[0m\n&#34;</span>, <span style=color:#58a1dd>err</span>)
 </span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#a6be9d>127</span>
 </span></span><span style=display:flex><span>	}
-</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>// TODO AUTH
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#58a1dd>diskrepo</span>, <span style=color:#58a1dd>err</span> <span style=color:#ff636f>:=</span> <span style=color:#58a1dd>RepoPathStat</span>(<span style=color:#58a1dd>pwn</span>)
+</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>// TODO AUTH</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>diskrepo</span>, <span style=color:#58a1dd>err</span> <span style=color:#ff636f>:=</span> <span style=color:#58a1dd>RepoPathStat</span>(<span style=color:#58a1dd>pwn</span>)
 </span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> <span style=color:#58a1dd>err</span> <span style=color:#ff636f>!=</span> <span style=color:#ff636f>nil</span> {
 </span></span><span style=display:flex><span>		<span style=color:#58a1dd>fmt</span>.<span style=color:#58a1dd>Fprintf</span>(<span style=color:#58a1dd>s</span>.<span style=color:#58a1dd>Stderr</span>(), <span style=color:#a6be9d>&#34;Access deined: \x1b[31m%v\x1b[0m\n&#34;</span>, <span style=color:#58a1dd>err</span>)
 </span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#a6be9d>127</span>
@@ -121,16 +120,16 @@
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>version</span> <span style=color:#ff636f>:=</span> <span style=color:#58a1dd>GetSessionEnv</span>(<span style=color:#58a1dd>s</span>, <span style=color:#a6be9d>&#34;GIT_PROTOCOL&#34;</span>)
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>cmd</span> <span style=color:#ff636f>:=</span> <span style=color:#58a1dd>exec</span>.<span style=color:#58a1dd>Command</span>(<span style=color:#a6be9d>&#34;git&#34;</span>, <span style=color:#58a1dd>scmd</span>, <span style=color:#58a1dd>diskrepo</span>)
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>ProcAttr</span>(<span style=color:#58a1dd>cmd</span>)
-</span></span><span style=display:flex><span>	<span style=color:#58a1dd>cmd</span>.<span style=color:#58a1dd>Env</span> = <span style=color:#58a1dd>append</span>(<span style=color:#58a1dd>environ</span>, <span style=color:#a6be9d>&#34;GL_ID=key-&#34;</span><span style=color:#ff636f>+</span><span style=color:#58a1dd>strconv</span>.<span style=color:#58a1dd>FormatInt</span>(<span style=color:#a6be9d>1111</span>, <span style=color:#a6be9d>10</span>)) <span style=color:#828b96;font-style:italic>/// to set envid
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#ff636f>if</span> <span style=color:#58a1dd>len</span>(<span style=color:#58a1dd>version</span>) &gt; <span style=color:#a6be9d>0</span> {
-</span></span><span style=display:flex><span>		<span style=color:#58a1dd>cmd</span>.<span style=color:#58a1dd>Env</span> = <span style=color:#58a1dd>append</span>(<span style=color:#58a1dd>environ</span>, <span style=color:#a6be9d>&#34;GIT_PROTOCOL=&#34;</span><span style=color:#ff636f>+</span><span style=color:#58a1dd>version</span>) <span style=color:#828b96;font-style:italic>/// to set envid
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	}
-</span></span><span style=display:flex><span>	<span style=color:#58a1dd>cmd</span>.<span style=color:#58a1dd>Env</span> = <span style=color:#58a1dd>append</span>(<span style=color:#58a1dd>environ</span>, <span style=color:#58a1dd>s</span>.<span style=color:#58a1dd>Environ</span>()<span style=color:#ff636f>...</span>) <span style=color:#828b96;font-style:italic>/// include other
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#58a1dd>cmd</span>.<span style=color:#58a1dd>Stderr</span> = <span style=color:#58a1dd>s</span>.<span style=color:#58a1dd>Stderr</span>()
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>cmd</span>.<span style=color:#58a1dd>Env</span> = <span style=color:#58a1dd>append</span>(<span style=color:#58a1dd>environ</span>, <span style=color:#a6be9d>&#34;GL_ID=key-&#34;</span><span style=color:#ff636f>+</span><span style=color:#58a1dd>strconv</span>.<span style=color:#58a1dd>FormatInt</span>(<span style=color:#a6be9d>1111</span>, <span style=color:#a6be9d>10</span>)) <span style=color:#828b96;font-style:italic>/// to set envid</span>
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> <span style=color:#58a1dd>len</span>(<span style=color:#58a1dd>version</span>) &gt; <span style=color:#a6be9d>0</span> {
+</span></span><span style=display:flex><span>		<span style=color:#58a1dd>cmd</span>.<span style=color:#58a1dd>Env</span> = <span style=color:#58a1dd>append</span>(<span style=color:#58a1dd>environ</span>, <span style=color:#a6be9d>&#34;GIT_PROTOCOL=&#34;</span><span style=color:#ff636f>+</span><span style=color:#58a1dd>version</span>) <span style=color:#828b96;font-style:italic>/// to set envid</span>
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>cmd</span>.<span style=color:#58a1dd>Env</span> = <span style=color:#58a1dd>append</span>(<span style=color:#58a1dd>environ</span>, <span style=color:#58a1dd>s</span>.<span style=color:#58a1dd>Environ</span>()<span style=color:#ff636f>...</span>) <span style=color:#828b96;font-style:italic>/// include other</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>cmd</span>.<span style=color:#58a1dd>Stderr</span> = <span style=color:#58a1dd>s</span>.<span style=color:#58a1dd>Stderr</span>()
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>cmd</span>.<span style=color:#58a1dd>Stdin</span> = <span style=color:#58a1dd>s</span>
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>cmd</span>.<span style=color:#58a1dd>Stdout</span> = <span style=color:#58a1dd>s</span>
-</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>// FIXME: check timeout
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#ff636f>if</span> <span style=color:#58a1dd>err</span> = <span style=color:#58a1dd>cmd</span>.<span style=color:#58a1dd>Start</span>(); <span style=color:#58a1dd>err</span> <span style=color:#ff636f>!=</span> <span style=color:#ff636f>nil</span> {
+</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>// FIXME: check timeout</span>
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> <span style=color:#58a1dd>err</span> = <span style=color:#58a1dd>cmd</span>.<span style=color:#58a1dd>Start</span>(); <span style=color:#58a1dd>err</span> <span style=color:#ff636f>!=</span> <span style=color:#ff636f>nil</span> {
 </span></span><span style=display:flex><span>		<span style=color:#58a1dd>fmt</span>.<span style=color:#58a1dd>Fprintln</span>(<span style=color:#58a1dd>s</span>.<span style=color:#58a1dd>Stderr</span>(), <span style=color:#a6be9d>&#34;Server internal error, unable to run git-&#34;</span>, <span style=color:#58a1dd>scmd</span>)
 </span></span><span style=display:flex><span>		<span style=color:#58a1dd>log</span>.<span style=color:#58a1dd>Printf</span>(<span style=color:#a6be9d>&#34;Server internal error, unable to run git-%s error: %v&#34;</span>, <span style=color:#58a1dd>scmd</span>, <span style=color:#58a1dd>err</span>)
 </span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#a6be9d>127</span>
@@ -155,8 +154,8 @@
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span><span style=color:#ff636f>func</span> <span style=color:#58a1dd>sshAuth</span>(<span style=color:#58a1dd>ctx</span> <span style=color:#58a1dd>ssh</span>.<span style=color:#58a1dd>Context</span>, <span style=color:#58a1dd>key</span> <span style=color:#58a1dd>ssh</span>.<span style=color:#58a1dd>PublicKey</span>) <span style=color:#ff636f>bool</span> {
-</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>/// TODO auth
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
+</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>/// TODO auth</span>
+</span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>	<span style=color:#ff636f>return</span> <span style=color:#ff636f>true</span>
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
@@ -169,17 +168,17 @@
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>GitCommand</span>(<span style=color:#58a1dd>s</span>, <span style=color:#58a1dd>strings</span>.<span style=color:#58a1dd>TrimPrefix</span>(<span style=color:#58a1dd>cmd</span>[<span style=color:#a6be9d>0</span>], <span style=color:#a6be9d>&#34;git-&#34;</span>), <span style=color:#58a1dd>cmd</span>[<span style=color:#a6be9d>1</span>])
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// Userid get
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span><span style=color:#ff636f>var</span> <span style=color:#58a1dd>Userid</span> <span style=color:#ff636f>uint32</span>
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// Userid get</span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>var</span> <span style=color:#58a1dd>Userid</span> <span style=color:#ff636f>uint32</span>
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// Groupid in
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span><span style=color:#ff636f>var</span> <span style=color:#58a1dd>Groupid</span> <span style=color:#ff636f>uint32</span>
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// Groupid in</span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>var</span> <span style=color:#58a1dd>Groupid</span> <span style=color:#ff636f>uint32</span>
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// NeedSetsid is
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span><span style=color:#ff636f>var</span> <span style=color:#58a1dd>NeedSetsid</span> <span style=color:#ff636f>bool</span>
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// NeedSetsid is</span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>var</span> <span style=color:#58a1dd>NeedSetsid</span> <span style=color:#ff636f>bool</span>
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// ProcAttr is
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span><span style=color:#ff636f>func</span> <span style=color:#58a1dd>ProcAttr</span>(<span style=color:#58a1dd>cmd</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>exec</span>.<span style=color:#58a1dd>Cmd</span>) {
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// ProcAttr is</span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>func</span> <span style=color:#58a1dd>ProcAttr</span>(<span style=color:#58a1dd>cmd</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>exec</span>.<span style=color:#58a1dd>Cmd</span>) {
 </span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> <span style=color:#58a1dd>NeedSetsid</span> {
 </span></span><span style=display:flex><span>		<span style=color:#58a1dd>cmd</span>.<span style=color:#58a1dd>SysProcAttr</span> = <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>syscall</span>.<span style=color:#58a1dd>SysProcAttr</span>{
 </span></span><span style=display:flex><span>			<span style=color:#58a1dd>Credential</span>: <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>syscall</span>.<span style=color:#58a1dd>Credential</span>{
@@ -191,8 +190,8 @@
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>//InitializeUtils ini
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span><span style=color:#ff636f>func</span> <span style=color:#58a1dd>InitializeUtils</span>() <span style=color:#ff636f>error</span> {
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>//InitializeUtils ini</span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>func</span> <span style=color:#58a1dd>InitializeUtils</span>() <span style=color:#ff636f>error</span> {
 </span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> <span style=color:#58a1dd>syscall</span>.<span style=color:#58a1dd>Getuid</span>() <span style=color:#ff636f>!=</span> <span style=color:#a6be9d>0</span> {
 </span></span><span style=display:flex><span>		<span style=color:#58a1dd>NeedSetsid</span> = <span style=color:#ff636f>false</span>
 </span></span><span style=display:flex><span>		<span style=color:#58a1dd>Userid</span> = <span style=color:#58a1dd>uint32</span>(<span style=color:#58a1dd>syscall</span>.<span style=color:#58a1dd>Getuid</span>())
@@ -200,7 +199,7 @@
 </span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#ff636f>nil</span>
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>//
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#58a1dd>user</span>, <span style=color:#58a1dd>err</span> <span style=color:#ff636f>:=</span> <span style=color:#58a1dd>user</span>.<span style=color:#58a1dd>Lookup</span>(<span style=color:#a6be9d>&#34;git&#34;</span>)
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>	user, err := user.Lookup(&#34;git&#34;)</span>
 </span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> <span style=color:#58a1dd>err</span> <span style=color:#ff636f>!=</span> <span style=color:#ff636f>nil</span> {
 </span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#58a1dd>err</span>
 </span></span><span style=display:flex><span>	}
@@ -259,15 +258,15 @@
 </span></span><span style=display:flex><span>	<span style=color:#a6be9d>&#34;golang.org/x/crypto/ssh&#34;</span>
 </span></span><span style=display:flex><span>)
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// Thanks https://github.com/mikesmitty/edkey
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
-</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// MarshalED25519PrivateKey todo
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span><span style=color:#828b96;font-style:italic>/* Writes ed25519 private keys into the new OpenSSH private key format.
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// Thanks https://github.com/mikesmitty/edkey</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// MarshalED25519PrivateKey todo</span>
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>/* Writes ed25519 private keys into the new OpenSSH private key format.
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>I have no idea why this isn&#39;t implemented anywhere yet, you can do seemingly
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>everything except write it to disk in the OpenSSH private key format. */</span>
 </span></span><span style=display:flex><span><span style=color:#ff636f>func</span> <span style=color:#58a1dd>MarshalED25519PrivateKey</span>(<span style=color:#58a1dd>key</span> <span style=color:#58a1dd>ed25519</span>.<span style=color:#58a1dd>PrivateKey</span>) []<span style=color:#ff636f>byte</span> {
-</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>// Add our key header (followed by a null byte)
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#58a1dd>magic</span> <span style=color:#ff636f>:=</span> <span style=color:#58a1dd>append</span>([]<span style=color:#58a1dd>byte</span>(<span style=color:#a6be9d>&#34;openssh-key-v1&#34;</span>), <span style=color:#a6be9d>0</span>)
+</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>// Add our key header (followed by a null byte)</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>magic</span> <span style=color:#ff636f>:=</span> <span style=color:#58a1dd>append</span>([]<span style=color:#58a1dd>byte</span>(<span style=color:#a6be9d>&#34;openssh-key-v1&#34;</span>), <span style=color:#a6be9d>0</span>)
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>	<span style=color:#ff636f>var</span> <span style=color:#58a1dd>w</span> <span style=color:#ff636f>struct</span> {
 </span></span><span style=display:flex><span>		<span style=color:#58a1dd>CipherName</span>   <span style=color:#ff636f>string</span>
@@ -278,8 +277,8 @@
 </span></span><span style=display:flex><span>		<span style=color:#58a1dd>PrivKeyBlock</span> []<span style=color:#ff636f>byte</span>
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>// Fill out the private key fields
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#58a1dd>pk1</span> <span style=color:#ff636f>:=</span> <span style=color:#ff636f>struct</span> {
+</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>// Fill out the private key fields</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>pk1</span> <span style=color:#ff636f>:=</span> <span style=color:#ff636f>struct</span> {
 </span></span><span style=display:flex><span>		<span style=color:#58a1dd>Check1</span>  <span style=color:#ff636f>uint32</span>
 </span></span><span style=display:flex><span>		<span style=color:#58a1dd>Check2</span>  <span style=color:#ff636f>uint32</span>
 </span></span><span style=display:flex><span>		<span style=color:#58a1dd>Keytype</span> <span style=color:#ff636f>string</span>
@@ -289,48 +288,48 @@
 </span></span><span style=display:flex><span>		<span style=color:#58a1dd>Pad</span>     []<span style=color:#ff636f>byte</span> <span style=color:#a6be9d>`ssh:&#34;rest&#34;`</span>
 </span></span><span style=display:flex><span>	}{}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>// Set our check ints
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#58a1dd>ci</span> <span style=color:#ff636f>:=</span> <span style=color:#58a1dd>mrand</span>.<span style=color:#58a1dd>Uint32</span>()
+</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>// Set our check ints</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>ci</span> <span style=color:#ff636f>:=</span> <span style=color:#58a1dd>mrand</span>.<span style=color:#58a1dd>Uint32</span>()
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>pk1</span>.<span style=color:#58a1dd>Check1</span> = <span style=color:#58a1dd>ci</span>
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>pk1</span>.<span style=color:#58a1dd>Check2</span> = <span style=color:#58a1dd>ci</span>
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>// Set our key type
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#58a1dd>pk1</span>.<span style=color:#58a1dd>Keytype</span> = <span style=color:#58a1dd>ssh</span>.<span style=color:#58a1dd>KeyAlgoED25519</span>
+</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>// Set our key type</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>pk1</span>.<span style=color:#58a1dd>Keytype</span> = <span style=color:#58a1dd>ssh</span>.<span style=color:#58a1dd>KeyAlgoED25519</span>
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>// Add the pubkey to the optionally-encrypted block
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#58a1dd>pk</span>, <span style=color:#58a1dd>ok</span> <span style=color:#ff636f>:=</span> <span style=color:#58a1dd>key</span>.<span style=color:#58a1dd>Public</span>().(<span style=color:#58a1dd>ed25519</span>.<span style=color:#58a1dd>PublicKey</span>)
+</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>// Add the pubkey to the optionally-encrypted block</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>pk</span>, <span style=color:#58a1dd>ok</span> <span style=color:#ff636f>:=</span> <span style=color:#58a1dd>key</span>.<span style=color:#58a1dd>Public</span>().(<span style=color:#58a1dd>ed25519</span>.<span style=color:#58a1dd>PublicKey</span>)
 </span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> !<span style=color:#58a1dd>ok</span> {
-</span></span><span style=display:flex><span>		<span style=color:#828b96;font-style:italic>//fmt.Fprintln(os.Stderr, &#34;ed25519.PublicKey type assertion failed on an ed25519 public key. This should never ever happen.&#34;)
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>		<span style=color:#ff636f>return</span> <span style=color:#ff636f>nil</span>
+</span></span><span style=display:flex><span>		<span style=color:#828b96;font-style:italic>//fmt.Fprintln(os.Stderr, &#34;ed25519.PublicKey type assertion failed on an ed25519 public key. This should never ever happen.&#34;)</span>
+</span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#ff636f>nil</span>
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>pubKey</span> <span style=color:#ff636f>:=</span> []<span style=color:#58a1dd>byte</span>(<span style=color:#58a1dd>pk</span>)
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>pk1</span>.<span style=color:#58a1dd>Pub</span> = <span style=color:#58a1dd>pubKey</span>
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>// Add our private key
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#58a1dd>pk1</span>.<span style=color:#58a1dd>Priv</span> = []<span style=color:#58a1dd>byte</span>(<span style=color:#58a1dd>key</span>)
+</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>// Add our private key</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>pk1</span>.<span style=color:#58a1dd>Priv</span> = []<span style=color:#58a1dd>byte</span>(<span style=color:#58a1dd>key</span>)
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>// Might be useful to put something in here at some point
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#58a1dd>pk1</span>.<span style=color:#58a1dd>Comment</span> = <span style=color:#a6be9d>&#34;&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>// Might be useful to put something in here at some point</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>pk1</span>.<span style=color:#58a1dd>Comment</span> = <span style=color:#a6be9d>&#34;&#34;</span>
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>// Add some padding to match the encryption block size within PrivKeyBlock (without Pad field)
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#828b96;font-style:italic>// 8 doesn&#39;t match the documentation, but that&#39;s what ssh-keygen uses for unencrypted keys. *shrug*
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#58a1dd>bs</span> <span style=color:#ff636f>:=</span> <span style=color:#a6be9d>8</span>
+</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>// Add some padding to match the encryption block size within PrivKeyBlock (without Pad field)</span>
+</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>// 8 doesn&#39;t match the documentation, but that&#39;s what ssh-keygen uses for unencrypted keys. *shrug*</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>bs</span> <span style=color:#ff636f>:=</span> <span style=color:#a6be9d>8</span>
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>blockLen</span> <span style=color:#ff636f>:=</span> <span style=color:#58a1dd>len</span>(<span style=color:#58a1dd>ssh</span>.<span style=color:#58a1dd>Marshal</span>(<span style=color:#58a1dd>pk1</span>))
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>padLen</span> <span style=color:#ff636f>:=</span> (<span style=color:#58a1dd>bs</span> <span style=color:#ff636f>-</span> (<span style=color:#58a1dd>blockLen</span> <span style=color:#ff636f>%</span> <span style=color:#58a1dd>bs</span>)) <span style=color:#ff636f>%</span> <span style=color:#58a1dd>bs</span>
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>pk1</span>.<span style=color:#58a1dd>Pad</span> = <span style=color:#58a1dd>make</span>([]<span style=color:#ff636f>byte</span>, <span style=color:#58a1dd>padLen</span>)
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>// Padding is a sequence of bytes like: 1, 2, 3...
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#ff636f>for</span> <span style=color:#58a1dd>i</span> <span style=color:#ff636f>:=</span> <span style=color:#a6be9d>0</span>; <span style=color:#58a1dd>i</span> &lt; <span style=color:#58a1dd>padLen</span>; <span style=color:#58a1dd>i</span><span style=color:#ff636f>++</span> {
+</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>// Padding is a sequence of bytes like: 1, 2, 3...</span>
+</span></span><span style=display:flex><span>	<span style=color:#ff636f>for</span> <span style=color:#58a1dd>i</span> <span style=color:#ff636f>:=</span> <span style=color:#a6be9d>0</span>; <span style=color:#58a1dd>i</span> &lt; <span style=color:#58a1dd>padLen</span>; <span style=color:#58a1dd>i</span><span style=color:#ff636f>++</span> {
 </span></span><span style=display:flex><span>		<span style=color:#58a1dd>pk1</span>.<span style=color:#58a1dd>Pad</span>[<span style=color:#58a1dd>i</span>] = <span style=color:#58a1dd>byte</span>(<span style=color:#58a1dd>i</span> <span style=color:#ff636f>+</span> <span style=color:#a6be9d>1</span>)
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>// Generate the pubkey prefix &#34;\0\0\0\nssh-ed25519\0\0\0 &#34;
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#58a1dd>prefix</span> <span style=color:#ff636f>:=</span> []<span style=color:#ff636f>byte</span>{<span style=color:#a6be9d>0x0</span>, <span style=color:#a6be9d>0x0</span>, <span style=color:#a6be9d>0x0</span>, <span style=color:#a6be9d>0x0b</span>}
+</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>// Generate the pubkey prefix &#34;\0\0\0\nssh-ed25519\0\0\0 &#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>prefix</span> <span style=color:#ff636f>:=</span> []<span style=color:#ff636f>byte</span>{<span style=color:#a6be9d>0x0</span>, <span style=color:#a6be9d>0x0</span>, <span style=color:#a6be9d>0x0</span>, <span style=color:#a6be9d>0x0b</span>}
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>prefix</span> = <span style=color:#58a1dd>append</span>(<span style=color:#58a1dd>prefix</span>, []<span style=color:#58a1dd>byte</span>(<span style=color:#58a1dd>ssh</span>.<span style=color:#58a1dd>KeyAlgoED25519</span>)<span style=color:#ff636f>...</span>)
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>prefix</span> = <span style=color:#58a1dd>append</span>(<span style=color:#58a1dd>prefix</span>, []<span style=color:#ff636f>byte</span>{<span style=color:#a6be9d>0x0</span>, <span style=color:#a6be9d>0x0</span>, <span style=color:#a6be9d>0x0</span>, <span style=color:#a6be9d>0x20</span>}<span style=color:#ff636f>...</span>)
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>// Only going to support unencrypted keys for now
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#58a1dd>w</span>.<span style=color:#58a1dd>CipherName</span> = <span style=color:#a6be9d>&#34;none&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>// Only going to support unencrypted keys for now</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>w</span>.<span style=color:#58a1dd>CipherName</span> = <span style=color:#a6be9d>&#34;none&#34;</span>
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>w</span>.<span style=color:#58a1dd>KdfName</span> = <span style=color:#a6be9d>&#34;none&#34;</span>
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>w</span>.<span style=color:#58a1dd>KdfOpts</span> = <span style=color:#a6be9d>&#34;&#34;</span>
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>w</span>.<span style=color:#58a1dd>NumKeys</span> = <span style=color:#a6be9d>1</span>
@@ -342,15 +341,15 @@
 </span></span><span style=display:flex><span>	<span style=color:#ff636f>return</span> <span style=color:#58a1dd>magic</span>
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// AuthenticationKeyGenerationRSA RSA
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span><span style=color:#ff636f>func</span> <span style=color:#58a1dd>AuthenticationKeyGenerationRSA</span>(<span style=color:#58a1dd>keyPath</span> <span style=color:#ff636f>string</span>) <span style=color:#ff636f>error</span> {
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// AuthenticationKeyGenerationRSA RSA</span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>func</span> <span style=color:#58a1dd>AuthenticationKeyGenerationRSA</span>(<span style=color:#58a1dd>keyPath</span> <span style=color:#ff636f>string</span>) <span style=color:#ff636f>error</span> {
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>privKey</span>, <span style=color:#58a1dd>err</span> <span style=color:#ff636f>:=</span> <span style=color:#58a1dd>rsa</span>.<span style=color:#58a1dd>GenerateKey</span>(<span style=color:#58a1dd>rand</span>.<span style=color:#58a1dd>Reader</span>, <span style=color:#a6be9d>2048</span>)
 </span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> <span style=color:#58a1dd>err</span> <span style=color:#ff636f>!=</span> <span style=color:#ff636f>nil</span> {
 </span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#58a1dd>err</span>
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>// generate public key
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#58a1dd>publicKey</span>, <span style=color:#58a1dd>err</span> <span style=color:#ff636f>:=</span> <span style=color:#58a1dd>ssh</span>.<span style=color:#58a1dd>NewPublicKey</span>(<span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>privKey</span>.<span style=color:#58a1dd>PublicKey</span>)
+</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>// generate public key</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>publicKey</span>, <span style=color:#58a1dd>err</span> <span style=color:#ff636f>:=</span> <span style=color:#58a1dd>ssh</span>.<span style=color:#58a1dd>NewPublicKey</span>(<span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>privKey</span>.<span style=color:#58a1dd>PublicKey</span>)
 </span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> <span style=color:#58a1dd>err</span> <span style=color:#ff636f>!=</span> <span style=color:#ff636f>nil</span> {
 </span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#58a1dd>err</span>
 </span></span><span style=display:flex><span>	}
@@ -367,9 +366,9 @@
 </span></span><span style=display:flex><span>	<span style=color:#ff636f>return</span> <span style=color:#58a1dd>ioutil</span>.<span style=color:#58a1dd>WriteFile</span>(<span style=color:#58a1dd>keyPath</span><span style=color:#ff636f>+</span><span style=color:#a6be9d>&#34;.pub&#34;</span>, <span style=color:#58a1dd>authorizedKey</span>, <span style=color:#a6be9d>0644</span>)
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// AuthenticationKeyGenerationECDSA ecdsa
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// by default we gen 256
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span><span style=color:#ff636f>func</span> <span style=color:#58a1dd>AuthenticationKeyGenerationECDSA</span>(<span style=color:#58a1dd>keyPath</span> <span style=color:#ff636f>string</span>) <span style=color:#ff636f>error</span> {
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// AuthenticationKeyGenerationECDSA ecdsa</span>
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// by default we gen 256</span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>func</span> <span style=color:#58a1dd>AuthenticationKeyGenerationECDSA</span>(<span style=color:#58a1dd>keyPath</span> <span style=color:#ff636f>string</span>) <span style=color:#ff636f>error</span> {
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>privKey</span>, <span style=color:#58a1dd>err</span> <span style=color:#ff636f>:=</span> <span style=color:#58a1dd>ecdsa</span>.<span style=color:#58a1dd>GenerateKey</span>(<span style=color:#58a1dd>elliptic</span>.<span style=color:#58a1dd>P256</span>(), <span style=color:#58a1dd>rand</span>.<span style=color:#58a1dd>Reader</span>)
 </span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> <span style=color:#58a1dd>err</span> <span style=color:#ff636f>!=</span> <span style=color:#ff636f>nil</span> {
 </span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#58a1dd>err</span>
@@ -382,8 +381,8 @@
 </span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> <span style=color:#58a1dd>err</span> <span style=color:#ff636f>!=</span> <span style=color:#ff636f>nil</span> {
 </span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#58a1dd>err</span>
 </span></span><span style=display:flex><span>	}
-</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>// EC PRIVATE KEY
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#58a1dd>pemKey</span> <span style=color:#ff636f>:=</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>pem</span>.<span style=color:#58a1dd>Block</span>{
+</span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>// EC PRIVATE KEY</span>
+</span></span><span style=display:flex><span>	<span style=color:#58a1dd>pemKey</span> <span style=color:#ff636f>:=</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>pem</span>.<span style=color:#58a1dd>Block</span>{
 </span></span><span style=display:flex><span>		<span style=color:#58a1dd>Type</span>:  <span style=color:#a6be9d>&#34;EC PRIVATE KEY&#34;</span>,
 </span></span><span style=display:flex><span>		<span style=color:#58a1dd>Bytes</span>: <span style=color:#58a1dd>pembyte</span>,
 </span></span><span style=display:flex><span>	}
@@ -395,8 +394,8 @@
 </span></span><span style=display:flex><span>	<span style=color:#ff636f>return</span> <span style=color:#58a1dd>ioutil</span>.<span style=color:#58a1dd>WriteFile</span>(<span style=color:#58a1dd>keyPath</span><span style=color:#ff636f>+</span><span style=color:#a6be9d>&#34;.pub&#34;</span>, <span style=color:#58a1dd>authorizedKey</span>, <span style=color:#a6be9d>0644</span>)
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// AuthenticationKeyGenerationED25519 ED25519 keygen
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span><span style=color:#ff636f>func</span> <span style=color:#58a1dd>AuthenticationKeyGenerationED25519</span>(<span style=color:#58a1dd>keyPath</span> <span style=color:#ff636f>string</span>) <span style=color:#ff636f>error</span> {
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// AuthenticationKeyGenerationED25519 ED25519 keygen</span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>func</span> <span style=color:#58a1dd>AuthenticationKeyGenerationED25519</span>(<span style=color:#58a1dd>keyPath</span> <span style=color:#ff636f>string</span>) <span style=color:#ff636f>error</span> {
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>pubKey</span>, <span style=color:#58a1dd>privKey</span>, <span style=color:#58a1dd>err</span> <span style=color:#ff636f>:=</span> <span style=color:#58a1dd>ed25519</span>.<span style=color:#58a1dd>GenerateKey</span>(<span style=color:#58a1dd>rand</span>.<span style=color:#58a1dd>Reader</span>)
 </span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> <span style=color:#58a1dd>err</span> <span style=color:#ff636f>!=</span> <span style=color:#ff636f>nil</span> {
 </span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#58a1dd>err</span>

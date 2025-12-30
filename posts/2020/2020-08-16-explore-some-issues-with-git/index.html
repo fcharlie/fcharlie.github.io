@@ -1,5 +1,4 @@
-<!doctype html><html lang=en><head><title>探讨 Git 版本控制系统的若干问题 - 2020 版</title>
-<meta charset=utf-8><meta name=X-UA-Compatible content="IE=edge"><meta name=google-site-verification content><meta content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=5" name=viewport><meta content="telephone=no" name=format-detection><meta name=description content><meta name=renderer content="webkit"><meta name=theme-color content="#ffffff"><script src=/js/toc.js></script><link type=text/css rel=stylesheet href=/vendor/css/bootstrap.min.css><link rel=stylesheet href=/scss/dark-mode.min.cb53f1bee2b8900cb4f082afbf00175d6618f281cf9a2fe8619e3b52d20b5721.css integrity="sha256-y1PxvuK4kAy08IKvvwAXXWYY8oHPmi/oYZ47UtILVyE=" media=screen><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Material+Icons"></head><body><div id=app><div class=single-column-drawer-container id=drawer v-bind:class="{ 'single-column-drawer-container-active': isDrawerOpen }"><div class=drawer-content><div class=drawer-menu><a class="a-block drawer-menu-item active" href=/posts>归档
+<!doctype html><html lang=en><head><title>探讨 Git 版本控制系统的若干问题 - 2020 版</title><meta charset=utf-8><meta name=X-UA-Compatible content="IE=edge"><meta name=google-site-verification content><meta content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=5" name=viewport><meta content="telephone=no" name=format-detection><meta name=description content><meta name=renderer content="webkit"><meta name=theme-color content="#ffffff"><script src=/js/toc.js></script><link type=text/css rel=stylesheet href=/vendor/css/bootstrap.min.css><link rel=stylesheet href=/scss/dark-mode.min.cb53f1bee2b8900cb4f082afbf00175d6618f281cf9a2fe8619e3b52d20b5721.css integrity="sha256-y1PxvuK4kAy08IKvvwAXXWYY8oHPmi/oYZ47UtILVyE=" media=screen><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Material+Icons"></head><body><div id=app><div class=single-column-drawer-container id=drawer v-bind:class="{ 'single-column-drawer-container-active': isDrawerOpen }"><div class=drawer-content><div class=drawer-menu><a class="a-block drawer-menu-item active" href=/posts>归档
 </a><a class="a-block drawer-menu-item false" href=/categories>分类
 </a><a class="a-block drawer-menu-item false" href=/tags>标签
 </a><a class="a-block drawer-menu-item false" href=/about>关于
@@ -62,18 +61,18 @@
 </span></span><span style=display:flex><span>	<span style=color:#a6be9d>&#34;strconv&#34;</span>
 </span></span><span style=display:flex><span>)
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// git blob view
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
-</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// BlobViewer todo
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span><span style=color:#ff636f>type</span> <span style=color:#58a1dd>BlobViewer</span> <span style=color:#ff636f>struct</span> {
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// git blob view</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// BlobViewer todo</span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>type</span> <span style=color:#58a1dd>BlobViewer</span> <span style=color:#ff636f>struct</span> {
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>w</span>  <span style=color:#58a1dd>io</span>.<span style=color:#58a1dd>Writer</span>
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>zr</span> <span style=color:#58a1dd>io</span>.<span style=color:#58a1dd>ReadCloser</span>
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>fd</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>os</span>.<span style=color:#58a1dd>File</span>
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>h</span>  <span style=color:#58a1dd>hash</span>.<span style=color:#58a1dd>Hash</span>
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// NewBlobViewer new blob viewer
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span><span style=color:#ff636f>func</span> <span style=color:#58a1dd>NewBlobViewer</span>(<span style=color:#58a1dd>p</span> <span style=color:#ff636f>string</span>, <span style=color:#58a1dd>w</span> <span style=color:#58a1dd>io</span>.<span style=color:#58a1dd>Writer</span>) (<span style=color:#ff636f>*</span><span style=color:#58a1dd>BlobViewer</span>, <span style=color:#ff636f>error</span>) {
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// NewBlobViewer new blob viewer</span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>func</span> <span style=color:#58a1dd>NewBlobViewer</span>(<span style=color:#58a1dd>p</span> <span style=color:#ff636f>string</span>, <span style=color:#58a1dd>w</span> <span style=color:#58a1dd>io</span>.<span style=color:#58a1dd>Writer</span>) (<span style=color:#ff636f>*</span><span style=color:#58a1dd>BlobViewer</span>, <span style=color:#ff636f>error</span>) {
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>fd</span>, <span style=color:#58a1dd>err</span> <span style=color:#ff636f>:=</span> <span style=color:#58a1dd>os</span>.<span style=color:#58a1dd>Open</span>(<span style=color:#58a1dd>p</span>)
 </span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> <span style=color:#58a1dd>err</span> <span style=color:#ff636f>!=</span> <span style=color:#ff636f>nil</span> {
 </span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#ff636f>nil</span>, <span style=color:#58a1dd>err</span>
@@ -100,8 +99,8 @@
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// Header Lookup header
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span><span style=color:#ff636f>func</span> (<span style=color:#58a1dd>bv</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>BlobViewer</span>) <span style=color:#58a1dd>Header</span>() <span style=color:#ff636f>error</span> {
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// Header Lookup header</span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>func</span> (<span style=color:#58a1dd>bv</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>BlobViewer</span>) <span style=color:#58a1dd>Header</span>() <span style=color:#ff636f>error</span> {
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>raw</span>, <span style=color:#58a1dd>err</span> <span style=color:#ff636f>:=</span> <span style=color:#58a1dd>bv</span>.<span style=color:#58a1dd>readUntil</span>(<span style=color:#a6be9d>&#39; &#39;</span>)
 </span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> <span style=color:#58a1dd>err</span> <span style=color:#ff636f>!=</span> <span style=color:#ff636f>nil</span> {
 </span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#58a1dd>err</span>
@@ -118,8 +117,8 @@
 </span></span><span style=display:flex><span>	<span style=color:#ff636f>return</span> <span style=color:#ff636f>nil</span>
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>//Lookup blob details
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span><span style=color:#ff636f>func</span> (<span style=color:#58a1dd>bv</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>BlobViewer</span>) <span style=color:#58a1dd>Lookup</span>() <span style=color:#ff636f>error</span> {
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>//Lookup blob details</span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>func</span> (<span style=color:#58a1dd>bv</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>BlobViewer</span>) <span style=color:#58a1dd>Lookup</span>() <span style=color:#ff636f>error</span> {
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>zr</span>, <span style=color:#58a1dd>err</span> <span style=color:#ff636f>:=</span> <span style=color:#58a1dd>zlib</span>.<span style=color:#58a1dd>NewReader</span>(<span style=color:#58a1dd>bv</span>.<span style=color:#58a1dd>fd</span>)
 </span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> <span style=color:#58a1dd>err</span> <span style=color:#ff636f>!=</span> <span style=color:#ff636f>nil</span> {
 </span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#58a1dd>err</span>
@@ -131,8 +130,8 @@
 </span></span><span style=display:flex><span>	<span style=color:#ff636f>return</span> <span style=color:#ff636f>nil</span>
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// Close close blob viewer
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span><span style=color:#ff636f>func</span> (<span style=color:#58a1dd>bv</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>BlobViewer</span>) <span style=color:#58a1dd>Close</span>() <span style=color:#ff636f>error</span> {
+</span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// Close close blob viewer</span>
+</span></span><span style=display:flex><span><span style=color:#ff636f>func</span> (<span style=color:#58a1dd>bv</span> <span style=color:#ff636f>*</span><span style=color:#58a1dd>BlobViewer</span>) <span style=color:#58a1dd>Close</span>() <span style=color:#ff636f>error</span> {
 </span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> <span style=color:#58a1dd>bv</span>.<span style=color:#58a1dd>zr</span> <span style=color:#ff636f>!=</span> <span style=color:#ff636f>nil</span> {
 </span></span><span style=display:flex><span>		<span style=color:#58a1dd>bv</span>.<span style=color:#58a1dd>zr</span>.<span style=color:#58a1dd>Close</span>()
 </span></span><span style=display:flex><span>	}

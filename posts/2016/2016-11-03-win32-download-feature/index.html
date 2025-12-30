@@ -1,5 +1,4 @@
-<!doctype html><html lang=en><head><title>Windows 下载功能的实现 - C++ 篇</title>
-<meta charset=utf-8><meta name=X-UA-Compatible content="IE=edge"><meta name=google-site-verification content><meta content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=5" name=viewport><meta content="telephone=no" name=format-detection><meta name=description content><meta name=renderer content="webkit"><meta name=theme-color content="#ffffff"><script src=/js/toc.js></script><link type=text/css rel=stylesheet href=/vendor/css/bootstrap.min.css><link rel=stylesheet href=/scss/dark-mode.min.cb53f1bee2b8900cb4f082afbf00175d6618f281cf9a2fe8619e3b52d20b5721.css integrity="sha256-y1PxvuK4kAy08IKvvwAXXWYY8oHPmi/oYZ47UtILVyE=" media=screen><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Material+Icons"></head><body><div id=app><div class=single-column-drawer-container id=drawer v-bind:class="{ 'single-column-drawer-container-active': isDrawerOpen }"><div class=drawer-content><div class=drawer-menu><a class="a-block drawer-menu-item active" href=/posts>归档
+<!doctype html><html lang=en><head><title>Windows 下载功能的实现 - C++ 篇</title><meta charset=utf-8><meta name=X-UA-Compatible content="IE=edge"><meta name=google-site-verification content><meta content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=5" name=viewport><meta content="telephone=no" name=format-detection><meta name=description content><meta name=renderer content="webkit"><meta name=theme-color content="#ffffff"><script src=/js/toc.js></script><link type=text/css rel=stylesheet href=/vendor/css/bootstrap.min.css><link rel=stylesheet href=/scss/dark-mode.min.cb53f1bee2b8900cb4f082afbf00175d6618f281cf9a2fe8619e3b52d20b5721.css integrity="sha256-y1PxvuK4kAy08IKvvwAXXWYY8oHPmi/oYZ47UtILVyE=" media=screen><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Material+Icons"></head><body><div id=app><div class=single-column-drawer-container id=drawer v-bind:class="{ 'single-column-drawer-container-active': isDrawerOpen }"><div class=drawer-content><div class=drawer-menu><a class="a-block drawer-menu-item active" href=/posts>归档
 </a><a class="a-block drawer-menu-item false" href=/categories>分类
 </a><a class="a-block drawer-menu-item false" href=/tags>标签
 </a><a class="a-block drawer-menu-item false" href=/about>关于
@@ -19,7 +18,7 @@ Urlmon 还提供了下载到缓存目录的函数 URLDownloadToCacheFile，正�
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;Urlmon.h&gt;</span><span style=color:#828b96;font-style:italic>
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;functional&gt;</span><span style=color:#828b96;font-style:italic>
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#pragma comment(lib,&#34;Urlmon&#34;)
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
+</span></span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span><span style=color:#ff636f>class</span> <span style=color:#58a1dd>DownloadStatus</span> <span style=color:#ff636f>:</span><span style=color:#ff636f>public</span> <span style=color:#58a1dd>IBindStatusCallback</span> {
 </span></span><span style=display:flex><span><span style=color:#ff636f>public</span><span style=color:#ff636f>:</span>
@@ -80,9 +79,9 @@ Urlmon 还提供了下载到缓存目录的函数 URLDownloadToCacheFile，正�
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>// IUnknown methods.  Note that IE never calls any of these methods, since
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#828b96;font-style:italic>// the caller owns the IBindStatusCallback interface, so the methods all
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#828b96;font-style:italic>// return zero/E_NOTIMPL.
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
+</span></span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>// the caller owns the IBindStatusCallback interface, so the methods all
+</span></span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>// return zero/E_NOTIMPL.
+</span></span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>STDMETHOD_</span>(<span style=color:#58a1dd>ULONG</span>, <span style=color:#58a1dd>AddRef</span>)()
 </span></span><span style=display:flex><span>	{
 </span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#a6be9d>0</span>;
@@ -127,10 +126,10 @@ Urlmon 还提供了下载到缓存目录的函数 URLDownloadToCacheFile，正�
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;winrt/Windows.Web.Http.h&gt;</span><span style=color:#828b96;font-style:italic>
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;winrt/Windows.Web.Http.Filters.h&gt;</span><span style=color:#828b96;font-style:italic>
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;winrt/Windows.Storage.Streams.h&gt;</span><span style=color:#828b96;font-style:italic>
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
+</span></span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#pragma comment(lib, &#34;windowsapp&#34;)
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#pragma comment(lib,&#34;Shlwapi&#34;)
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
+</span></span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span><span style=color:#ff636f>using</span> <span style=color:#ff636f>namespace</span> <span style=color:#58a1dd>winrt</span>;
 </span></span><span style=display:flex><span><span style=color:#ff636f>using</span> <span style=color:#ff636f>namespace</span> <span style=color:#58a1dd>Windows</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>Foundation</span>;
 </span></span><span style=display:flex><span><span style=color:#ff636f>using</span> <span style=color:#ff636f>namespace</span> <span style=color:#58a1dd>Windows</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>Web</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>Http</span>;
@@ -140,7 +139,7 @@ Urlmon 还提供了下载到缓存目录的函数 URLDownloadToCacheFile，正�
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>//https://msdn.microsoft.com/en-us/library/windows/apps/xaml/windows.web.http.httpclient.aspx
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
+</span></span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span><span style=color:#58a1dd>IAsyncAction</span> <span style=color:#58a1dd>DownloadFileInternal</span>(<span style=color:#58a1dd>hstring_ref</span> <span style=color:#58a1dd>remoteFile</span>,<span style=color:#58a1dd>hstring_ref</span> <span style=color:#58a1dd>localFile</span>) {
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>Uri</span> <span style=color:#58a1dd>uri</span>(<span style=color:#58a1dd>remoteFile</span>);
@@ -195,11 +194,11 @@ Start-BitsTransfer 实际上使用的是 Windows 的 BITS 服务,而 Windows 更
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;algorithm&gt;</span><span style=color:#828b96;font-style:italic>
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;unordered_map&gt;</span><span style=color:#828b96;font-style:italic>
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&#34;console.h&#34;</span><span style=color:#828b96;font-style:italic>
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
+</span></span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#pragma comment(lib,&#34;WinHTTP&#34;)
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
+</span></span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#define MinWarp(a,b) ((b&lt;a)?b:a)
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
+</span></span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span><span style=color:#ff636f>struct</span> <span style=color:#58a1dd>RequestURL</span> {
 </span></span><span style=display:flex><span>	<span style=color:#ff636f>int</span> <span style=color:#58a1dd>nPort</span>;
@@ -244,7 +243,7 @@ Start-BitsTransfer 实际上使用的是 Windows 的 BITS 服务,而 Windows 更
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#define DEFAULT_USERAGENT L&#34;WindowsGet/1.0&#34;
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
+</span></span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span><span style=color:#ff636f>class</span> <span style=color:#58a1dd>InternetObject</span> {
 </span></span><span style=display:flex><span><span style=color:#ff636f>public</span><span style=color:#ff636f>:</span>
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>InternetObject</span>(<span style=color:#58a1dd>HINTERNET</span> <span style=color:#58a1dd>hInternet</span>)<span style=color:#ff636f>:</span><span style=color:#58a1dd>hInternet_</span>(<span style=color:#58a1dd>hInternet</span>) {
@@ -279,9 +278,9 @@ Start-BitsTransfer 实际上使用的是 Windows 的 BITS 服务,而 Windows 更
 </span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>//	WinHttpSetOption(hInternet, WINHTTP_OPTION_REDIRECT_POLICY, &amp;dwOption,sizeof(DWORD));
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#828b96;font-style:italic>/// https://msdn.microsoft.com/en-us/library/windows/desktop/aa384066(v=vs.85).aspx
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#828b96;font-style:italic>/// WINHTTP_PROTOCOL_FLAG_HTTP2
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#58a1dd>DWORD</span> <span style=color:#58a1dd>dwOption</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>WINHTTP_OPTION_REDIRECT_POLICY_ALWAYS</span>;
+</span></span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>/// https://msdn.microsoft.com/en-us/library/windows/desktop/aa384066(v=vs.85).aspx
+</span></span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>/// WINHTTP_PROTOCOL_FLAG_HTTP2
+</span></span></span><span style=display:flex><span>	<span style=color:#58a1dd>DWORD</span> <span style=color:#58a1dd>dwOption</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>WINHTTP_OPTION_REDIRECT_POLICY_ALWAYS</span>;
 </span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>WinHttpSetOption</span>(<span style=color:#58a1dd>hInternet</span>, <span style=color:#58a1dd>WINHTTP_OPTION_REDIRECT_POLICY</span>,
 </span></span><span style=display:flex><span>		<span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>dwOption</span>, <span style=color:#ff636f>sizeof</span>(<span style=color:#58a1dd>DWORD</span>))) {
 </span></span><span style=display:flex><span>		<span style=color:#58a1dd>ErrorMessage</span> <span style=color:#58a1dd>err</span>(<span style=color:#58a1dd>GetLastError</span>());
@@ -349,16 +348,16 @@ Start-BitsTransfer 实际上使用的是 Windows 的 BITS 服务,而 Windows 更
 </span></span><span style=display:flex><span>		<span style=color:#58a1dd>CreateFileW</span>(<span style=color:#58a1dd>tmp</span>.<span style=color:#58a1dd>c_str</span>(), <span style=color:#58a1dd>GENERIC_READ</span> <span style=color:#ff636f>|</span> <span style=color:#58a1dd>GENERIC_WRITE</span>, <span style=color:#58a1dd>FILE_SHARE_READ</span>,
 </span></span><span style=display:flex><span>			<span style=color:#58a1dd>NULL</span>, <span style=color:#58a1dd>OPEN_ALWAYS</span>, <span style=color:#58a1dd>FILE_ATTRIBUTE_NORMAL</span>, <span style=color:#58a1dd>NULL</span>);
 </span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>///
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#ff636f>uint64_t</span> <span style=color:#58a1dd>total</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>;
+</span></span></span><span style=display:flex><span>	<span style=color:#ff636f>uint64_t</span> <span style=color:#58a1dd>total</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>;
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>DWORD</span> <span style=color:#58a1dd>dwSize</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>;
 </span></span><span style=display:flex><span>	<span style=color:#ff636f>char</span> <span style=color:#58a1dd>fixedsizebuf</span>[<span style=color:#a6be9d>16384</span>];
 </span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>///
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#ff636f>if</span> (<span style=color:#58a1dd>callback</span>) {
+</span></span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> (<span style=color:#58a1dd>callback</span>) {
 </span></span><span style=display:flex><span>		<span style=color:#58a1dd>callback</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>impl</span>(<span style=color:#a6be9d>0</span>, <span style=color:#58a1dd>callback</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>userdata</span>);
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>	<span style=color:#ff636f>do</span> {
 </span></span><span style=display:flex><span>		<span style=color:#828b96;font-style:italic>// Check for available data.
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>		<span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>WinHttpQueryDataAvailable</span>(<span style=color:#58a1dd>hRequest</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>dwSize</span>)) {
+</span></span></span><span style=display:flex><span>		<span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>WinHttpQueryDataAvailable</span>(<span style=color:#58a1dd>hRequest</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>dwSize</span>)) {
 </span></span><span style=display:flex><span>			<span style=color:#ff636f>break</span>;
 </span></span><span style=display:flex><span>		}
 </span></span><span style=display:flex><span>		<span style=color:#58a1dd>total</span> <span style=color:#ff636f>+=</span> <span style=color:#58a1dd>dwSize</span>;
@@ -406,12 +405,12 @@ Start-BitsTransfer 实际上使用的是 Windows 的 BITS 服务,而 Windows 更
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;WinInet.h&gt;</span><span style=color:#828b96;font-style:italic>
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;Shlwapi.h&gt;</span><span style=color:#828b96;font-style:italic>
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&#34;console.h&#34;</span><span style=color:#828b96;font-style:italic>
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
+</span></span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#pragma comment(lib, &#34;WinInet.lib&#34;)
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span><span style=color:#828b96;font-style:italic>//https://msdn.microsoft.com/en-us/library/windows/desktop/aa385328(v=vs.85).aspx
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>//https://msdn.microsoft.com/en-us/library/windows/desktop/aa385328(v=vs.85).aspx
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>//INTERNET_OPTION_ENABLE_HTTP_PROTOCOL
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>//HTTP_PROTOCOL_FLAG_HTTP2
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span><span style=color:#ff636f>struct</span> <span style=color:#58a1dd>WinINetRequestURL</span> {
+</span></span></span><span style=display:flex><span><span style=color:#ff636f>struct</span> <span style=color:#58a1dd>WinINetRequestURL</span> {
 </span></span><span style=display:flex><span>	<span style=color:#ff636f>int</span> <span style=color:#58a1dd>nPort</span><span style=color:#ff636f>=</span><span style=color:#a6be9d>0</span>;
 </span></span><span style=display:flex><span>	<span style=color:#ff636f>int</span> <span style=color:#58a1dd>nScheme</span><span style=color:#ff636f>=</span><span style=color:#a6be9d>0</span>;
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#58a1dd>scheme</span>;
@@ -530,21 +529,21 @@ Start-BitsTransfer 实际上使用的是 Windows 的 BITS 服务,而 Windows 更
 </span></span><span style=display:flex><span>		<span style=color:#58a1dd>dwContentLength</span> <span style=color:#ff636f>=</span> ((<span style=color:#58a1dd>DWORD64</span>)<span style=color:#58a1dd>highSize</span> <span style=color:#ff636f>&lt;&lt;</span> <span style=color:#a6be9d>32</span>)<span style=color:#ff636f>+</span><span style=color:#58a1dd>loSize</span> ;
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>//InternetQueryDataAvailable
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>hRequest</span>) {
+</span></span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>hRequest</span>) {
 </span></span><span style=display:flex><span>		<span style=color:#58a1dd>ErrorMessage</span> <span style=color:#58a1dd>err</span>(<span style=color:#58a1dd>GetLastError</span>());
 </span></span><span style=display:flex><span>		<span style=color:#58a1dd>BaseErrorMessagePrint</span>(<span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;InternetOpenUrlW(): %s&#34;</span>, <span style=color:#58a1dd>err</span>.<span style=color:#58a1dd>message</span>());
 </span></span><span style=display:flex><span>		<span style=color:#ff636f>return</span> <span style=color:#58a1dd>false</span>;
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>// lpszVersion -&gt;nullptr ,use config
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#58a1dd>tmp</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>localFile</span> <span style=color:#ff636f>+</span> <span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;.part&#34;</span>;
+</span></span></span><span style=display:flex><span>	<span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span> <span style=color:#58a1dd>tmp</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>localFile</span> <span style=color:#ff636f>+</span> <span style=color:#a6be9d>L</span><span style=color:#a6be9d>&#34;.part&#34;</span>;
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>HANDLE</span> <span style=color:#58a1dd>hFile</span> <span style=color:#ff636f>=</span>
 </span></span><span style=display:flex><span>		<span style=color:#58a1dd>CreateFileW</span>(<span style=color:#58a1dd>tmp</span>.<span style=color:#58a1dd>c_str</span>(), <span style=color:#58a1dd>GENERIC_READ</span> <span style=color:#ff636f>|</span> <span style=color:#58a1dd>GENERIC_WRITE</span>, <span style=color:#58a1dd>FILE_SHARE_READ</span>,
 </span></span><span style=display:flex><span>			<span style=color:#58a1dd>NULL</span>, <span style=color:#58a1dd>OPEN_ALWAYS</span>, <span style=color:#58a1dd>FILE_ATTRIBUTE_NORMAL</span>, <span style=color:#58a1dd>NULL</span>);
 </span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>///
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#58a1dd>BYTE</span> <span style=color:#58a1dd>fixedsizebuf</span>[<span style=color:#a6be9d>16384</span>];
+</span></span></span><span style=display:flex><span>	<span style=color:#58a1dd>BYTE</span> <span style=color:#58a1dd>fixedsizebuf</span>[<span style=color:#a6be9d>16384</span>];
 </span></span><span style=display:flex><span>	<span style=color:#828b96;font-style:italic>//DWORD64 rdsize = 0;
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>	<span style=color:#58a1dd>DWORD</span> <span style=color:#58a1dd>dwReadSize</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>;
+</span></span></span><span style=display:flex><span>	<span style=color:#58a1dd>DWORD</span> <span style=color:#58a1dd>dwReadSize</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>;
 </span></span><span style=display:flex><span>	<span style=color:#58a1dd>DWORD</span> <span style=color:#58a1dd>dwWriteSize</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>;
 </span></span><span style=display:flex><span>	<span style=color:#ff636f>uint64_t</span> <span style=color:#58a1dd>rdsize</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>;
 </span></span><span style=display:flex><span>	<span style=color:#ff636f>if</span> (<span style=color:#58a1dd>callback</span>) {

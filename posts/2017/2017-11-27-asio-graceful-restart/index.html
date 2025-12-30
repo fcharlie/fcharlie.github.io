@@ -1,5 +1,4 @@
-<!doctype html><html lang=en><head><title>基于 Asio 的服务器平滑重启方案</title>
-<meta charset=utf-8><meta name=X-UA-Compatible content="IE=edge"><meta name=google-site-verification content><meta content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=5" name=viewport><meta content="telephone=no" name=format-detection><meta name=description content><meta name=renderer content="webkit"><meta name=theme-color content="#ffffff"><script src=/js/toc.js></script><link type=text/css rel=stylesheet href=/vendor/css/bootstrap.min.css><link rel=stylesheet href=/scss/dark-mode.min.cb53f1bee2b8900cb4f082afbf00175d6618f281cf9a2fe8619e3b52d20b5721.css integrity="sha256-y1PxvuK4kAy08IKvvwAXXWYY8oHPmi/oYZ47UtILVyE=" media=screen><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Material+Icons"></head><body><div id=app><div class=single-column-drawer-container id=drawer v-bind:class="{ 'single-column-drawer-container-active': isDrawerOpen }"><div class=drawer-content><div class=drawer-menu><a class="a-block drawer-menu-item active" href=/posts>归档
+<!doctype html><html lang=en><head><title>基于 Asio 的服务器平滑重启方案</title><meta charset=utf-8><meta name=X-UA-Compatible content="IE=edge"><meta name=google-site-verification content><meta content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=5" name=viewport><meta content="telephone=no" name=format-detection><meta name=description content><meta name=renderer content="webkit"><meta name=theme-color content="#ffffff"><script src=/js/toc.js></script><link type=text/css rel=stylesheet href=/vendor/css/bootstrap.min.css><link rel=stylesheet href=/scss/dark-mode.min.cb53f1bee2b8900cb4f082afbf00175d6618f281cf9a2fe8619e3b52d20b5721.css integrity="sha256-y1PxvuK4kAy08IKvvwAXXWYY8oHPmi/oYZ47UtILVyE=" media=screen><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Material+Icons"></head><body><div id=app><div class=single-column-drawer-container id=drawer v-bind:class="{ 'single-column-drawer-container-active': isDrawerOpen }"><div class=drawer-content><div class=drawer-menu><a class="a-block drawer-menu-item active" href=/posts>归档
 </a><a class="a-block drawer-menu-item false" href=/categories>分类
 </a><a class="a-block drawer-menu-item false" href=/tags>标签
 </a><a class="a-block drawer-menu-item false" href=/about>关于
@@ -12,18 +11,18 @@
 </time><i class=material-icons>folder</i>
 <a href=/categories/server>server</a>
 &nbsp;</div></div></div><div class=post-body-wrapper><div class=post-body v-pre><h2 id=前言>前言</h2><p>与客户端程序不同的是，服务端程序要尽可能的长时间运行，故障时能够自动恢复，并且更新时不能影响服务正在处理的请求。这就产生了平滑重启的功能需求。实际上，网络上比较流行的 HTTP 服务器 Nginx 就支持平滑重启。而 apache httpd 同样支持。码云分布式以后，很多功能被分解成一个个的服务，比如存储机器上的 git-srv, git-diamond 等等，为了平台的稳定运行，也需要支持平滑重启。</p><h2 id=平滑重启的原理>平滑重启的原理</h2><p>平滑重启的原理实际上比较简单，即，当接收到平滑重启后，旧的服务关闭监听套接字，处理完所有请求后便退出。而在旧的服务关闭监听套接字后，启动一个新的服务监听套接字，处理新的请求。</p><p>在 POSIX 系统中，我们可以使用 <strong>Signal</strong> 通知服务平滑重启，在 Windows 中，可以使用 <strong>Windows Event Object</strong> 通知服务平滑重启。</p><p>平滑重启并没有什么技术难点，但实现的过程中却需要避开一些陷阱。</p><h2 id=asio-平滑重启>Asio 平滑重启</h2><p>我开发的网络服务大多基于 <code>Boost.Asio</code> 实现，线上的服务器也大多运行 Ubuntu 14.04 或者 Ubuntu 16.04。最初的时候，码云的服务器并没有支持平滑重启，这并不是我没有尝试实现平滑重启功能，当时为了加快部署，支持使用 <code>apt-get</code> 安装了 <code>Boost.Asio</code>，而不是源码编译 <code>Boost.Asio</code>。经由 apt-get 安装的库往往比最新版本老很多（可能是 5~6 个版本），也容易出现一些特定的 bug。于是我也没将那些服务有支持平滑重启。后来在我将所有的 Boost.Asio 替换成独立的 <code>Asio</code> 就支持平滑重启了。</p><p>下面是一个例子：</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-c++ data-lang=c++><span style=display:flex><span><span style=color:#828b96;font-style:italic>///
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
+</span></span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#ifndef _NET_SERVE_HPP
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#define _NET_SERVE_HPP
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;mutex&gt;</span><span style=color:#828b96;font-style:italic>
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;thread&gt;</span><span style=color:#828b96;font-style:italic> </span><span style=color:#828b96;font-style:italic>///std::thread::hardware_concurrency()
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;utility&gt;</span><span style=color:#828b96;font-style:italic>
+</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;utility&gt;</span><span style=color:#828b96;font-style:italic>
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#ifndef _WIN32
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;unistd.h&gt;</span><span style=color:#828b96;font-style:italic>
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;fcntl.h&gt;</span><span style=color:#828b96;font-style:italic>
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#endif
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#include</span> <span style=color:#828b96;font-style:italic>&lt;asio.hpp&gt;</span><span style=color:#828b96;font-style:italic>
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
+</span></span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span><span style=color:#ff636f>namespace</span> <span style=color:#58a1dd>net</span> {
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span><span style=color:#ff636f>class</span> <span style=color:#58a1dd>Context</span> {
@@ -59,7 +58,7 @@
 </span></span><span style=display:flex><span>  }
 </span></span><span style=display:flex><span>  <span style=color:#ff636f>void</span> <span style=color:#58a1dd>Clear</span>() {
 </span></span><span style=display:flex><span>    <span style=color:#828b96;font-style:italic>//
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>    <span style=color:#58a1dd>works_</span>.<span style=color:#58a1dd>clear</span>();
+</span></span></span><span style=display:flex><span>    <span style=color:#58a1dd>works_</span>.<span style=color:#58a1dd>clear</span>();
 </span></span><span style=display:flex><span>  }
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>  <span style=color:#58a1dd>asio</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>io_context</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>Next</span>() {
@@ -85,11 +84,11 @@
 </span></span><span style=display:flex><span>  <span style=color:#58a1dd>Serve</span>(<span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>size_t</span> <span style=color:#58a1dd>n</span>) <span style=color:#ff636f>:</span> <span style=color:#58a1dd>context_</span>(<span style=color:#58a1dd>n</span>), <span style=color:#58a1dd>acceptor_</span>(<span style=color:#58a1dd>context_</span>.<span style=color:#58a1dd>Next</span>()) {}
 </span></span><span style=display:flex><span>  <span style=color:#ff636f>void</span> <span style=color:#58a1dd>SetVars</span>(<span style=color:#58a1dd>ServeVars</span> <span style=color:#ff636f>&amp;&amp;</span><span style=color:#58a1dd>vars</span>) {
 </span></span><span style=display:flex><span>    <span style=color:#828b96;font-style:italic>///
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>    <span style=color:#58a1dd>vars_</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>move</span>(<span style=color:#58a1dd>vars</span>);
+</span></span></span><span style=display:flex><span>    <span style=color:#58a1dd>vars_</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>move</span>(<span style=color:#58a1dd>vars</span>);
 </span></span><span style=display:flex><span>  }
 </span></span><span style=display:flex><span>  <span style=color:#ff636f>void</span> <span style=color:#58a1dd>Acceptorclose</span>(<span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>error_code</span> <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>ec</span>) {
 </span></span><span style=display:flex><span>    <span style=color:#828b96;font-style:italic>/// close acceptor
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>    <span style=color:#58a1dd>acceptor_</span>.<span style=color:#58a1dd>close</span>(<span style=color:#58a1dd>ec</span>);
+</span></span></span><span style=display:flex><span>    <span style=color:#58a1dd>acceptor_</span>.<span style=color:#58a1dd>close</span>(<span style=color:#58a1dd>ec</span>);
 </span></span><span style=display:flex><span>  }
 </span></span><span style=display:flex><span>  <span style=color:#ff636f>void</span> <span style=color:#58a1dd>DelayExit</span>() {
 </span></span><span style=display:flex><span>    <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>error_code</span> <span style=color:#58a1dd>ec</span>;
@@ -114,12 +113,12 @@
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>listener socket can be closed in time.
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>*/</span>
 </span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#ifndef _WIN32
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>    <span style=color:#ff636f>int</span> <span style=color:#58a1dd>oflag</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>fcntl</span>(<span style=color:#58a1dd>acceptor_</span>.<span style=color:#58a1dd>native_handle</span>(), <span style=color:#58a1dd>F_GETFD</span>, <span style=color:#a6be9d>0</span>);
+</span></span></span><span style=display:flex><span>    <span style=color:#ff636f>int</span> <span style=color:#58a1dd>oflag</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>fcntl</span>(<span style=color:#58a1dd>acceptor_</span>.<span style=color:#58a1dd>native_handle</span>(), <span style=color:#58a1dd>F_GETFD</span>, <span style=color:#a6be9d>0</span>);
 </span></span><span style=display:flex><span>    <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>oflag</span> <span style=color:#ff636f>&gt;=</span> <span style=color:#a6be9d>0</span>) {
 </span></span><span style=display:flex><span>      <span style=color:#58a1dd>fcntl</span>(<span style=color:#58a1dd>acceptor_</span>.<span style=color:#58a1dd>native_handle</span>(), <span style=color:#58a1dd>F_SETFD</span>, <span style=color:#58a1dd>oflag</span> <span style=color:#ff636f>|</span> <span style=color:#58a1dd>FD_CLOEXEC</span>);
 </span></span><span style=display:flex><span>    }
 </span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#endif
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>    <span style=color:#ff636f>for</span> (<span style=color:#ff636f>int</span> <span style=color:#58a1dd>i</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>; <span style=color:#58a1dd>i</span> <span style=color:#ff636f>&lt;</span> <span style=color:#a6be9d>10</span>; <span style=color:#58a1dd>i</span><span style=color:#ff636f>++</span>) {
+</span></span></span><span style=display:flex><span>    <span style=color:#ff636f>for</span> (<span style=color:#ff636f>int</span> <span style=color:#58a1dd>i</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>; <span style=color:#58a1dd>i</span> <span style=color:#ff636f>&lt;</span> <span style=color:#a6be9d>10</span>; <span style=color:#58a1dd>i</span><span style=color:#ff636f>++</span>) {
 </span></span><span style=display:flex><span>      <span style=color:#58a1dd>acceptor_</span>.<span style=color:#58a1dd>bind</span>(<span style=color:#58a1dd>ep</span>, <span style=color:#58a1dd>ec</span>);
 </span></span><span style=display:flex><span>      <span style=color:#ff636f>if</span> (<span style=color:#ff636f>!</span><span style=color:#58a1dd>ec</span>) {
 </span></span><span style=display:flex><span>        <span style=color:#ff636f>break</span>;
@@ -159,7 +158,7 @@
 </span></span><span style=display:flex><span>};
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>}; <span style=color:#828b96;font-style:italic>// namespace net
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
+</span></span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>#endif
 </span></span></span></code></pre></div><p>实际上就是在收到信号调用 <code>DelayExit</code> ，而在 <code>DelayExit</code> 中，实际上是先关闭 acceptor 然后清理 <code>executor_work_guard</code> 这样一来处理完 io_context 的任务后，线程就会退出，当所有线程退出后，主线程也就退出了。</p><p>完整的例子在：<a href=https://gitee.com/oscstudio/utilcode/tree/master/example/asio_server>oscstudio/utilcode@example/asio_server</a></p><p>这里值得注意的是，在 Unix 的世界中，子进程会继承父进程的文件描述符，为了避免 acceptor 被继承，需要设置监听套接字的文件描述符为 <strong>FD_CLOEXEC</strong>。如果在平滑重启前，启动了一个子进程并继承了监听套接字，就可能会导致平滑重启失败，新服务进程无法绑定监听套接字。</p><h2 id=最后>最后</h2><p>Utilcode 有个完整的 Linux 方案，支持平滑重启，故障自动重启，等等功能。有兴趣的可以阅读源码。</p><hr width=100% id=EOF><p style=color:#777>Last modified on 2017-11-27</p></div></div><nav class=post-pagination><a class=newer-posts href=/posts/2017/2017-12-06-massive-repositories-and-git/>Next<br>Git 巨型存储库的解决方案
 </a><a class=older-posts href=/posts/2017/2017-11-22-git-native-hook-depth-optimization/>Previous<br>Git 原生钩子的深度优化</a></nav><div class=post-comment-wrapper></div></div></div></div></div><div id=sideContainer class=side-container><a class="a-block nav-head false" href=https://forcemz.net/><div class=nav-title>江二十三的思考</div><div class=nav-subtitle>Themed by Diary.</div></a><div class=nav-link-list><a class="a-block nav-link-item active" href=/posts>归档

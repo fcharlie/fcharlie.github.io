@@ -1,5 +1,4 @@
-<!doctype html><html lang=en><head><title>Windows 命令行转义杂谈</title>
-<meta charset=utf-8><meta name=X-UA-Compatible content="IE=edge"><meta name=google-site-verification content><meta content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=5" name=viewport><meta content="telephone=no" name=format-detection><meta name=description content><meta name=renderer content="webkit"><meta name=theme-color content="#ffffff"><script src=/js/toc.js></script><link type=text/css rel=stylesheet href=/vendor/css/bootstrap.min.css><link rel=stylesheet href=/scss/dark-mode.min.cb53f1bee2b8900cb4f082afbf00175d6618f281cf9a2fe8619e3b52d20b5721.css integrity="sha256-y1PxvuK4kAy08IKvvwAXXWYY8oHPmi/oYZ47UtILVyE=" media=screen><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Material+Icons"></head><body><div id=app><div class=single-column-drawer-container id=drawer v-bind:class="{ 'single-column-drawer-container-active': isDrawerOpen }"><div class=drawer-content><div class=drawer-menu><a class="a-block drawer-menu-item active" href=/posts>归档
+<!doctype html><html lang=en><head><title>Windows 命令行转义杂谈</title><meta charset=utf-8><meta name=X-UA-Compatible content="IE=edge"><meta name=google-site-verification content><meta content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=5" name=viewport><meta content="telephone=no" name=format-detection><meta name=description content><meta name=renderer content="webkit"><meta name=theme-color content="#ffffff"><script src=/js/toc.js></script><link type=text/css rel=stylesheet href=/vendor/css/bootstrap.min.css><link rel=stylesheet href=/scss/dark-mode.min.cb53f1bee2b8900cb4f082afbf00175d6618f281cf9a2fe8619e3b52d20b5721.css integrity="sha256-y1PxvuK4kAy08IKvvwAXXWYY8oHPmi/oYZ47UtILVyE=" media=screen><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Material+Icons"></head><body><div id=app><div class=single-column-drawer-container id=drawer v-bind:class="{ 'single-column-drawer-container-active': isDrawerOpen }"><div class=drawer-content><div class=drawer-menu><a class="a-block drawer-menu-item active" href=/posts>归档
 </a><a class="a-block drawer-menu-item false" href=/categories>分类
 </a><a class="a-block drawer-menu-item false" href=/tags>标签
 </a><a class="a-block drawer-menu-item false" href=/about>关于
@@ -47,11 +46,11 @@
 </span></span><span style=display:flex><span>    <span style=color:#ff636f>auto</span> <span style=color:#58a1dd>start</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>args</span>.<span style=color:#58a1dd>begin</span>()<span style=color:#ff636f>+</span><span style=color:#58a1dd>index</span>;
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>    <span style=color:#828b96;font-style:italic>// Erase the first token.
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>    <span style=color:#828b96;font-style:italic>//  Used to get rid of the explicit commandline token &#34;--&#34;
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>    <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>skipFirst</span>)
+</span></span></span><span style=display:flex><span>    <span style=color:#828b96;font-style:italic>//  Used to get rid of the explicit commandline token &#34;--&#34;
+</span></span></span><span style=display:flex><span>    <span style=color:#ff636f>if</span> (<span style=color:#58a1dd>skipFirst</span>)
 </span></span><span style=display:flex><span>    {
 </span></span><span style=display:flex><span>        <span style=color:#828b96;font-style:italic>// Make sure that the arg we&#39;re deleting is &#34;--&#34;
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>        <span style=color:#58a1dd>FAIL_FAST_IF</span>(<span style=color:#ff636f>!</span>(<span style=color:#58a1dd>CLIENT_COMMANDLINE_ARG</span> <span style=color:#ff636f>==</span> <span style=color:#58a1dd>start</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>c_str</span>()));
+</span></span></span><span style=display:flex><span>        <span style=color:#58a1dd>FAIL_FAST_IF</span>(<span style=color:#ff636f>!</span>(<span style=color:#58a1dd>CLIENT_COMMANDLINE_ARG</span> <span style=color:#ff636f>==</span> <span style=color:#58a1dd>start</span><span style=color:#ff636f>-&gt;</span><span style=color:#58a1dd>c_str</span>()));
 </span></span><span style=display:flex><span>        <span style=color:#58a1dd>args</span>.<span style=color:#58a1dd>erase</span>(<span style=color:#58a1dd>start</span>);
 </span></span><span style=display:flex><span>    }
 </span></span><span style=display:flex><span>
@@ -75,7 +74,7 @@
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// https://github.com/microsoft/terminal/blob/master/src/server/DeviceComm.cpp
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// https://github.com/microsoft/terminal/blob/master/src/cascadia/TerminalConnection/ConhostConnection.cpp
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// https://github.com/microsoft/terminal/blob/master/src/inc/conpty.h
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
+</span></span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span><span style=color:#ff636f>__declspec</span>(<span style=color:#58a1dd>noinline</span>) <span style=color:#ff636f>inline</span> <span style=color:#58a1dd>HRESULT</span> <span style=color:#58a1dd>CreateConPty</span>(<span style=color:#ff636f>const</span> <span style=color:#58a1dd>std</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>wstring</span><span style=color:#ff636f>&amp;</span> <span style=color:#58a1dd>cmdline</span>,
 </span></span><span style=display:flex><span>                                                 <span style=color:#ff636f>const</span> <span style=color:#ff636f>unsigned</span> <span style=color:#ff636f>short</span> <span style=color:#58a1dd>w</span>,
 </span></span><span style=display:flex><span>                                                 <span style=color:#ff636f>const</span> <span style=color:#ff636f>unsigned</span> <span style=color:#ff636f>short</span> <span style=color:#58a1dd>h</span>,
@@ -85,19 +84,19 @@
 </span></span><span style=display:flex><span>                                                 <span style=color:#58a1dd>PROCESS_INFORMATION</span><span style=color:#ff636f>*</span> <span style=color:#ff636f>const</span> <span style=color:#58a1dd>piPty</span>)
 </span></span><span style=display:flex><span>{
 </span></span><span style=display:flex><span>    <span style=color:#828b96;font-style:italic>// Create some anon pipes so we can pass handles down and into the console.
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>    <span style=color:#828b96;font-style:italic>// IMPORTANT NOTE:
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>    <span style=color:#828b96;font-style:italic>// We&#39;re creating the pipe here with un-inheritable handles, then marking
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>    <span style=color:#828b96;font-style:italic>//      the conhost sides of the pipes as inheritable. We do this because if
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>    <span style=color:#828b96;font-style:italic>//      the entire pipe is marked as inheritable, when we pass the handles
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>    <span style=color:#828b96;font-style:italic>//      to CreateProcess, at some point the entire pipe object is copied to
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>    <span style=color:#828b96;font-style:italic>//      the conhost process, which includes the terminal side of the pipes
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>    <span style=color:#828b96;font-style:italic>//      (_inPipe and _outPipe). This means that if we die, there&#39;s still
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>    <span style=color:#828b96;font-style:italic>//      outstanding handles to our side of the pipes, and those handles are
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>    <span style=color:#828b96;font-style:italic>//      in conhost, despite conhost being unable to reference those handles
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>    <span style=color:#828b96;font-style:italic>//      and close them.
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>    <span style=color:#828b96;font-style:italic>// CRITICAL: Close our side of the handles. Otherwise you&#39;ll get the same
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>    <span style=color:#828b96;font-style:italic>//      problem if you close conhost, but not us (the terminal).
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>    <span style=color:#58a1dd>HANDLE</span> <span style=color:#58a1dd>outPipeConhostSide</span>;
+</span></span></span><span style=display:flex><span>    <span style=color:#828b96;font-style:italic>// IMPORTANT NOTE:
+</span></span></span><span style=display:flex><span>    <span style=color:#828b96;font-style:italic>// We&#39;re creating the pipe here with un-inheritable handles, then marking
+</span></span></span><span style=display:flex><span>    <span style=color:#828b96;font-style:italic>//      the conhost sides of the pipes as inheritable. We do this because if
+</span></span></span><span style=display:flex><span>    <span style=color:#828b96;font-style:italic>//      the entire pipe is marked as inheritable, when we pass the handles
+</span></span></span><span style=display:flex><span>    <span style=color:#828b96;font-style:italic>//      to CreateProcess, at some point the entire pipe object is copied to
+</span></span></span><span style=display:flex><span>    <span style=color:#828b96;font-style:italic>//      the conhost process, which includes the terminal side of the pipes
+</span></span></span><span style=display:flex><span>    <span style=color:#828b96;font-style:italic>//      (_inPipe and _outPipe). This means that if we die, there&#39;s still
+</span></span></span><span style=display:flex><span>    <span style=color:#828b96;font-style:italic>//      outstanding handles to our side of the pipes, and those handles are
+</span></span></span><span style=display:flex><span>    <span style=color:#828b96;font-style:italic>//      in conhost, despite conhost being unable to reference those handles
+</span></span></span><span style=display:flex><span>    <span style=color:#828b96;font-style:italic>//      and close them.
+</span></span></span><span style=display:flex><span>    <span style=color:#828b96;font-style:italic>// CRITICAL: Close our side of the handles. Otherwise you&#39;ll get the same
+</span></span></span><span style=display:flex><span>    <span style=color:#828b96;font-style:italic>//      problem if you close conhost, but not us (the terminal).
+</span></span></span><span style=display:flex><span>    <span style=color:#58a1dd>HANDLE</span> <span style=color:#58a1dd>outPipeConhostSide</span>;
 </span></span><span style=display:flex><span>    <span style=color:#58a1dd>HANDLE</span> <span style=color:#58a1dd>inPipeConhostSide</span>;
 </span></span><span style=display:flex><span>    <span style=color:#58a1dd>HANDLE</span> <span style=color:#58a1dd>signalPipeConhostSide</span>;
 </span></span><span style=display:flex><span>
@@ -111,7 +110,7 @@
 </span></span><span style=display:flex><span>    <span style=color:#58a1dd>CreatePipe</span>(<span style=color:#58a1dd>hOutput</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>outPipeConhostSide</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>sa</span>, <span style=color:#a6be9d>0</span>);
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>    <span style=color:#828b96;font-style:italic>// Mark inheritable for signal handle when creating. It&#39;ll have the same value on the other side.
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>    <span style=color:#58a1dd>sa</span>.<span style=color:#58a1dd>bInheritHandle</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>TRUE</span>;
+</span></span></span><span style=display:flex><span>    <span style=color:#58a1dd>sa</span>.<span style=color:#58a1dd>bInheritHandle</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>TRUE</span>;
 </span></span><span style=display:flex><span>    <span style=color:#58a1dd>CreatePipe</span>(<span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>signalPipeConhostSide</span>, <span style=color:#58a1dd>hSignal</span>, <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>sa</span>, <span style=color:#a6be9d>0</span>);
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>    <span style=color:#58a1dd>SetHandleInformation</span>(<span style=color:#58a1dd>inPipeConhostSide</span>, <span style=color:#58a1dd>HANDLE_FLAG_INHERIT</span>, <span style=color:#a6be9d>1</span>);
@@ -153,14 +152,14 @@
 </span></span><span style=display:flex><span>        <span style=color:#ff636f>nullptr</span>,
 </span></span><span style=display:flex><span>        <span style=color:#58a1dd>mutableCommandline</span>.<span style=color:#58a1dd>get</span>(),
 </span></span><span style=display:flex><span>        <span style=color:#ff636f>nullptr</span>, <span style=color:#828b96;font-style:italic>// lpProcessAttributes
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>        <span style=color:#ff636f>nullptr</span>, <span style=color:#828b96;font-style:italic>// lpThreadAttributes
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>        <span style=color:#58a1dd>true</span>, <span style=color:#828b96;font-style:italic>// bInheritHandles
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>        <span style=color:#a6be9d>0</span>, <span style=color:#828b96;font-style:italic>// dwCreationFlags
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>        <span style=color:#ff636f>nullptr</span>, <span style=color:#828b96;font-style:italic>// lpEnvironment
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>        <span style=color:#ff636f>nullptr</span>, <span style=color:#828b96;font-style:italic>// lpCurrentDirectory
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>        <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>si</span>, <span style=color:#828b96;font-style:italic>// lpStartupInfo
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>        <span style=color:#58a1dd>piPty</span> <span style=color:#828b96;font-style:italic>// lpProcessInformation
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>    );
+</span></span></span><span style=display:flex><span>        <span style=color:#ff636f>nullptr</span>, <span style=color:#828b96;font-style:italic>// lpThreadAttributes
+</span></span></span><span style=display:flex><span>        <span style=color:#58a1dd>true</span>, <span style=color:#828b96;font-style:italic>// bInheritHandles
+</span></span></span><span style=display:flex><span>        <span style=color:#a6be9d>0</span>, <span style=color:#828b96;font-style:italic>// dwCreationFlags
+</span></span></span><span style=display:flex><span>        <span style=color:#ff636f>nullptr</span>, <span style=color:#828b96;font-style:italic>// lpEnvironment
+</span></span></span><span style=display:flex><span>        <span style=color:#ff636f>nullptr</span>, <span style=color:#828b96;font-style:italic>// lpCurrentDirectory
+</span></span></span><span style=display:flex><span>        <span style=color:#ff636f>&amp;</span><span style=color:#58a1dd>si</span>, <span style=color:#828b96;font-style:italic>// lpStartupInfo
+</span></span></span><span style=display:flex><span>        <span style=color:#58a1dd>piPty</span> <span style=color:#828b96;font-style:italic>// lpProcessInformation
+</span></span></span><span style=display:flex><span>    );
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>    <span style=color:#58a1dd>CloseHandle</span>(<span style=color:#58a1dd>inPipeConhostSide</span>);
 </span></span><span style=display:flex><span>    <span style=color:#58a1dd>CloseHandle</span>(<span style=color:#58a1dd>outPipeConhostSide</span>);
@@ -169,11 +168,11 @@
 </span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#58a1dd>fSuccess</span> <span style=color:#ff636f>?</span> <span style=color:#58a1dd>S_OK</span> : <span style=color:#58a1dd>HRESULT_FROM_WIN32</span>(<span style=color:#58a1dd>GetLastError</span>());
 </span></span><span style=display:flex><span>}
 </span></span></code></pre></div><p>但由于 <a href=https://github.com/microsoft/terminal/issues/1131>Switch from ConhostConnection to the official ConPTY API #1131</a> 依赖 <a href=https://github.com/microsoft/terminal/issues/1130><code>winconpty.c</code></a>，但 <code>winconpty.c</code> 迟迟没有开源，因此，此问题一直没有得到解决，后来随着 Windows Terminal 的公开预览，此问题也不断由用户报告。于是我提交了一个 <a href=https://github.com/microsoft/terminal/pull/1815>Fix The conhost command line is not properly escaped</a>, 试图修复这个问题，经过一个星期的等待，PR 终于被合并，目前使用最新源码构建的 Windows Terminal 已经能够按照预期工作，我的 Windows Terminal 配置文件也已经更新：<a href=https://gist.github.com/fcharlie/7530d36175bc5249f1ae92be536238cd>https://gist.github.com/fcharlie/7530d36175bc5249f1ae92be536238cd</a></p><p>这个问题在 conhost 中都能出现，可能并不是个例，那么应该很多软件都会出现命令行正确转义。</p><h2 id=windows-ucrt-的进程启动函数>Windows UCRT 的进程启动函数</h2><p>在 Windows 中，通常编写 C 程序启动进程除了使用 <code>CreateProcess</code> API 之外，还可以使用 <code>_spawn*</code> <code>_exec*</code> 之类的函数，但在 Windows 1903（10.0.18362.0）UCRT 的源码中，都是调用 <code>common_spawnvp</code> 实现，而命令行合成的代码是通过如下函数实现：</p><div class=highlight><pre tabindex=0 style=color:#1d2432;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-c++ data-lang=c++><span style=display:flex><span><span style=color:#828b96;font-style:italic>// &#34;C:\Program Files (x86)\Windows Kits\10\Source\10.0.18362.0\ucrt\exec\cenvarg.cpp&#34; +24
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>
+</span></span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// Converts a main()-style argv arguments vector into a command line.  On success,
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// returns a pointer to the newly constructed arguments block; the caller is
 </span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic>// responsible for freeing the string.  On failure, returns null and sets errno.
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span><span style=color:#ff636f>template</span> <span style=color:#ff636f>&lt;</span><span style=color:#ff636f>typename</span> <span style=color:#58a1dd>Character</span><span style=color:#ff636f>&gt;</span>
+</span></span></span><span style=display:flex><span><span style=color:#ff636f>template</span> <span style=color:#ff636f>&lt;</span><span style=color:#ff636f>typename</span> <span style=color:#58a1dd>Character</span><span style=color:#ff636f>&gt;</span>
 </span></span><span style=display:flex><span><span style=color:#ff636f>static</span> <span style=color:#58a1dd>errno_t</span> <span style=color:#ff636f>__cdecl</span> <span style=color:#58a1dd>construct_command_line</span>(
 </span></span><span style=display:flex><span>    <span style=color:#58a1dd>Character</span> <span style=color:#ff636f>const</span><span style=color:#ff636f>*</span> <span style=color:#ff636f>const</span><span style=color:#ff636f>*</span> <span style=color:#ff636f>const</span> <span style=color:#58a1dd>argv</span>,
 </span></span><span style=display:flex><span>    <span style=color:#58a1dd>Character</span><span style=color:#ff636f>**</span>             <span style=color:#ff636f>const</span> <span style=color:#58a1dd>command_line_result</span>
@@ -184,15 +183,15 @@
 </span></span><span style=display:flex><span>    <span style=color:#ff636f>*</span><span style=color:#58a1dd>command_line_result</span> <span style=color:#ff636f>=</span> <span style=color:#ff636f>nullptr</span>;
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>    <span style=color:#828b96;font-style:italic>// Compute the number of bytes required to store the arguments in argv in a
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>    <span style=color:#828b96;font-style:italic>// command line string (including spaces between arguments and a terminator):
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>    <span style=color:#58a1dd>size_t</span> <span style=color:#ff636f>const</span> <span style=color:#58a1dd>command_line_count</span> <span style=color:#ff636f>=</span> [<span style=color:#ff636f>&amp;</span>]
+</span></span></span><span style=display:flex><span>    <span style=color:#828b96;font-style:italic>// command line string (including spaces between arguments and a terminator):
+</span></span></span><span style=display:flex><span>    <span style=color:#58a1dd>size_t</span> <span style=color:#ff636f>const</span> <span style=color:#58a1dd>command_line_count</span> <span style=color:#ff636f>=</span> [<span style=color:#ff636f>&amp;</span>]
 </span></span><span style=display:flex><span>    {
 </span></span><span style=display:flex><span>        <span style=color:#58a1dd>size_t</span> <span style=color:#58a1dd>n</span> <span style=color:#ff636f>=</span> <span style=color:#a6be9d>0</span>;
 </span></span><span style=display:flex><span>        <span style=color:#ff636f>for</span> (<span style=color:#58a1dd>Character</span> <span style=color:#ff636f>const</span><span style=color:#ff636f>*</span> <span style=color:#ff636f>const</span><span style=color:#ff636f>*</span> <span style=color:#58a1dd>it</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>argv</span>; <span style=color:#ff636f>*</span><span style=color:#58a1dd>it</span>; <span style=color:#58a1dd>n</span> <span style=color:#ff636f>+=</span> <span style=color:#58a1dd>traits</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>tcslen</span>(<span style=color:#ff636f>*</span><span style=color:#58a1dd>it</span><span style=color:#ff636f>++</span>) <span style=color:#ff636f>+</span> <span style=color:#a6be9d>1</span>) { }
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>        <span style=color:#828b96;font-style:italic>// If there were no arguments, return 1 so that we can return an empty
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>        <span style=color:#828b96;font-style:italic>// string:
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>        <span style=color:#ff636f>return</span> <span style=color:#58a1dd>__max</span>(<span style=color:#58a1dd>n</span>, <span style=color:#a6be9d>1</span>);
+</span></span></span><span style=display:flex><span>        <span style=color:#828b96;font-style:italic>// string:
+</span></span></span><span style=display:flex><span>        <span style=color:#ff636f>return</span> <span style=color:#58a1dd>__max</span>(<span style=color:#58a1dd>n</span>, <span style=color:#a6be9d>1</span>);
 </span></span><span style=display:flex><span>    }();
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>    <span style=color:#58a1dd>__crt_unique_heap_ptr</span><span style=color:#ff636f>&lt;</span><span style=color:#58a1dd>Character</span><span style=color:#ff636f>&gt;</span> <span style=color:#58a1dd>command_line</span>(<span style=color:#58a1dd>_calloc_crt_t</span>(<span style=color:#58a1dd>Character</span>, <span style=color:#58a1dd>command_line_count</span>));
@@ -206,14 +205,14 @@
 </span></span><span style=display:flex><span>    <span style=color:#58a1dd>Character</span><span style=color:#ff636f>*</span>              <span style=color:#58a1dd>result_it</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>command_line</span>.<span style=color:#58a1dd>get</span>();
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>    <span style=color:#828b96;font-style:italic>// If there are no arguments, just return the empty string:
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>    <span style=color:#ff636f>if</span> (<span style=color:#ff636f>*</span><span style=color:#58a1dd>source_it</span> <span style=color:#ff636f>==</span> <span style=color:#a6be9d>&#39;\0&#39;</span>)
+</span></span></span><span style=display:flex><span>    <span style=color:#ff636f>if</span> (<span style=color:#ff636f>*</span><span style=color:#58a1dd>source_it</span> <span style=color:#ff636f>==</span> <span style=color:#a6be9d>&#39;\0&#39;</span>)
 </span></span><span style=display:flex><span>    {
 </span></span><span style=display:flex><span>        <span style=color:#ff636f>*</span><span style=color:#58a1dd>command_line_result</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>command_line</span>.<span style=color:#58a1dd>detach</span>();
 </span></span><span style=display:flex><span>        <span style=color:#ff636f>return</span> <span style=color:#a6be9d>0</span>;
 </span></span><span style=display:flex><span>    }
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>    <span style=color:#828b96;font-style:italic>// Copy the arguments, separated by spaces:
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>    <span style=color:#ff636f>while</span> (<span style=color:#ff636f>*</span><span style=color:#58a1dd>source_it</span> <span style=color:#ff636f>!=</span> <span style=color:#a6be9d>&#39;\0&#39;</span>)
+</span></span></span><span style=display:flex><span>    <span style=color:#ff636f>while</span> (<span style=color:#ff636f>*</span><span style=color:#58a1dd>source_it</span> <span style=color:#ff636f>!=</span> <span style=color:#a6be9d>&#39;\0&#39;</span>)
 </span></span><span style=display:flex><span>    {
 </span></span><span style=display:flex><span>        <span style=color:#58a1dd>_ERRCHECK</span>(<span style=color:#58a1dd>traits</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>tcscpy_s</span>(<span style=color:#58a1dd>result_it</span>, <span style=color:#58a1dd>command_line_count</span> <span style=color:#ff636f>-</span> (<span style=color:#58a1dd>result_it</span> <span style=color:#ff636f>-</span> <span style=color:#58a1dd>command_line</span>.<span style=color:#58a1dd>get</span>()), <span style=color:#ff636f>*</span><span style=color:#58a1dd>source_it</span>));
 </span></span><span style=display:flex><span>        <span style=color:#58a1dd>result_it</span> <span style=color:#ff636f>+=</span> <span style=color:#58a1dd>traits</span><span style=color:#ff636f>::</span><span style=color:#58a1dd>tcslen</span>(<span style=color:#ff636f>*</span><span style=color:#58a1dd>source_it</span>);
@@ -222,7 +221,7 @@
 </span></span><span style=display:flex><span>    }
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>    <span style=color:#828b96;font-style:italic>// Replace the last space with a terminator:
-</span></span></span><span style=display:flex><span><span style=color:#828b96;font-style:italic></span>    <span style=color:#58a1dd>result_it</span>[<span style=color:#ff636f>-</span><span style=color:#a6be9d>1</span>] <span style=color:#ff636f>=</span> <span style=color:#a6be9d>&#39;\0&#39;</span>;
+</span></span></span><span style=display:flex><span>    <span style=color:#58a1dd>result_it</span>[<span style=color:#ff636f>-</span><span style=color:#a6be9d>1</span>] <span style=color:#ff636f>=</span> <span style=color:#a6be9d>&#39;\0&#39;</span>;
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>    <span style=color:#ff636f>*</span><span style=color:#58a1dd>command_line_result</span> <span style=color:#ff636f>=</span> <span style=color:#58a1dd>command_line</span>.<span style=color:#58a1dd>detach</span>();
 </span></span><span style=display:flex><span>    <span style=color:#ff636f>return</span> <span style=color:#a6be9d>0</span>;
