@@ -8,7 +8,7 @@ categories = "git"
 
 去年 12 月底，我在 Gitee 看到了我 8 年前写的 [Git 构建脚本：git-dist](https://gitee.com/oscstudio/git-dist) 在至今依然在维护，看起来 Gitee 仍在使用这个脚本，这么多年了，脚本的核心思路也没有大改，我现在对如何构建 Git 有了新的方法，似乎可以试一试。
 
-尽管这只是一个简单的项目，但如今的我各种事情缠身，以至于今天才把这个事情弄完，现在已经发布到 [Github (git-minimal)](https://github.com/baulk/git-minimal)，并且有了 [Release](https://github.com/baulk/git-minimal/releases/tag/v2.52.0)，基本能覆盖到 Linux `x86_64/aarch64` 平台，在脚本中还预留了对龙芯平台的支持。
+尽管这只是一个简单的项目，但我还是花了不少时间，到了今天才把这个事情弄完，现在已经发布到 [Github (git-minimal)](https://github.com/baulk/git-minimal)，并且有了 [Release](https://github.com/baulk/git-minimal/releases/tag/v2.52.0)，基本能覆盖到 Linux `x86_64/aarch64` 平台，在脚本中还预留了对龙芯平台的支持。
 
 ## 构建之前
 
