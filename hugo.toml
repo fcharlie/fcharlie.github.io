@@ -6,7 +6,7 @@ enableRobotsTXT = true
 languageCode = "zh-CN"
 hasCJKLanguage = true
 theme = "diary"
-copyRight = "Copyright (c) 2009-2024 J23"
+copyRight = "Copyright (c) 2009-2025 J23"
 
 
 # Generate sitemap in the public folder
@@ -23,7 +23,7 @@ unsafe = true
 [markup.highlight]
 codeFences = true
 guessSyntax = false
-hl_Lines = ""
+hl_Lines = '3'
 lineNoStart = 1
 lineNos = false
 lineNumbersInTable = true
