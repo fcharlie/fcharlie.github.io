@@ -140,7 +140,7 @@ contents:
 使用 nfpm 我可以制作 rpm,deb,apk(alpine package) 等等包。
 
 
-### Git 的 RUNTIME_PREFIX 与启动器
+### RUNTIME_PREFIX 与启动器
 
 使用包管理器安装 git-minimal 的时候可以指定 prefix 为 `/usr/local`，但如果用户想解压 git-minimal 直接在任意位置运行，那就歇菜了，虽然可以配置 `RUNTIME_PREFIX` 解决任意位置运行的问题，但我们还依赖 cURL CA-BUNDLE (`curl-ca-bundle.crt`)，它是 cURL 定期从 Mozilla 提取的，我们携带用来解决 SSL 证书验证问题，当然如果 git-minimal 解压到任意位置，可能会导致证书验证失败，但 Git 还留了一条路，即环境变量可以修改这个文件的路径，即 `GIT_SSL_CAINFO`。这个时候我可以参考 git-for-windows 的思路写一个启动器，配置好环境后运行 `execve` 启动对应的命令，在只使用较少工具链的基础上，我使用 C++23 编写了这个启动器，设置好环境变量后使用 execve 执行对应的命令：
 
