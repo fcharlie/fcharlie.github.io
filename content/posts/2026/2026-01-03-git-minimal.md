@@ -77,7 +77,7 @@ esac
 
 `cmake` 和 `autoconf` 基本都能正确识别工具链，构建的过程中都没有什么问题，但 `OpenSSL` 的构建体系较为独立，需要做一些调整：
 
-```nushell
+```nu
         if ($target | str starts-with "aarch64") {
             $opensslOptions = $opensslOptions | append "linux-aarch64"
         } else if ($target | str starts-with "loongarch64") {
@@ -88,7 +88,7 @@ esac
 
 在构建 git 之前基本没有出什么问题，但运行 `configure` 阶段一直报告交叉编译的程序无法运行，看来 git 对这块做的不够好，我们可以使用 configure 缓存机制跳过这些运行性检查：
 
-```nushell
+```nu
     if not ($target | str starts-with $nu.os-info.arch) {
         # If git's configure is not handled properly, cross-compilation will fail, and the configure cache mechanism needs to be used to intercept it.
         # The following is the correct configuration for caching under musl libc (refer to alpine x86_64).
