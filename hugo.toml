@@ -6,7 +6,7 @@ enableRobotsTXT = true
 languageCode = "zh-CN"
 hasCJKLanguage = true
 theme = "diary"
-copyRight = "Copyright (c) 2009-2025 J23"
+copyRight = "Copyright (c) 2009-2026 J23"
 
 
 # Generate sitemap in the public folder
